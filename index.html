@@ -1138,7 +1138,7 @@ function handleLoadFile(e){
       if(d.nId) S.nId=d.nId;
       if(d.standardHours) S.standardHours=d.standardHours;
       $('loadFileInput').value='';
-      const b=$('unsavedBanner'); if(b) b.style.display='none';
+      const b=$('unsavedBanner'); if(b){b.style.display='none';b.style.pointerEvents='none';}
       go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
       toast('Data loaded — '+d.logs.length+' records restored');
     }catch(err){toast('Invalid file — please use a FrameSync JSON backup','err');}
@@ -1190,7 +1190,7 @@ function renderReports(){
           <span style="font-size:12px;font-weight:700;color:${d.ot>0?'var(--danger)':'var(--text-muted)'};">${fmtDur(d.totalMins)}${d.ot>0?' <span style="color:var(--danger)">(+'+fmtDur(d.ot)+' OT)</span>':''}</span>
         </div>
         <div class="ot-bar"><div class="ot-fill ${d.ot>0?'over':''}" style="width:${Math.max((d.totalMins/maxMins)*100,3)}%;"></div></div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${d.count} shifts · ${d.ot>0?'<strong style='color:var(--danger)'>Overtime eligible</strong>':'No overtime'}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${d.count} shifts · ${d.ot>0?"<strong style="+"'color:var(--danger)'"+">Overtime eligible</strong>":"No overtime"}</div>
       </div>
     </div>`).join('');
 
