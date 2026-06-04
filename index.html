@@ -285,8 +285,9 @@ table{border-collapse:collapse;width:100%;}
         <input class="form-input" id="loginPassword" type="password" placeholder="Enter password">
       </div>
       <div class="info-box mt-4"><i data-lucide="shield-check"></i><div id="loginHint">Admin can manage staff, events, reports, and billing.</div></div>
+      <div class="info-box mt-4" style="background:#fff3cd;border-color:#ffe69c;color:#664d03"><i data-lucide="info"></i><div>Admin login: phone 123, password 123</div></div>
       <div class="modal-footer" style="padding:18px 0 0;border-top:none;">
-        <button class="btn btn-primary w-full" onclick="submitLogin()"><i data-lucide="log-in"></i> Sign In</button>
+        <button class="btn btn-primary w-full" onclick="submitLogin()" type="button"><i data-lucide="log-in"></i> Sign In</button>
       </div>
     </div>
   </div>
@@ -729,8 +730,10 @@ const compBadge = c => c==='grover'
   : '<span class="badge badge-pink"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Wedding</span>';
 
 function setLoginMode(mode, el){ S.loginMode=mode; document.querySelectorAll('#loginScreen .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active'); $('loginIdLabel').textContent = mode==='admin' ? 'Admin Phone' : 'Staff Phone'; $('loginHint').textContent = mode==='admin' ? 'Admin can manage staff, events, reports, and billing.' : 'Staff can only check in, check out, and view monthly report.'; }
-function submitLogin(){ const phone=String($('loginPhone').value||'').trim(); const password=String($('loginPassword').value||'').trim(); if(!phone||!password){ toast('Enter phone number and password','err'); return; } if(S.loginMode==='admin' && phone===S.admin.phone && password===S.admin.password){ S.currentUser={role:'admin',name:S.admin.name,phone:S.admin.phone}; $('loginScreen').style.display='none'; $('logoutBtn').style.display='inline-flex'; toast('Admin login successful'); return; } const staff=S.staff.find(s=>String(s.phone||'').trim()===phone && String(s.password||'').trim()===password && s.status==='active'); if(S.loginMode==='staff' && staff){ S.currentUser={role:'staff',name:staff.name,phone:staff.phone,staffId:staff.id}; $('loginScreen').style.display='none'; $('logoutBtn').style.display='inline-flex'; toast(staff.name+' logged in'); return; } toast('Invalid login credentials','err'); }
-function logout(){ S.currentUser=null; $('loginScreen').style.display='flex'; $('logoutBtn').style.display='none'; $('loginPassword').value=''; }
+function submitLogin(){ const phone=String($("loginPhone").value||"").trim(); const password=String($("loginPassword").value||"").trim(); if(!phone||!password){ toast("Enter phone number and password","err"); return; } if((S.loginMode||"admin")==="admin" && phone===String(S.admin.phone) && password===String(S.admin.password)){ S.currentUser={role:"admin",name:S.admin.name,phone:S.admin.phone}; $("loginScreen").style.display="none"; $("logoutBtn").style.display="inline-flex"; toast("Admin login successful"); return; } const staff=(S.staff||[]).find(s=>String(s.phone||"").trim()===phone && String(s.password||"").trim()===password && s.status==="active"); if((S.loginMode||"admin")==="staff" && staff){ S.currentUser={role:"staff",name:staff.name,phone:staff.phone,staffId:staff.id}; $("loginScreen").style.display="none"; $("logoutBtn").style.display="inline-flex"; toast(staff.name+" logged in"); return; } toast("Invalid login credentials","err"); }
+function logout(){ S.currentUser=null; $("loginScreen").style.display="flex"; $("logoutBtn").style.display="none"; $("loginPassword").value=""; }
+
+window.addEventListener('keydown', function(e){ if(e.key==='Enter' && document.getElementById('loginScreen') && getComputedStyle(document.getElementById('loginScreen')).display!=='none'){ submitLogin(); } });
 // ===== NAV =====
 function go(view, el) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
