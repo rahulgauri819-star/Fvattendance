@@ -268,6 +268,30 @@ table{border-collapse:collapse;width:100%;}
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
+<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#f8f9fa,#eef4ff);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div class="card" style="width:100%;max-width:460px;overflow:hidden;">
+    <div class="card-header"><span class="card-title">FrameSync Login</span></div>
+    <div class="card-body">
+      <div class="tabs" style="margin-top:-6px;">
+        <div class="tab active" id="tabAdmin" onclick="setLoginMode('admin',this)">Admin</div>
+        <div class="tab" id="tabStaff" onclick="setLoginMode('staff',this)">Staff</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="loginIdLabel">Admin Phone</label>
+        <input class="form-input" id="loginPhone" type="tel" placeholder="Enter phone number">
+      </div>
+      <div class="form-group mt-4">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="loginPassword" type="password" placeholder="Enter password">
+      </div>
+      <div class="info-box mt-4"><i data-lucide="shield-check"></i><div id="loginHint">Admin can manage staff, events, reports, and billing.</div></div>
+      <div class="modal-footer" style="padding:18px 0 0;border-top:none;">
+        <button class="btn btn-primary w-full" onclick="submitLogin()"><i data-lucide="log-in"></i> Sign In</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
@@ -309,22 +333,11 @@ table{border-collapse:collapse;width:100%;}
       <span class="topbar-title" id="topbarTitle">Dashboard</span>
     </div>
     <div class="topbar-right">
-      <button class="btn btn-outline btn-sm" onclick="loadDataFromFile()" title="Load saved data">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Load
-      </button>
-      <button class="btn btn-primary btn-sm" onclick="saveData()" title="Save all data">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save
-      </button>
-      <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="handleLoadFile(event)">
       <button class="btn btn-primary btn-sm" onclick="openCheckinModal()"><i data-lucide="plus"></i> Check In</button>
     </div>
   </header>
 
-  <div id="unsavedBanner" style="display:none;pointer-events:none;background:#fff3cd;border-bottom:1px solid #ffc107;padding:7px 24px;font-size:12px;color:#856404;align-items:center;justify-content:space-between;gap:12px;">
-    <span>⚠️ <strong>Unsaved changes</strong> — data will be lost on page refresh. Download a backup using the <strong>Save</strong> button.</span>
-    <button onclick="saveData()" style="background:#ffc107;color:#212529;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">Save Now</button>
-  </div>
-<div class="page">
+  <div class="page">
 
     <!-- DASHBOARD -->
     <div class="view active" id="view-dashboard">
@@ -588,6 +601,10 @@ table{border-collapse:collapse;width:100%;}
       <div class="form-group">
         <label class="form-label">Email</label>
         <input class="form-input" type="email" id="sfEmail" placeholder="email@example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Login Password <span class="req">*</span></label>
+            <input class="form-input" type="text" id="sfPassword" placeholder="Set staff password">
       </div>
     </div>
     <div class="form-group">
@@ -687,7 +704,7 @@ const S = {
   editSfId:null, editEvId:null, coLogId:null,
   ciCompany:null, ciSelfieData:null, ciGps:null,
   evTab:'all',
-  standardHours: 8
+  standardHours: 8, admin:{phone:'+91 99999 99999',password:'admin123',name:'Rahul Gauri'}, loginMode:'admin', currentUser:null
 };
 
 // ===== HELPERS =====
@@ -701,11 +718,19 @@ const fmtDur = m => { if(!m||m<=0) return '—'; return Math.floor(m/60)+'h '+(m
 const dur = (ci,co) => { const d=toMins(co)-toMins(ci); return d>0?d:null; };
 const getSf = id => S.staff.find(s=>s.id===id);
 const getEv = id => S.events.find(e=>e.id===id);
+const normalizePhone = p => (p||'').replace(/\D/g,'');
+const canEditMasters = () => S.currentUser && S.currentUser.role==='admin';
+const isStaffUser = () => S.currentUser && S.currentUser.role==='staff';
+const currentStaffId = () => isStaffUser() ? S.currentUser.staffId : null;
+const hasPhotoBooth = log => ((log.workType||'')+' '+((getEv(log.eventId)||{}).name||'')).toLowerCase().includes('photo booth') || ((log.workType||'')+' '+((getEv(log.eventId)||{}).name||'')).toLowerCase().includes('photobooth');
 const colors = ['#0d6efd','#198754','#6f42c1','#fd7e14','#e83e8c','#20c997','#dc3545','#0dcaf0'];
 const compBadge = c => c==='grover'
   ? '<span class="badge badge-blue"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>Grover A/V</span>'
   : '<span class="badge badge-pink"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Wedding</span>';
 
+function setLoginMode(mode, el){ S.loginMode=mode; document.querySelectorAll('#loginScreen .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active'); $('loginIdLabel').textContent = mode==='admin' ? 'Admin Phone' : 'Staff Phone'; $('loginHint').textContent = mode==='admin' ? 'Admin can manage staff, events, reports, and billing.' : 'Staff can only check in, check out, and view monthly report.'; }
+function submitLogin(){ const phone=normalizePhone($('loginPhone').value); const password=$('loginPassword').value.trim(); if(!phone||!password){ toast('Enter phone number and password','err'); return; } if(S.loginMode==='admin' && phone===normalizePhone(S.admin.phone) && password===S.admin.password){ S.currentUser={role:'admin',name:S.admin.name,phone:S.admin.phone}; $('loginScreen').style.display='none'; $('logoutBtn').style.display='inline-flex'; toast('Admin login successful'); return; } const staff=S.staff.find(s=>normalizePhone(s.phone)===phone && s.password===password && s.status==='active'); if(S.loginMode==='staff' && staff){ S.currentUser={role:'staff',name:staff.name,phone:staff.phone,staffId:staff.id}; $('loginScreen').style.display='none'; $('logoutBtn').style.display='inline-flex'; toast(staff.name+' logged in'); return; } toast('Invalid login credentials','err'); }
+function logout(){ S.currentUser=null; $('loginScreen').style.display='flex'; $('logoutBtn').style.display='none'; $('loginPassword').value=''; }
 // ===== NAV =====
 function go(view, el) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -867,7 +892,6 @@ function handleSelfie(e){
     $('selfiePreview').style.display='block';
     $('selfiePrompt').style.display='none';
     $('selfieBox').className='selfie-box has-photo';
-    $('selfieInput').value='';
     toast('Selfie captured ✓');
   };
   reader.readAsDataURL(file);
@@ -889,7 +913,6 @@ function submitCheckin(){
     ciNotes:notes, coNotes:'', copyName:'', copyPhone:''
   };
   S.logs.push(log);
-  markDirty();
   closeM('ciModal');
   const sf=getSf(staffId);
   toast(sf.name+' checked in at '+venue+' — '+log.checkIn);
@@ -914,14 +937,13 @@ function openCheckoutModal(staffId){
 function submitCheckout(){
   const log=S.logs.find(l=>l.id===S.coLogId);
   if(!log){toast('Log not found','err');return;}
-  if(log.company==='grover'){
+  if(hasPhotoBooth(log)){ const prints=parseInt($('coPrints').value||'0',10); if(!(prints>=0)){ toast('Please enter total number of prints','err'); return; } log.totalPrints=prints; } if(log.company==='grover'){
     const cn=$('coCopyName').value.trim();
     const cp=$('coCopyPhone').value.trim();
     if(!cn||!cp){toast('Please enter data copy person name & phone (required for Grover events)','err');return;}
     log.copyName=cn; log.copyPhone=cp;
   }
   log.checkOut=nowTime();
-  markDirty();
   log.coNotes=$('coNotes').value.trim();
   closeM('coModal');
   const sf=getSf(log.staffId);
@@ -931,7 +953,7 @@ function submitCheckout(){
 }
 
 // ===== STAFF =====
-function renderStaff(){
+function renderStaff(){ if(isStaffUser()){ $('staffTbody').innerHTML='<tr><td colspan=6><div class="empty"><h3>Access Restricted</h3><p>Staff cannot edit details.</p></div></td></tr>'; return; }
   const q=($('staffSearch').value||'').toLowerCase();
   const rf=$('staffRoleF').value;
   const filtered=S.staff.filter(s=>(!q||s.name.toLowerCase().includes(q)||s.role.toLowerCase().includes(q))&&(!rf||s.role===rf));
@@ -978,19 +1000,18 @@ function submitStaff(){
   const name=$('sfName').value.trim();
   if(!name){toast('Name is required','err');return;}
   const d={name,role:$('sfRole').value,phone:$('sfPhone').value.trim(),email:$('sfEmail').value.trim(),status:$('sfStatus').value};
-  if(S.editSfId){Object.assign(getSf(S.editSfId),d);markDirty();toast('Staff updated');}
-  else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];S.staff.push(d);markDirty();toast(name+' added to team');}
+  if(S.editSfId){Object.assign(getSf(S.editSfId),d);toast('Staff updated');}
+  else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];S.staff.push(d);toast(name+' added to team');}
   closeM('sfModal');renderStaff();
 }
 function deleteStaff(id){
   if(!confirm('Remove this staff member?')) return;
   S.staff=S.staff.filter(s=>s.id!==id);
-  markDirty();
   toast('Staff removed');renderStaff();
 }
 
 // ===== EVENTS =====
-function renderEvents(){
+function renderEvents(){ if(isStaffUser()){ $('eventsGrid').innerHTML='<div class="empty"><h3>Access Restricted</h3><p>Staff cannot edit events.</p></div>'; return; }
   const tab=S.evTab;
   const evs=S.events.filter(e=>tab==='all'||e.company===tab).sort((a,b)=>a.date.localeCompare(b.date));
   const grid=$('eventsGrid');
@@ -1043,15 +1064,14 @@ function submitEvent(){
   const name=$('evName').value.trim(), venue=$('evVenue').value.trim(), date=$('evDate').value;
   if(!name||!venue||!date){toast('Name, venue and date required','err');return;}
   const d={name,company:$('evCompany').value,date,venue,client:$('evClient').value.trim(),notes:$('evNotes').value.trim()};
-  if(S.editEvId){Object.assign(getEv(S.editEvId),d);markDirty();toast('Event updated');}
-  else{d.id=S.nId.event++;S.events.push(d);markDirty();toast('Event added');}
+  if(S.editEvId){Object.assign(getEv(S.editEvId),d);toast('Event updated');}
+  else{d.id=S.nId.event++;S.events.push(d);toast('Event added');}
   closeM('evModal');renderEvents();
 }
 function deleteEvent(id){
   if(!confirm('Delete this event?')) return;
   S.events=S.events.filter(e=>e.id!==id);
   S.logs=S.logs.filter(l=>l.eventId!==id);
-  markDirty();
   toast('Event deleted');renderEvents();
 }
 
@@ -1114,46 +1134,6 @@ function viewSelfie(logId){
   openM('gpsModal');
 }
 
-
-// ===== SAVE / LOAD DATA =====
-function saveData(){
-  const snapshot={staff:S.staff,events:S.events,logs:S.logs,nId:S.nId,standardHours:S.standardHours};
-  const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='framesync-data-'+today()+'.json';
-  a.click();
-  const b=$('unsavedBanner'); if(b){b.style.display='none';b.style.pointerEvents='none';}
-  toast('Data saved! Keep this JSON file as your backup.');
-}
-function loadDataFromFile(){$('loadFileInput').click();}
-function handleLoadFile(e){
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const d=JSON.parse(ev.target.result);
-      if(!d.staff||!d.events||!d.logs) throw new Error('Invalid');
-      S.staff=d.staff; S.events=d.events; S.logs=d.logs;
-      if(d.nId) S.nId=d.nId;
-      if(d.standardHours) S.standardHours=d.standardHours;
-      $('loadFileInput').value='';
-      const b=$('unsavedBanner'); if(b){b.style.display='none';b.style.pointerEvents='none';}
-      go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
-      toast('Data loaded — '+d.logs.length+' records restored');
-    }catch(err){toast('Invalid file — please use a FrameSync JSON backup','err');}
-  };
-  reader.readAsText(file);
-}
-
-// ===== MARK DIRTY =====
-function markDirty(){
-  const b=$('unsavedBanner'); if(b){b.style.display='flex';b.style.pointerEvents='all';}
-}
-
-// ===== GPS RETRY =====
-function retryGps(){venueChanged();}
-
 // ===== EXPORT CSV =====
 function exportCSV(){
   const rows=[['Staff','Role','Company','Event','Venue','Date','Check-In','Check-Out','Duration(mins)','GPS Lat','GPS Lng','Copied By','Copy Phone','CI Notes','CO Notes']];
@@ -1171,7 +1151,7 @@ function exportCSV(){
 }
 
 // ===== REPORTS =====
-function renderReports(){
+function renderReports(){ const logs = isStaffUser() ? S.logs.filter(l=>l.staffId===currentStaffId()) : S.logs.slice();
   // Staff hours + overtime
   const sfData=S.staff.filter(s=>s.status==='active').map(sf=>{
     const logs=S.logs.filter(l=>l.staffId===sf.id);
@@ -1180,8 +1160,8 @@ function renderReports(){
     const ot=Math.max(0,totalMins-std);
     return {sf,count:logs.length,totalMins,ot};
   }).sort((a,b)=>b.totalMins-a.totalMins);
-  const maxMins=Math.max(...sfData.map(d=>d.totalMins).concat([1]));
-  $('staffReportList').innerHTML=sfData.length===0?'<div class="empty"><p>No attendance records yet</p></div>':sfData.map(d=>`
+  const maxMins=Math.max(...sfData.map(d=>d.totalMins),1);
+  $('staffReportList').innerHTML=sfData.map(d=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--divider);">
       <div class="av" style="background:${d.sf.color};">${ini(d.sf.name)}</div>
       <div style="flex:1;min-width:0;">
@@ -1190,7 +1170,7 @@ function renderReports(){
           <span style="font-size:12px;font-weight:700;color:${d.ot>0?'var(--danger)':'var(--text-muted)'};">${fmtDur(d.totalMins)}${d.ot>0?' <span style="color:var(--danger)">(+'+fmtDur(d.ot)+' OT)</span>':''}</span>
         </div>
         <div class="ot-bar"><div class="ot-fill ${d.ot>0?'over':''}" style="width:${Math.max((d.totalMins/maxMins)*100,3)}%;"></div></div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${d.count} shifts · ${d.ot>0?"<strong style="+"'color:var(--danger)'"+">Overtime eligible</strong>":"No overtime"}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${d.count} shifts · ${d.ot>0?'<strong style='color:var(--danger)'>Overtime eligible</strong>':'No overtime'}</div>
       </div>
     </div>`).join('');
 
