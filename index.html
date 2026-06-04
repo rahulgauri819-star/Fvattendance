@@ -704,7 +704,7 @@ const S = {
   editSfId:null, editEvId:null, coLogId:null,
   ciCompany:null, ciSelfieData:null, ciGps:null,
   evTab:'all',
-  standardHours: 8, admin:{phone:'+91 99999 99999',password:'admin123',name:'Rahul Gauri'}, loginMode:'admin', currentUser:null
+  standardHours: 8, admin:{phone:'123',password:'123',name:'Rahul Gauri'}, loginMode:'admin', currentUser:null
 };
 
 // ===== HELPERS =====
@@ -729,7 +729,7 @@ const compBadge = c => c==='grover'
   : '<span class="badge badge-pink"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Wedding</span>';
 
 function setLoginMode(mode, el){ S.loginMode=mode; document.querySelectorAll('#loginScreen .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active'); $('loginIdLabel').textContent = mode==='admin' ? 'Admin Phone' : 'Staff Phone'; $('loginHint').textContent = mode==='admin' ? 'Admin can manage staff, events, reports, and billing.' : 'Staff can only check in, check out, and view monthly report.'; }
-function submitLogin(){ const phone=normalizePhone($('loginPhone').value); const password=$('loginPassword').value.trim(); if(!phone||!password){ toast('Enter phone number and password','err'); return; } if(S.loginMode==='admin' && phone===normalizePhone(S.admin.phone) && password===S.admin.password){ S.currentUser={role:'admin',name:S.admin.name,phone:S.admin.phone}; $('loginScreen').style.display='none'; $('logoutBtn').style.display='inline-flex'; toast('Admin login successful'); return; } const staff=S.staff.find(s=>normalizePhone(s.phone)===phone && s.password===password && s.status==='active'); if(S.loginMode==='staff' && staff){ S.currentUser={role:'staff',name:staff.name,phone:staff.phone,staffId:staff.id}; $('loginScreen').style.display='none'; $('logoutBtn').style.display='inline-flex'; toast(staff.name+' logged in'); return; } toast('Invalid login credentials','err'); }
+function submitLogin(){ const phone=String($('loginPhone').value||'').trim(); const password=String($('loginPassword').value||'').trim(); if(!phone||!password){ toast('Enter phone number and password','err'); return; } if(S.loginMode==='admin' && phone===S.admin.phone && password===S.admin.password){ S.currentUser={role:'admin',name:S.admin.name,phone:S.admin.phone}; $('loginScreen').style.display='none'; $('logoutBtn').style.display='inline-flex'; toast('Admin login successful'); return; } const staff=S.staff.find(s=>String(s.phone||'').trim()===phone && String(s.password||'').trim()===password && s.status==='active'); if(S.loginMode==='staff' && staff){ S.currentUser={role:'staff',name:staff.name,phone:staff.phone,staffId:staff.id}; $('loginScreen').style.display='none'; $('logoutBtn').style.display='inline-flex'; toast(staff.name+' logged in'); return; } toast('Invalid login credentials','err'); }
 function logout(){ S.currentUser=null; $('loginScreen').style.display='flex'; $('logoutBtn').style.display='none'; $('loginPassword').value=''; }
 // ===== NAV =====
 function go(view, el) {
