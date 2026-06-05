@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FrameSync — Photography Attendance</title>
+<title>Fotovision — Photography Attendance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
@@ -190,7 +190,16 @@ table{border-collapse:collapse;width:100%;}
 .company-card{border:2px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:.15s;text-align:center;background:#fff;}
 .company-card:hover{border-color:var(--primary);background:var(--primary-light);}
 .company-card.selected-grover{border-color:var(--grover-color);background:var(--primary-light);}
-.company-card.selected-wedding{border-color:var(--wedding-color);background:var(--wedding-light);}
+.company-card.selected-office{border-color:var(--purple);background:var(--purple-light);}
+
+/* STAFF PORTAL BIG BUTTONS */
+.portal-btn{width:100%;padding:22px 20px;border-radius:var(--radius-lg);font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;border:none;transition:.15s;box-shadow:var(--shadow);}
+.portal-btn svg{width:24px;height:24px;}
+.portal-btn-in{background:var(--primary);color:#fff;}
+.portal-btn-in:hover{background:var(--primary-hover);}
+.portal-btn-out{background:var(--success);color:#fff;}
+.portal-btn-out:hover{opacity:.92;}
+.portal-btn-done{background:var(--surface2);color:var(--text-muted);cursor:default;}
 .company-card-icon{width:44px;height:44px;border-radius:10px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;}
 .company-card-icon svg{width:22px;height:22px;}
 .company-card-name{font-size:13px;font-weight:700;}
@@ -278,7 +287,7 @@ table{border-collapse:collapse;width:100%;}
       <div style="width:56px;height:56px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 16px rgba(13,110,253,.25);">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg>
       </div>
-      <div style="font-size:22px;font-weight:800;letter-spacing:-.3px;">FrameSync</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.3px;">Fotovision</div>
       <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Attendance Management System</div>
     </div>
 
@@ -328,7 +337,7 @@ table{border-collapse:collapse;width:100%;}
   <!-- Hidden admin access — looks like a footer note -->
   <div style="position:fixed;bottom:16px;right:20px;text-align:right;">
     <span id="adminAccessNote" onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;letter-spacing:.02em;">
-      © FrameSync v2.1 · All rights reserved
+      © Fotovision v2.1 · All rights reserved
     </span>
   </div>
 
@@ -363,7 +372,7 @@ table{border-collapse:collapse;width:100%;}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg>
     </div>
     <div>
-      <div class="logo-text">FrameSync</div>
+      <div class="logo-text">Fotovision</div>
       <div class="logo-sub">Attendance System</div>
     </div>
   </div>
@@ -377,6 +386,8 @@ table{border-collapse:collapse;width:100%;}
     <div class="nav-item" onclick="go('logs',this)"><i data-lucide="clipboard-list"></i> Attendance Log</div>
     <span class="nav-label">Insights</span>
     <div class="nav-item" onclick="go('reports',this)"><i data-lucide="bar-chart-2"></i> Reports</div>
+    <span class="nav-label">System</span>
+    <div class="nav-item" onclick="go('settings',this)"><i data-lucide="settings"></i> Settings</div>
   </nav>
   <div class="sidebar-footer">
     <div class="admin-card">
@@ -406,6 +417,33 @@ table{border-collapse:collapse;width:100%;}
   </header>
 
   <div class="page">
+
+    <!-- STAFF PORTAL -->
+    <div class="view" id="view-staff-portal">
+      <!-- Header with greeting and logout -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div>
+          <div style="font-size:22px;font-weight:800;" id="portalGreeting">Welcome</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:2px;" id="portalRole"></div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="logout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Logout
+        </button>
+      </div>
+
+      <!-- Big Check-In / Check-Out buttons -->
+      <div id="portalActionArea" style="display:flex;flex-direction:column;gap:14px;margin-bottom:32px;"></div>
+
+      <!-- This month's records -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">My Attendance — <span id="portalMonthLabel"></span></span>
+          <span class="badge badge-blue" id="portalShiftCount">0 shifts</span>
+        </div>
+        <div id="portalLogList"></div>
+      </div>
+    </div>
 
     <!-- DASHBOARD -->
 
@@ -451,7 +489,6 @@ table{border-collapse:collapse;width:100%;}
         <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Search staff..." id="staffSearch" oninput="renderStaff()"></div>
         <select class="form-select" style="width:auto;" id="staffRoleF" onchange="renderStaff()">
           <option value="">All Roles</option>
-          <option>Photographer</option><option>Cinematographer</option><option>Editor</option><option>Assistant</option>
         </select>
       </div>
       <div class="card"><div class="table-wrap">
@@ -519,6 +556,98 @@ table{border-collapse:collapse;width:100%;}
       </div>
     </div>
 
+    <!-- SETTINGS -->
+    <div class="view" id="view-settings">
+      <div class="page-header">
+        <div><h1 class="page-title">Settings</h1><p class="page-sub">Manage roles, hours and admin credentials</p></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;max-width:680px;">
+
+        <!-- ROLES -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Staff Roles</span>
+            <span class="badge badge-gray" id="roleCount">0 roles</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div id="rolesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div style="display:flex;gap:10px;padding-top:4px;border-top:1px solid var(--divider);">
+              <input class="form-input" id="newRoleInput" type="text" placeholder="e.g. Lighting Technician" maxlength="40"
+                onkeydown="if(event.key==='Enter')addRole()" style="flex:1;">
+              <button class="btn btn-primary" type="button" onclick="addRole()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Role
+              </button>
+            </div>
+            <div class="form-hint">Roles used by existing staff cannot be deleted until reassigned.</div>
+          </div>
+        </div>
+
+        <!-- WORK TYPES -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Work Types</span>
+            <span class="badge badge-gray" id="wtCount">0 types</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div id="wtList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div style="display:flex;gap:10px;padding-top:4px;border-top:1px solid var(--divider);">
+              <input class="form-input" id="newWtInput" type="text" placeholder="e.g. Aerial Photography" maxlength="40"
+                onkeydown="if(event.key==='Enter')addWorkType()" style="flex:1;">
+              <button class="btn btn-primary" type="button" onclick="addWorkType()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+            </div>
+            <div class="form-hint">Shown as checkboxes during staff check-out.</div>
+          </div>
+        </div>
+
+        <!-- STANDARD HOURS -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Standard Working Hours</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-hint">Used to calculate overtime in Reports. Currently set to <strong id="stdHrsDisplay">8</strong> hours per shift.</div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="position:relative;width:120px;">
+                <input class="form-input" id="stdHrsInput" type="number" min="1" max="24" value="8" style="padding-right:36px;">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);pointer-events:none;">hrs</span>
+              </div>
+              <button class="btn btn-primary" type="button" onclick="saveStdHours()">Save</button>
+              <span id="stdHrsMsg" style="font-size:13px;color:var(--success);display:none;">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHANGE ADMIN PASSWORD -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Change Admin Password</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-group">
+              <label class="form-label">Current Password <span class="req">*</span></label>
+              <input class="form-input" id="pwCurrent" type="password" placeholder="Enter current password" autocomplete="current-password">
+            </div>
+            <div class="form-grid form-grid-2">
+              <div class="form-group">
+                <label class="form-label">New Password <span class="req">*</span></label>
+                <input class="form-input" id="pwNew" type="password" placeholder="New password" autocomplete="new-password">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirm New Password <span class="req">*</span></label>
+                <input class="form-input" id="pwConfirm" type="password" placeholder="Repeat new password" autocomplete="new-password">
+              </div>
+            </div>
+            <div id="pwError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:9px 13px;font-size:13px;"></div>
+            <div>
+              <button class="btn btn-primary" type="button" onclick="changeAdminPassword()">Update Password</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div><!-- /page -->
 </div><!-- /main -->
 
@@ -534,8 +663,8 @@ table{border-collapse:collapse;width:100%;}
   <div class="modal-body">
     <!-- Step 1: Company -->
     <div id="ciStep1">
-      <div class="section-divider">Step 1 — Select Company</div>
-      <div class="company-cards">
+      <div class="section-divider">Step 1 — Select Duty Type</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
         <div class="company-card" id="ccGrover" onclick="selectCompany('grover')">
           <div class="company-card-icon" style="background:#dbeafe;"><svg viewBox="0 0 24 24" fill="none" stroke="#0d6efd" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
           <div class="company-card-name">Grover Audio Visual</div>
@@ -545,6 +674,19 @@ table{border-collapse:collapse;width:100%;}
           <div class="company-card-icon" style="background:#fce4ec;"><svg viewBox="0 0 24 24" fill="none" stroke="#e83e8c" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
           <div class="company-card-name">Wedding Division</div>
           <div class="company-card-desc">Wedding events</div>
+        </div>
+        <div class="company-card" id="ccOffice" onclick="selectCompany('office')">
+          <div class="company-card-icon" style="background:#e8daff;"><svg viewBox="0 0 24 24" fill="none" stroke="#6f42c1" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
+          <div class="company-card-name">Office Duty</div>
+          <div class="company-card-desc">In-office work</div>
+        </div>
+      </div>
+      <!-- Wedding client name — shown only when Wedding selected -->
+      <div id="ciClientNameWrap" style="display:none;margin-top:14px;">
+        <div class="form-group">
+          <label class="form-label">Client Name <span class="req">*</span></label>
+          <input class="form-input" type="text" id="ciClientName" placeholder="e.g. Sharma Family">
+          <div class="form-hint">Required for Wedding Division</div>
         </div>
       </div>
     </div>
@@ -610,6 +752,11 @@ table{border-collapse:collapse;width:100%;}
     <button class="close-btn" onclick="closeM('coModal')"><i data-lucide="x"></i></button>
   </div>
   <div class="modal-body">
+    <!-- Work Types -->
+    <div class="form-group">
+      <label class="form-label">Work Done <span class="req">*</span> <span style="font-size:11px;color:var(--text-muted);font-weight:400;">Select all that apply</span></label>
+      <div id="coWorkTypes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
+    </div>
     <div class="form-group">
       <label class="form-label">Check-Out Time</label>
       <input class="form-input" type="text" id="coTime" readonly style="background:var(--surface2);">
@@ -657,9 +804,7 @@ table{border-collapse:collapse;width:100%;}
       </div>
       <div class="form-group">
         <label class="form-label">Role <span class="req">*</span></label>
-        <select class="form-select" id="sfRole">
-          <option>Photographer</option><option>Cinematographer</option><option>Editor</option><option>Assistant</option>
-        </select>
+        <select class="form-select" id="sfRole"></select>
       </div>
     </div>
     <div class="form-grid form-grid-2">
@@ -773,6 +918,8 @@ const S = {
   editSfId:null, editEvId:null, coLogId:null,
   ciCompany:null, ciSelfieData:null, ciGps:null,
   evTab:'all',
+  roles: ['Photographer','Cinematographer','Editor','Assistant','Drone Operator','Photo Booth Operator'],
+  workTypes: ['Still Photography','Cinematic','NX Video','Photobooth','Assistant'],
   standardHours: 8, admin:{phone:'123',password:'admin123',name:'Rahul Gauri'}, loginMode:'staff', currentUser:null
 };
 
@@ -840,20 +987,30 @@ window.submitLogin = function(){
   S.currentUser = {role:'staff', name:staff.name, staffId:staff.id};
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('logoutBtn').style.display = 'inline-flex';
+  document.getElementById('topbarCiBtn').style.display = 'none';
+  // Hide all admin nav items — show nothing in sidebar for staff
+  document.querySelectorAll('.nav-item,.nav-label').forEach(el=>el.style.display='none');
   const adminAv = document.querySelector('.admin-av'); if(adminAv) adminAv.textContent = ini(staff.name);
   const adminName = document.querySelector('.admin-name'); if(adminName) adminName.textContent = staff.name;
   const adminRole = document.querySelector('.admin-role'); if(adminRole) adminRole.textContent = staff.role;
+  // Switch to staff portal view
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-staff-portal').classList.add('active');
+  document.getElementById('topbarTitle').textContent = 'My Portal';
+  renderStaffPortal();
   toast('Welcome, ' + staff.name + '!');
-  go('dashboard', document.querySelector('.nav-item[onclick*="dashboard"]'));
 };
 
 window.logout = function(){
   S.currentUser = null;
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('topbarCiBtn').style.display = '';
   document.getElementById('loginPassword').value = '';
   const ph = document.getElementById('loginPhone'); if(ph) ph.value = '';
   document.getElementById('loginError').style.display = 'none';
+  // Restore all nav items
+  document.querySelectorAll('.nav-item,.nav-label').forEach(el=>el.style.display='');
 };
 
 window.addEventListener('keydown', function(e){
@@ -880,7 +1037,7 @@ function go(view, el) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   $('view-'+view).classList.add('active');
   if(el) el.classList.add('active');
-  const titles={dashboard:'Dashboard',checkin:'Check-In / Out',staff:'Staff',events:'Events',logs:'Attendance Log',reports:'Reports'};
+  const titles={dashboard:'Dashboard',checkin:'Check-In / Out',staff:'Staff',events:'Events',logs:'Attendance Log',reports:'Reports',settings:'Settings'};
   $('topbarTitle').textContent = titles[view]||'';
   closeSidebar();
   if(view==='dashboard') renderDash();
@@ -889,6 +1046,7 @@ function go(view, el) {
   if(view==='events') renderEvents();
   if(view==='logs') renderLogs();
   if(view==='reports') renderReports();
+  if(view==='settings') renderSettings();
 }
 function toggleSidebar(){$('sidebar').classList.toggle('open');$('sidebarOverlay').classList.toggle('open');}
 function closeSidebar(){$('sidebar').classList.remove('open');$('sidebarOverlay').classList.remove('open');}
@@ -975,8 +1133,9 @@ function renderCheckin(){
 // ===== CHECK-IN MODAL =====
 function openCheckinModal(staffId){
   S.ciCompany=null; S.ciSelfieData=null; S.ciGps=null;
-  $('ccGrover').className='company-card';
-  $('ccWedding').className='company-card';
+  ['ccGrover','ccWedding','ccOffice'].forEach(id=>$(id).className='company-card');
+  $('ciClientNameWrap').style.display='none';
+  $('ciClientName').value='';
   $('ciStaff').innerHTML=S.staff.filter(s=>s.status==='active').map(s=>`<option value="${s.id}"${s.id===staffId?' selected':''}>${s.name} — ${s.role}</option>`).join('');
   $('ciEvent').innerHTML='<option value="">— No Event —</option>'+S.events.map(e=>`<option value="${e.id}">${e.name} (${fmtDate(e.date)})</option>`).join('');
   $('ciTime').value=nowTime();
@@ -992,6 +1151,10 @@ function selectCompany(c){
   S.ciCompany=c;
   $('ccGrover').className='company-card'+(c==='grover'?' selected-grover':'');
   $('ccWedding').className='company-card'+(c==='wedding'?' selected-wedding':'');
+  $('ccOffice').className='company-card'+(c==='office'?' selected-office':'');
+  // Show client name only for wedding
+  $('ciClientNameWrap').style.display=c==='wedding'?'block':'none';
+  if(c!=='wedding') $('ciClientName').value='';
 }
 function ciEventChange(){
   const evId=parseInt($('ciEvent').value);
@@ -1044,22 +1207,27 @@ function submitCheckin(){
   const evId=parseInt($('ciEvent').value)||null;
   const venue=$('ciVenue').value.trim();
   const notes=$('ciNotes').value.trim();
-  if(!S.ciCompany){toast('Please select a company (Grover A/V or Wedding)','err');return;}
+  if(!S.ciCompany){toast('Please select a duty type','err');return;}
+  if(S.ciCompany==='wedding'){
+    const cn=$('ciClientName').value.trim();
+    if(!cn){toast('Client name is required for Wedding Division','err');return;}
+  }
   if(!venue){toast('Please enter a venue','err');return;}
   if(!S.ciSelfieData){toast('Selfie is mandatory — please take a face photo','err');return;}
   const log={
     id:S.nId.log++, staffId, eventId:evId, company:S.ciCompany,
+    clientName:S.ciCompany==='wedding'?$('ciClientName').value.trim():'',
     venue, date:today(), checkIn:nowTime(), checkOut:'',
     selfie:S.ciSelfieData,
     gpsLat:S.ciGps?S.ciGps.lat:null, gpsLng:S.ciGps?S.ciGps.lng:null,
     gpsAddr:$('gpsCoords').textContent||'',
-    ciNotes:notes, coNotes:'', copyName:'', copyPhone:''
+    ciNotes:notes, coNotes:'', copyName:'', copyPhone:'', workTypes:[]
   };
   S.logs.push(log);
   closeM('ciModal');
   const sf=getSf(staffId);
   toast(sf.name+' checked in at '+venue+' — '+log.checkIn);
-  renderCheckin();
+  if(isStaffUser()) renderStaffPortal(); else renderCheckin();
 }
 
 // ===== CHECKOUT MODAL =====
@@ -1075,11 +1243,26 @@ function openCheckoutModal(staffId){
   $('coCopyName').value='';
   $('coCopyPhone').value='';
   $('groverCopySection').style.display=log.company==='grover'?'block':'none';
+  // Render work type checkboxes
+  $('coWorkTypes').innerHTML=S.workTypes.map((wt,i)=>`
+    <label style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;transition:.15s;user-select:none;" id="wtLabel_${i}">
+      <input type="checkbox" value="${wt}" id="wt_${i}" onchange="toggleWtChip(${i})" style="display:none;">
+      ${wt}
+    </label>`).join('');
   openM('coModal');
+}
+function toggleWtChip(i){
+  const cb=$('wt_'+i); const lb=$('wtLabel_'+i);
+  if(cb.checked){ lb.style.background='var(--primary)'; lb.style.color='#fff'; lb.style.borderColor='var(--primary)'; }
+  else { lb.style.background=''; lb.style.color=''; lb.style.borderColor=''; }
 }
 function submitCheckout(){
   const log=S.logs.find(l=>l.id===S.coLogId);
   if(!log){toast('Log not found','err');return;}
+  // Work types — required
+  const selected=S.workTypes.filter((wt,i)=>$('wt_'+i)&&$('wt_'+i).checked);
+  if(!selected.length){toast('Please select at least one work type','err');return;}
+  log.workTypes=selected;
   if(log.company==='grover'){
     const cn=$('coCopyName').value.trim();
     const cp=$('coCopyPhone').value.trim();
@@ -1092,13 +1275,16 @@ function submitCheckout(){
   const sf=getSf(log.staffId);
   const d=dur(log.checkIn,log.checkOut);
   toast(sf.name+' checked out — '+fmtDur(d));
-  renderCheckin();
+  if(isStaffUser()) renderStaffPortal(); else renderCheckin();
 }
 
 // ===== STAFF =====
 function renderStaff(){ if(isStaffUser()){ $('staffTbody').innerHTML='<tr><td colspan=6><div class="empty"><h3>Access Restricted</h3><p>Staff cannot edit details.</p></div></td></tr>'; return; }
+  // Sync role filter options
+  const rfEl=$('staffRoleF'); const curRole=rfEl.value;
+  rfEl.innerHTML='<option value="">All Roles</option>'+S.roles.map(r=>`<option${r===curRole?' selected':''}>${r}</option>`).join('');
   const q=($('staffSearch').value||'').toLowerCase();
-  const rf=$('staffRoleF').value;
+  const rf=rfEl.value;
   const filtered=S.staff.filter(s=>(!q||s.name.toLowerCase().includes(q)||s.role.toLowerCase().includes(q))&&(!rf||s.role===rf));
   const tbody=$('staffTbody');
   if(!filtered.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty"><p>No staff found</p></div></td></tr>';return;}
@@ -1126,7 +1312,7 @@ function openAddStaff(){
   $('sfModalTitle').textContent='Add Staff Member';
   $('sfSaveBtn').textContent='Save Staff';
   ['sfName','sfPhone','sfEmail','sfPassword'].forEach(i=>$(i).value='');
-  $('sfRole').value='Photographer';
+  populateRoleSelect('');
   $('sfStatus').value='active';
   openM('sfModal');
 }
@@ -1134,7 +1320,7 @@ function editStaff(id){
   const sf=getSf(id); S.editSfId=id;
   $('sfModalTitle').textContent='Edit Staff';
   $('sfSaveBtn').textContent='Update';
-  $('sfName').value=sf.name; $('sfRole').value=sf.role;
+  $('sfName').value=sf.name; populateRoleSelect(sf.role);
   $('sfPhone').value=sf.phone||''; $('sfEmail').value=sf.email||'';
   $('sfPassword').value=sf.password||'';
   $('sfStatus').value=sf.status;
@@ -1291,7 +1477,7 @@ function exportCSV(){
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'\"')+'"').join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='framesync_attendance.csv'; a.click();
+  a.download='fotovision_attendance.csv'; a.click();
   toast('CSV exported');
 }
 
@@ -1359,6 +1545,185 @@ function renderReports(){
       <td>${l.copyPhone}</td>
     </tr>`;}).join(''):'<tr><td colspan="5"><div class="empty"><p>No data copy records yet</p></div></td></tr>';
   lucide.createIcons();
+}
+
+  lucide.createIcons();
+}
+
+// ===== STAFF PORTAL =====
+function renderStaffPortal(){
+  const sf = getSf(S.currentUser.staffId);
+  if(!sf) return;
+  const td = today();
+
+  // Greeting
+  $('portalGreeting').textContent = 'Hello, ' + sf.name.split(' ')[0] + ' 👋';
+  $('portalRole').textContent = sf.role + ' · ' + new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+
+  // Check if currently checked in today
+  const activeLog = S.logs.find(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&!l.checkOut);
+  const doneToday = S.logs.filter(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&l.checkOut).length;
+
+  let actionHTML = '';
+  if(activeLog){
+    // Currently checked in — show status + big checkout button
+    actionHTML += `
+      <div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius-lg);padding:16px 20px;display:flex;align-items:center;gap:12px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        <div>
+          <div style="font-weight:700;color:var(--success);">Checked In</div>
+          <div style="font-size:13px;color:var(--text-muted);">Since ${activeLog.checkIn} · ${activeLog.venue}</div>
+        </div>
+      </div>
+      <button class="portal-btn portal-btn-out" onclick="openCheckoutModal(${sf.id})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Check Out
+      </button>`;
+  } else {
+    // Not checked in — big check-in button
+    actionHTML += `
+      <button class="portal-btn portal-btn-in" onclick="openCheckinModal(${sf.id})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Check In
+      </button>`;
+    if(doneToday>0){
+      actionHTML += `
+        <button class="portal-btn portal-btn-done" style="font-size:14px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          ${doneToday} shift${doneToday>1?'s':''} completed today
+        </button>`;
+    }
+  }
+  $('portalActionArea').innerHTML = actionHTML;
+
+  // This month's logs
+  const now = new Date();
+  const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  $('portalMonthLabel').textContent = now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const myLogs = S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym)).sort((a,b)=>b.date.localeCompare(a.date)||b.checkIn.localeCompare(a.checkIn));
+  $('portalShiftCount').textContent = myLogs.length+' shift'+(myLogs.length!==1?'s':'');
+
+  $('portalLogList').innerHTML = myLogs.length ? myLogs.map(l=>{
+    const d = dur(l.checkIn,l.checkOut);
+    const compLabel = l.company==='grover'?'🎬 Grover A/V':l.company==='wedding'?'💍 Wedding':'🏢 Office';
+    const wtLabel = (l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:flex-start;gap:12px;">
+      <div style="width:38px;height:38px;border-radius:var(--radius-sm);background:${l.checkOut?'var(--surface2)':'var(--success-light)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${l.checkOut?'var(--text-faint)':'var(--success)'}" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:13px;">${fmtDate(l.date)} <span style="font-weight:400;color:var(--text-muted);">· ${compLabel}</span></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${l.venue}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Work: ${wtLabel}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:12px;font-weight:600;">${l.checkIn}${l.checkOut?' → '+l.checkOut:' →  <span style="color:var(--success)">Active</span>'}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${d?fmtDur(d):'In progress'}</div>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty" style="padding:32px;"><p>No shifts this month yet</p></div>';
+
+  lucide.createIcons();
+}
+
+// ===== SETTINGS =====
+function populateRoleSelect(currentVal){
+  const sel = $('sfRole'); if(!sel) return;
+  sel.innerHTML = S.roles.map(r=>`<option${r===currentVal?' selected':''}>${r}</option>`).join('');
+}
+
+function renderSettings(){
+  const usedRoles = new Set(S.staff.map(s=>s.role));
+  $('roleCount').textContent = S.roles.length + ' role' + (S.roles.length!==1?'s':'');
+  $('rolesList').innerHTML = S.roles.length ? S.roles.map((r,i)=>{
+    const inUse = usedRoles.has(r);
+    const staffCount = S.staff.filter(s=>s.role===r).length;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
+      <span style="flex:1;font-size:14px;font-weight:500;">${r}</span>
+      ${inUse?`<span class="badge badge-blue">${staffCount} staff</span>`:''}
+      <button onclick="deleteRole(${i})" class="btn btn-danger btn-sm" ${inUse?'disabled':''} style="${inUse?'opacity:.4;cursor:not-allowed;':''}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Delete
+      </button>
+    </div>`;
+  }).join('') : '<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No roles defined yet.</div>';
+
+  // Work types
+  $('wtCount').textContent = S.workTypes.length + ' type' + (S.workTypes.length!==1?'s':'');
+  $('wtList').innerHTML = S.workTypes.length ? S.workTypes.map((wt,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
+      <span style="flex:1;font-size:14px;font-weight:500;">${wt}</span>
+      <button onclick="deleteWorkType(${i})" class="btn btn-danger btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Delete
+      </button>
+    </div>`).join('') : '<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No work types defined yet.</div>';
+  $('stdHrsInput').value = S.standardHours;
+  $('stdHrsDisplay').textContent = S.standardHours;
+  $('stdHrsMsg').style.display = 'none';
+  ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
+  $('pwError').style.display='none';
+  lucide.createIcons();
+}
+
+function addRole(){
+  const input = $('newRoleInput');
+  const val = (input.value||'').trim();
+  if(!val){ toast('Enter a role name','err'); return; }
+  if(S.roles.some(r=>r.toLowerCase()===val.toLowerCase())){ toast('Role already exists','err'); return; }
+  S.roles.push(val);
+  input.value = '';
+  renderSettings();
+  toast('"'+val+'" role added');
+}
+
+function deleteRole(index){
+  const role = S.roles[index];
+  if(S.staff.some(s=>s.role===role)){ toast('Reassign staff before deleting this role','err'); return; }
+  if(!confirm('Delete role "'+role+'"?')) return;
+  S.roles.splice(index,1);
+  renderSettings();
+  toast('"'+role+'" deleted');
+}
+
+function addWorkType(){
+  const input = $('newWtInput');
+  const val = (input.value||'').trim();
+  if(!val){ toast('Enter a work type name','err'); return; }
+  if(S.workTypes.some(w=>w.toLowerCase()===val.toLowerCase())){ toast('Work type already exists','err'); return; }
+  S.workTypes.push(val);
+  input.value = '';
+  renderSettings();
+  toast('"'+val+'" work type added');
+}
+function deleteWorkType(index){
+  if(!confirm('Delete work type "'+S.workTypes[index]+'"?')) return;
+  S.workTypes.splice(index,1);
+  renderSettings();
+  toast('Work type deleted');
+}
+
+function saveStdHours(){
+  const val = parseInt($('stdHrsInput').value,10);
+  if(!val||val<1||val>24){ toast('Enter a value between 1 and 24','err'); return; }
+  S.standardHours = val;
+  $('stdHrsDisplay').textContent = val;
+  const msg = $('stdHrsMsg'); msg.style.display='inline';
+  setTimeout(()=>msg.style.display='none', 2500);
+}
+
+function changeAdminPassword(){
+  const errEl = $('pwError'); errEl.style.display='none';
+  const cur=($('pwCurrent').value||'').trim();
+  const nw=($('pwNew').value||'').trim();
+  const cfm=($('pwConfirm').value||'').trim();
+  if(!cur||!nw||!cfm){ errEl.textContent='All three fields are required.'; errEl.style.display='block'; return; }
+  if(cur!==S.admin.password){ errEl.textContent='Current password is incorrect.'; errEl.style.display='block'; return; }
+  if(nw.length<4){ errEl.textContent='New password must be at least 4 characters.'; errEl.style.display='block'; return; }
+  if(nw!==cfm){ errEl.textContent='New passwords do not match.'; errEl.style.display='block'; return; }
+  S.admin.password=nw;
+  ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
+  toast('Admin password updated successfully');
 }
 
 </script>
