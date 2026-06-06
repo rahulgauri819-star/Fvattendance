@@ -269,6 +269,13 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 .wt-chip.selected{background:var(--primary);color:#fff;border-color:var(--primary);}
 
 @keyframes slideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* BILLING */
+.billing-double-row td{border-left:3px solid var(--warning);}
+.billing-double-badge{display:inline-flex;align-items:center;gap:4px;background:var(--warning-light);color:#7c4a00;border-radius:20px;font-size:11px;font-weight:700;padding:3px 9px;}
+.billing-subtotal-card{border:1px solid var(--border);border-radius:var(--radius);margin:12px 16px;padding:14px 16px;}
+.rate-edit-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--divider);}
+.rate-edit-row:last-child{border-bottom:none;}
 </style>
 </head>
 <body>
@@ -344,6 +351,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     <div class="nav-item" onclick="go('logs',this)"><i data-lucide="clipboard-list"></i> Attendance Log</div>
     <span class="nav-label">Insights</span>
     <div class="nav-item" onclick="go('reports',this)"><i data-lucide="bar-chart-2"></i> Reports</div>
+    <div class="nav-item" onclick="go('billing',this)"><i data-lucide="receipt"></i> Grover Billing</div>
     <span class="nav-label">System</span>
     <div class="nav-item" onclick="go('settings',this)"><i data-lucide="settings"></i> Settings</div>
   </nav>
@@ -534,6 +542,61 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
             <button class="btn btn-primary" onclick="changeAdminPassword()">Update Password</button>
           </div>
         </div>
+      </div>
+    </div>
+
+
+    <!-- GROVER BILLING -->
+    <div class="view" id="view-billing">
+      <div class="page-header">
+        <div><h1 class="page-title">🎬 Grover Billing Report</h1><p class="page-sub">Monthly invoice to Grover Audio Visual Services</p></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="exportBillingCSV()"><i data-lucide="download"></i> Export CSV</button>
+          <button class="btn btn-primary" onclick="exportBillingPDF()"><i data-lucide="file-text"></i> Download PDF</button>
+        </div>
+      </div>
+
+      <!-- Month selector -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <button class="btn btn-outline btn-sm" onclick="billingPrevMonth()"><i data-lucide="chevron-left"></i></button>
+        <span style="font-size:16px;font-weight:700;min-width:140px;text-align:center;" id="billingMonthLabel"></span>
+        <button class="btn btn-outline btn-sm" onclick="billingNextMonth()"><i data-lucide="chevron-right"></i></button>
+      </div>
+
+      <!-- Rates reference card -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title">Billing Rates</span><button class="btn btn-ghost btn-sm" onclick="toggleRatesEdit()"><i data-lucide="edit-2"></i> Edit Rates</button></div>
+        <div class="card-body" id="billingRatesCard"></div>
+      </div>
+
+      <!-- Double shift rule info -->
+      <div class="info-box" style="margin-bottom:20px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><strong>Double Shift Rule:</strong> Check-in between 5:00 AM–12:00 PM AND check-out at or after 8:30 PM = duty billed twice at full rate.</div>
+      </div>
+
+      <!-- Pending warning -->
+      <div id="billingPendingWarn" style="display:none;background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:#7c4a00;margin-bottom:16px;"></div>
+
+      <!-- Main billing table -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount">0 entries</span></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Double Shift</th><th>Rate</th><th>Amount</th></tr></thead>
+            <tbody id="billingTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Staff subtotals -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title">Staff-wise Subtotals</span></div>
+        <div id="billingSubtotals"></div>
+      </div>
+
+      <!-- Grand total -->
+      <div id="billingGrandTotal" style="background:#1a1a2e;color:#fff;border-radius:var(--radius-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       </div>
     </div>
 
@@ -776,10 +839,12 @@ const S = {
   editSfId:null, coLogId:null,
   ciCompany:null, ciSelfieData:null, ciGps:null,
   roles: ['Photographer','Cinematographer','Editor','Assistant','Drone Operator','Photo Booth Operator'],
-  workTypes: ['Still Photography','NX Video','Cinematic Video','Photobooth','Assistant'],
+  workTypes: ['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth','Assistant'],
   standardHours: 8,
   admin:{password:'admin123',name:'Rahul Gauri'},
-  currentUser:null
+  currentUser:null,
+  groverRates:{'Still Photography':3000,'NX Video':5000,'Cinematic Video':8000,'Candid Photography':8000,'Photobooth':null},
+  billingMonth: new Date().toISOString().slice(0,7)
 };
 
 // ===== HELPERS =====
@@ -969,7 +1034,7 @@ function go(view,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   $('view-'+view).classList.add('active');
   if(el) el.classList.add('active');
-  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings'};
+  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings',billing:'Grover Billing'};
   $('topbarTitle').textContent=titles[view]||view;
   closeSidebar();
   if(view==='dashboard') renderDash();
@@ -978,6 +1043,7 @@ function go(view,el){
   if(view==='logs') renderLogs();
   if(view==='reports') renderReports();
   if(view==='settings') renderSettings();
+  if(view==='billing') renderBilling();
 }
 function toggleSidebar(){$('sidebar').classList.toggle('open');$('sidebarOverlay').classList.toggle('open');}
 function closeSidebar(){$('sidebar').classList.remove('open');$('sidebarOverlay').classList.remove('open');}
@@ -1488,6 +1554,287 @@ function changeAdminPassword(){
   if(nw!==cfm){e.textContent='Passwords do not match.';e.style.display='block';return;}
   S.admin.password=nw; ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
   toast('Admin password updated');
+}
+
+// ===== GROVER BILLING =====
+function billingPrevMonth(){
+  const [y,m]=S.billingMonth.split('-').map(Number);
+  const d=new Date(y,m-2,1);
+  S.billingMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderBilling();
+}
+function billingNextMonth(){
+  const [y,m]=S.billingMonth.split('-').map(Number);
+  const d=new Date(y,m,1);
+  const now=new Date();
+  if(d>now) return;
+  S.billingMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderBilling();
+}
+
+function isDoubleShift(ci,co){
+  if(!ci||!co) return false;
+  const [cih,cim]=ci.split(':').map(Number);
+  const ciMins=cih*60+cim;
+  const [coh,com]=co.split(':').map(Number);
+  const coMins=coh*60+com;
+  // CI between 5:00 (300) and 12:00 (720) inclusive, CO >= 20:30 (1230)
+  return ciMins>=300 && ciMins<=720 && coMins>=1230;
+}
+
+function getGroverRate(wt){
+  return S.groverRates[wt]; // null=TBD, undefined=not configured
+}
+
+function buildBillingEntries(month){
+  const logs=S.logs.filter(l=>l.company==='grover'&&l.date.startsWith(month)&&l.checkOut);
+  const entries=[];
+  let rowNum=1;
+  logs.sort((a,b)=>a.date.localeCompare(b.date)||a.checkIn.localeCompare(b.checkIn));
+  logs.forEach(l=>{
+    const sf=getSf(l.staffId); if(!sf) return;
+    const wt=(l.workTypes&&l.workTypes.length)?l.workTypes[0]:'';
+    if(!wt) return; // no work type = skip
+    // Skip Assistant entirely
+    if(wt.toLowerCase()==='assistant') return;
+    const rate=getGroverRate(wt);
+    const double=isDoubleShift(l.checkIn,l.checkOut);
+    entries.push({rowNum:rowNum++,log:l,sf,wt,rate,double:false,amount:rate});
+    if(double){
+      entries.push({rowNum:rowNum++,log:l,sf,wt,rate,double:true,amount:rate,isSecond:true});
+    }
+  });
+  return entries;
+}
+
+let ratesEditMode=false;
+function toggleRatesEdit(){
+  ratesEditMode=!ratesEditMode;
+  renderBillingRatesCard();
+}
+
+function saveRates(){
+  ['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth'].forEach(wt=>{
+    const el=$('rate_'+wt.replace(/[^a-z]/gi,'_'));
+    if(!el) return;
+    const val=el.value.trim();
+    S.groverRates[wt]=val===''?null:parseInt(val,10)||null;
+  });
+  ratesEditMode=false;
+  renderBilling();
+  toast('Rates saved');
+}
+
+function renderBillingRatesCard(){
+  const wts=['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth'];
+  if(ratesEditMode){
+    $('billingRatesCard').innerHTML=`
+      <div style="display:flex;flex-direction:column;gap:0;">
+        ${wts.map(wt=>`
+          <div class="rate-edit-row">
+            <span style="flex:1;font-size:14px;">${wt}</span>
+            <span style="font-size:13px;color:var(--text-muted);margin-right:4px;">₹</span>
+            <input class="form-input" type="number" id="rate_${wt.replace(/[^a-z]/gi,'_')}" value="${S.groverRates[wt]??''}" placeholder="e.g. 5000" style="width:120px;">
+          </div>`).join('')}
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button class="btn btn-primary" onclick="saveRates()">Save Rates</button>
+          <button class="btn btn-outline" onclick="ratesEditMode=false;renderBillingRatesCard()">Cancel</button>
+        </div>
+      </div>`;
+  } else {
+    $('billingRatesCard').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+      ${wts.map(wt=>`<div style="padding:10px 14px;background:var(--surface2);border-radius:var(--radius-sm);">
+        <div style="font-size:12px;color:var(--text-muted);">${wt}</div>
+        <div style="font-size:18px;font-weight:800;color:${S.groverRates[wt]?'var(--text)':'var(--text-faint)'};">${S.groverRates[wt]?'₹'+S.groverRates[wt].toLocaleString('en-IN'):'TBD'}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+}
+
+function renderBilling(){
+  const [y,m]=S.billingMonth.split('-').map(Number);
+  const monthLabel=new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  $('billingMonthLabel').textContent=monthLabel;
+  renderBillingRatesCard();
+
+  // Pending logs warning
+  const pendingLogs=S.logs.filter(l=>l.company==='grover'&&l.date.startsWith(S.billingMonth)&&!l.checkOut);
+  if(pendingLogs.length){
+    $('billingPendingWarn').style.display='block';
+    $('billingPendingWarn').innerHTML=`⚠️ ${pendingLogs.length} Grover log${pendingLogs.length>1?'s are':' is'} still checked in (no checkout) — excluded from billing until checkout is complete.`;
+  } else {
+    $('billingPendingWarn').style.display='none';
+  }
+
+  const entries=buildBillingEntries(S.billingMonth);
+  $('billingEntryCount').textContent=entries.length+' entr'+(entries.length===1?'y':'ies');
+
+  // Main table
+  if(!entries.length){
+    $('billingTbody').innerHTML=`<tr><td colspan="10"><div class="empty"><p>No billable Grover duties in ${monthLabel}</p></div></td></tr>`;
+  } else {
+    $('billingTbody').innerHTML=entries.map((e,idx)=>{
+      const sf=e.sf;
+      const amtStr=e.rate===null?'<span style="color:var(--text-faint);">TBD</span>':e.rate===undefined?'<span style="color:var(--text-faint);">—</span>':'₹'+e.rate.toLocaleString('en-IN');
+      return `<tr class="${e.double||e.isSecond?'billing-double-row':''}">
+        <td style="font-size:12px;color:var(--text-muted);">${e.isSecond?'↳':e.rowNum}</td>
+        <td style="font-size:12px;white-space:nowrap;">${fmtDate(e.log.date)}</td>
+        <td><div class="staff-cell"><div class="av" style="background:${sf.color};width:26px;height:26px;font-size:10px;">${ini(sf.name)}</div><span style="font-size:13px;">${sf.name}</span></div></td>
+        <td style="font-size:12px;max-width:120px;" class="truncate">${e.log.venue}</td>
+        <td style="font-size:13px;">${e.wt}</td>
+        <td style="font-size:12px;">${e.log.checkIn}</td>
+        <td style="font-size:12px;">${e.log.checkOut}</td>
+        <td>${e.isSecond?'<span class="billing-double-badge">🔁 Double</span>':e.double&&!e.isSecond?'<span style="font-size:11px;color:var(--text-muted);">1st shift</span>':'—'}</td>
+        <td style="font-size:13px;">${e.rate!=null?'₹'+e.rate.toLocaleString('en-IN'):'<span style="color:var(--text-faint);">TBD</span>'}</td>
+        <td style="font-weight:700;font-size:13px;">${amtStr}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Staff subtotals
+  const byStaff={};
+  entries.forEach(e=>{
+    const key=e.sf.id;
+    if(!byStaff[key]) byStaff[key]={sf:e.sf,entries:[],total:0,hasTBD:false};
+    byStaff[key].entries.push(e);
+    if(e.rate!=null) byStaff[key].total+=e.rate;
+    else byStaff[key].hasTBD=true;
+  });
+  const subtotalHTML=Object.values(byStaff).map(d=>{
+    const doubles=d.entries.filter(e=>e.isSecond).length;
+    const wtLines={};
+    d.entries.forEach(e=>{ if(!wtLines[e.wt]) wtLines[e.wt]={count:0,rate:e.rate}; wtLines[e.wt].count++; });
+    return `<div class="billing-subtotal-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div class="av" style="background:${d.sf.color};">${ini(d.sf.name)}</div>
+        <div style="flex:1;"><div style="font-weight:700;">${d.sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${d.entries.length} entr${d.entries.length===1?'y':'ies'}${doubles?' · '+doubles+' double shift'+(doubles>1?'s':''):''}</div></div>
+        <div style="font-size:18px;font-weight:800;color:var(--primary);">₹${d.total.toLocaleString('en-IN')}${d.hasTBD?' <span style="font-size:12px;color:var(--text-faint);">+TBD</span>':''}</div>
+      </div>
+      <div style="border-top:1px solid var(--divider);padding-top:8px;display:flex;flex-direction:column;gap:4px;">
+        ${Object.entries(wtLines).map(([wt,info])=>`
+          <div style="display:flex;justify-content:space-between;font-size:13px;">
+            <span style="color:var(--text-muted);">${wt} × ${info.count}</span>
+            <span style="font-weight:600;">${info.rate!=null?'₹'+(info.rate*info.count).toLocaleString('en-IN'):'TBD'}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  $('billingSubtotals').innerHTML=subtotalHTML||'<div class="empty"><p>No billable entries</p></div>';
+
+  // Grand total
+  const grandTotal=entries.reduce((acc,e)=>acc+(e.rate||0),0);
+  const hasTBD=entries.some(e=>e.rate===null);
+  const doubleCount=entries.filter(e=>e.isSecond).length;
+  const pbEntries=entries.filter(e=>e.wt==='Photobooth');
+  $('billingGrandTotal').innerHTML=`
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Total Entries</div><div style="font-size:22px;font-weight:800;">${entries.length}</div></div>
+      <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Double Shifts</div><div style="font-size:22px;font-weight:800;color:#ffd700;">${doubleCount}</div></div>
+      <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Photobooth</div><div style="font-size:22px;font-weight:800;color:#aaa;">${pbEntries.length} ${S.groverRates['Photobooth']==null?'(TBD)':''}</div></div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Total Billable — ${monthLabel}</div>
+      <div style="font-size:32px;font-weight:900;color:#fff;">₹${grandTotal.toLocaleString('en-IN')}</div>
+      ${hasTBD?'<div style="font-size:11px;opacity:.6;">Photobooth rate TBD — not included above</div>':''}
+    </div>`;
+  lucide.createIcons();
+}
+
+function exportBillingCSV(){
+  const entries=buildBillingEntries(S.billingMonth);
+  if(!entries.length){toast('No billable entries for this month','err');return;}
+  const [y,m]=S.billingMonth.split('-').map(Number);
+  const monthLabel=new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const rows=[['#','Date','Staff','Role','Venue','Work Type','Check-In','Check-Out','Double Shift','Rate (INR)','Amount (INR)','Month']];
+  entries.forEach(e=>{
+    rows.push([
+      e.isSecond?'↳':e.rowNum,
+      e.log.date,
+      e.sf.name,
+      e.sf.role,
+      e.log.venue,
+      e.wt,
+      e.log.checkIn,
+      e.log.checkOut,
+      e.isSecond?'Yes':'No',
+      e.rate!=null?e.rate:'TBD',
+      e.rate!=null?e.rate:'TBD',
+      monthLabel
+    ]);
+  });
+  // Grand total row
+  const grand=entries.reduce((a,e)=>a+(e.rate||0),0);
+  rows.push(['','','','','','','','','','TOTAL',grand,monthLabel]);
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const mn=new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'short',year:'numeric'}).replace(' ','');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='Grover_Billing_'+mn+'.csv'; a.click();
+  toast('Billing CSV exported');
+}
+
+function exportBillingPDF(){
+  const entries=buildBillingEntries(S.billingMonth);
+  const [y,m]=S.billingMonth.split('-').map(Number);
+  const monthLabel=new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const grand=entries.reduce((a,e)=>a+(e.rate||0),0);
+  const hasTBD=entries.some(e=>e.rate===null);
+  const doubles=entries.filter(e=>e.isSecond).length;
+
+  const tableRows=entries.map(e=>`
+    <tr style="${e.isSecond||e.double?'background:#fffbeb;':''}">
+      <td>${e.isSecond?'↳':e.rowNum}</td>
+      <td>${e.log.date}</td>
+      <td>${e.sf.name}</td>
+      <td style="max-width:120px;">${e.log.venue}</td>
+      <td>${e.wt}</td>
+      <td>${e.log.checkIn}</td>
+      <td>${e.log.checkOut}</td>
+      <td>${e.isSecond?'🔁 Double':''}</td>
+      <td style="text-align:right;">${e.rate!=null?'₹'+e.rate.toLocaleString('en-IN'):'TBD'}</td>
+      <td style="text-align:right;font-weight:700;">${e.rate!=null?'₹'+e.rate.toLocaleString('en-IN'):'TBD'}</td>
+    </tr>`).join('');
+
+  const rateLines=['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth']
+    .map(wt=>`<span style="margin-right:16px;"><strong>${wt}:</strong> ${S.groverRates[wt]!=null?'₹'+S.groverRates[wt].toLocaleString('en-IN'):'TBD'}</span>`).join('');
+
+  const pdfHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;margin:0;padding:24px;}
+    h1{font-size:20px;margin:0 0 4px;}
+    h2{font-size:14px;font-weight:700;margin:16px 0 8px;}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0d6efd;padding-bottom:12px;margin-bottom:16px;}
+    .rates-box{background:#f1f3f5;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:11px;}
+    .rule-box{background:#fff3cd;border-left:3px solid #fd7e14;padding:8px 12px;border-radius:4px;margin-bottom:16px;font-size:11px;}
+    table{border-collapse:collapse;width:100%;margin-bottom:16px;}
+    th{background:#0d6efd;color:#fff;text-align:left;padding:7px 8px;font-size:11px;}
+    td{padding:6px 8px;border-bottom:1px solid #dee2e6;font-size:11px;}
+    .total-box{background:#1a1a2e;color:#fff;padding:16px 20px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;}
+    .total-amt{font-size:28px;font-weight:900;}
+    .footer{margin-top:24px;font-size:10px;color:#aaa;text-align:center;border-top:1px solid #dee2e6;padding-top:12px;}
+    @media print{body{padding:0;}}
+  </style></head><body>
+  <div class="header">
+    <div><h1>📷 Fotovision</h1><div style="font-size:13px;color:#666;">Invoice to Grover Audio Visual Services</div><div style="font-size:13px;font-weight:700;margin-top:4px;">${monthLabel}</div></div>
+    <div style="text-align:right;font-size:11px;color:#666;">Generated: ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}<br>FrameSync Attendance System</div>
+  </div>
+  <div class="rates-box"><strong>Billing Rates:</strong> ${rateLines}</div>
+  <div class="rule-box">⚠️ <strong>Double Shift Rule:</strong> Check-in between 5:00 AM–12:00 PM AND check-out at or after 8:30 PM = same duty billed twice.</div>
+  <h2>Billing Entries</h2>
+  <table><thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Double</th><th>Rate</th><th>Amount</th></tr></thead>
+  <tbody>${tableRows}</tbody></table>
+  <div class="total-box">
+    <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Total Entries: ${entries.length} | Double Shifts: ${doubles}</div></div>
+    <div style="text-align:right;"><div style="font-size:11px;opacity:.7;">Total Billable — ${monthLabel}</div><div class="total-amt">₹${grand.toLocaleString('en-IN')}</div>${hasTBD?'<div style="font-size:10px;opacity:.6;">Photobooth TBD — not included</div>':''}</div>
+  </div>
+  <div class="footer">Fotovision · Greater Kailash-2, New Delhi · Generated by FrameSync</div>
+  <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`;
+
+  const win=window.open('','_blank');
+  win.document.write(pdfHTML);
+  win.document.close();
+  toast('PDF ready — use browser Print to save');
 }
 
 // ===== INIT =====
