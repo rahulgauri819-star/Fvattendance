@@ -903,6 +903,8 @@ function renderStaffPortal(){
     </button>`;
     if(doneToday>0) html+=`<button class="portal-btn portal-btn-done" style="font-size:14px;">✓ ${doneToday} shift${doneToday>1?'s':''} completed today</button>`;
   }
+  // Always make sure action area is visible and success screen is hidden
+  $('portalActionArea').style.display='flex';
   $('portalActionArea').innerHTML=html;
   $('checkinSuccess').classList.remove('show');
 }
@@ -910,28 +912,49 @@ function renderStaffPortal(){
 function renderStaffHistory(){
   const sf=getSf(S.currentUser.staffId); if(!sf) return;
   const now=new Date();
-  const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const year=now.getFullYear(), month=now.getMonth();
+  const ym=year+'-'+String(month+1).padStart(2,'0');
   $('portalMonthLabel').textContent=now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
-  const myLogs=S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym)).sort((a,b)=>b.date.localeCompare(a.date)||b.checkIn.localeCompare(a.checkIn));
-  // Count unique days worked
-  const uniqueDays=new Set(myLogs.map(l=>l.date)).size;
+  const myLogs=S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym));
+  const logsByDate={};
+  myLogs.forEach(l=>{ if(!logsByDate[l.date]) logsByDate[l.date]=[]; logsByDate[l.date].push(l); });
+  const uniqueDays=Object.keys(logsByDate).length;
+  // Build list of all days in month up to today
+  const todayDate=new Date(); todayDate.setHours(0,0,0,0);
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const lastDay=Math.min(daysInMonth, now.getDate());
+  let rows='';
+  for(let d=lastDay;d>=1;d--){
+    const dateStr=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dayLogs=logsByDate[dateStr];
+    const dt=new Date(year,month,d);
+    const dayLabel=dt.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+    if(dayLogs&&dayLogs.length){
+      dayLogs.forEach(l=>{
+        const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
+        rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div style="font-weight:600;font-size:13px;">${dayLabel}</div>
+            <div>${compBadge(l.company)}</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);">${l.venue}</div>
+          ${l.clientName?`<div style="font-size:12px;color:var(--text-muted);">Client: ${l.clientName}</div>`:''}
+          ${l.company!=='office'?`<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Work: ${wt}</div>`:''}
+        </div>`;
+      });
+    } else {
+      rows+=`<div style="padding:12px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;color:var(--text-muted);">${dayLabel}</div>
+        <span style="background:var(--danger-light);color:var(--danger);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;border:1.5px solid var(--danger);">Leave</span>
+      </div>`;
+    }
+  }
   $('portalLogList').innerHTML=`
     <div style="padding:16px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:13px;color:var(--text-muted);">Days Worked</div>
       <div style="font-size:22px;font-weight:800;color:var(--primary);">${uniqueDays}</div>
     </div>
-    ${myLogs.length?myLogs.map(l=>{
-      const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
-      return `<div style="padding:14px 16px;border-bottom:1px solid var(--divider);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-          <div style="font-weight:600;font-size:13px;">${fmtDate(l.date)}</div>
-          <div>${compBadge(l.company)}</div>
-        </div>
-        <div style="font-size:13px;color:var(--text-muted);">${l.venue}</div>
-        ${l.clientName?`<div style="font-size:12px;color:var(--text-muted);">Client: ${l.clientName}</div>`:''}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Work: ${wt}</div>
-      </div>`;
-    }).join(''):`<div class="empty" style="padding:32px;"><p>No days worked this month yet</p></div>`}`;
+    ${rows||'<div class="empty" style="padding:32px;"><p>No data yet</p></div>'}`;
   lucide.createIcons();
 }
 
