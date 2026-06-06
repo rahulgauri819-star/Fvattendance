@@ -2,49 +2,31 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fotovision — Photography Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fotovision — Attendance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
-:root {
-  --bg: #f8f9fa;
-  --surface: #ffffff;
-  --surface2: #f1f3f5;
-  --border: #dee2e6;
-  --divider: #e9ecef;
-  --text: #212529;
-  --text-muted: #6c757d;
-  --text-faint: #adb5bd;
-  --primary: #0d6efd;
-  --primary-hover: #0b5ed7;
-  --primary-light: #dbeafe;
-  --success: #198754;
-  --success-light: #d1e7dd;
-  --danger: #dc3545;
-  --danger-light: #f8d7da;
-  --warning: #fd7e14;
-  --warning-light: #ffe8cc;
-  --purple: #6f42c1;
-  --purple-light: #e8daff;
-  --grover-color: #0d6efd;
-  --wedding-color: #e83e8c;
-  --wedding-light: #fce4ec;
-  --radius: 10px;
-  --radius-sm: 6px;
-  --radius-lg: 14px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
-  --font: 'Inter', sans-serif;
-  --sidebar: 220px;
+:root{
+  --bg:#f8f9fa;--surface:#fff;--surface2:#f1f3f5;--border:#dee2e6;--divider:#e9ecef;
+  --text:#212529;--text-muted:#6c757d;--text-faint:#adb5bd;
+  --primary:#0d6efd;--primary-hover:#0b5ed7;--primary-light:#dbeafe;
+  --success:#198754;--success-light:#d1e7dd;
+  --danger:#dc3545;--danger-light:#f8d7da;
+  --warning:#fd7e14;--warning-light:#ffe8cc;
+  --purple:#6f42c1;--purple-light:#e8daff;
+  --wedding-color:#e83e8c;--wedding-light:#fce4ec;
+  --radius:10px;--radius-sm:6px;--radius-lg:14px;
+  --shadow:0 2px 8px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.12);
+  --font:'Inter',sans-serif;--sidebar:220px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{-webkit-font-smoothing:antialiased;}
+html{-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;}
 body{font-family:var(--font);font-size:15px;color:var(--text);background:var(--bg);display:flex;min-height:100dvh;}
 button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
-input,select,textarea{font:inherit;color:inherit;}
+input,select,textarea{font:inherit;color:inherit;-webkit-appearance:none;border-radius:0;}
 img{display:block;max-width:100%;}
 ul{list-style:none;}
 a{color:inherit;text-decoration:none;}
@@ -57,7 +39,7 @@ table{border-collapse:collapse;width:100%;}
 .logo-mark svg{width:18px;height:18px;}
 .logo-text{font-weight:700;font-size:15px;line-height:1.2;}
 .logo-sub{font-size:11px;color:var(--text-muted);}
-.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px;}
+.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
 .nav-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);padding:10px 8px 4px;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);font-size:14px;color:var(--text-muted);cursor:pointer;transition:.15s;}
 .nav-item:hover{background:var(--surface2);color:var(--text);}
@@ -78,7 +60,7 @@ table{border-collapse:collapse;width:100%;}
 .view{display:none;}
 .view.active{display:block;}
 
-/* RESPONSIVE */
+/* RESPONSIVE / MOBILE */
 .hamburger{display:none;}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:99;}
 @media(max-width:768px){
@@ -91,11 +73,22 @@ table{border-collapse:collapse;width:100%;}
   .page{padding:16px;}
 }
 
+/* STAFF MODE — no sidebar, bottom tabs */
+body.staff-mode .sidebar{display:none;}
+body.staff-mode .main{margin-left:0;}
+body.staff-mode .hamburger{display:none!important;}
+body.staff-mode .page{padding:16px 16px 80px;}
+.staff-tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--surface);border-top:1px solid var(--border);z-index:200;padding:0 8px;padding-bottom:env(safe-area-inset-bottom);}
+body.staff-mode .staff-tab-bar{display:flex;}
+.staff-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--text-muted);cursor:pointer;border-radius:var(--radius-sm);padding:8px 0;transition:.15s;}
+.staff-tab.active{color:var(--primary);}
+.staff-tab svg{width:20px;height:20px;}
+
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:.15s;}
 .btn svg{width:15px;height:15px;}
 .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);}
-.btn-primary:hover{background:var(--primary-hover);border-color:var(--primary-hover);}
+.btn-primary:hover{background:var(--primary-hover);}
 .btn-success{background:var(--success);color:#fff;}
 .btn-success:hover{opacity:.9;}
 .btn-danger{background:var(--danger-light);color:var(--danger);}
@@ -106,6 +99,7 @@ table{border-collapse:collapse;width:100%;}
 .btn-ghost:hover{background:var(--surface2);color:var(--text);}
 .btn-sm{padding:5px 11px;font-size:13px;}
 .btn-lg{padding:11px 22px;font-size:15px;}
+.w-full{width:100%;}
 
 /* FORM */
 .form-group{display:flex;flex-direction:column;gap:6px;}
@@ -118,7 +112,8 @@ table{border-collapse:collapse;width:100%;}
 .form-grid{display:grid;gap:16px;}
 .form-grid-2{grid-template-columns:1fr 1fr;}
 @media(max-width:500px){.form-grid-2{grid-template-columns:1fr;}}
-.form-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.mt-4{margin-top:16px;}
+.mb-4{margin-bottom:16px;}
 
 /* CARDS */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);}
@@ -137,28 +132,22 @@ table{border-collapse:collapse;width:100%;}
 .badge-gray{background:var(--surface2);color:var(--text-muted);}
 .badge-pink{background:var(--wedding-light);color:var(--wedding-color);}
 
-/* KPI GRID */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);}
 .kpi-label{font-size:12px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
-.kpi-val{font-size:26px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.kpi-val{font-size:26px;font-weight:800;line-height:1;}
 .kpi-sub{font-size:12px;color:var(--text-muted);margin-top:4px;}
 
-/* TABLE */
-.table-wrap{overflow-x:auto;}
-.data-table th{text-align:left;padding:10px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border-bottom:1px solid var(--divider);white-space:nowrap;background:var(--surface2);}
-.data-table td{padding:11px 14px;border-bottom:1px solid var(--divider);font-size:13px;vertical-align:middle;}
-.data-table tbody tr:hover{background:var(--surface2);}
-.data-table tbody tr:last-child td{border-bottom:none;}
-.staff-cell{display:flex;align-items:center;gap:10px;}
-.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:#fff;}
-.av-lg{width:44px;height:44px;font-size:16px;}
-
 /* MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;opacity:0;pointer-events:none;transition:.2s;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:0;opacity:0;pointer-events:none;transition:.2s;}
 .modal-bg.open{opacity:1;pointer-events:all;}
-.modal{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:92dvh;overflow-y:auto;transform:translateY(16px);transition:.2s;}
+.modal{background:#fff;border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;transform:translateY(40px);transition:.2s;}
 .modal-bg.open .modal{transform:translateY(0);}
+@media(min-width:600px){
+  .modal-bg{align-items:center;padding:16px;}
+  .modal{border-radius:var(--radius-lg);max-height:92dvh;}
+}
 .modal-header{padding:16px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
 .modal-title{font-size:15px;font-weight:700;}
 .modal-body{padding:20px;display:flex;flex-direction:column;gap:16px;}
@@ -171,7 +160,6 @@ table{border-collapse:collapse;width:100%;}
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
 .page-title{font-size:22px;font-weight:800;}
 .page-sub{font-size:13px;color:var(--text-muted);margin-top:2px;}
-.page-actions{display:flex;gap:10px;flex-wrap:wrap;}
 
 /* FILTER BAR */
 .filter-bar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
@@ -185,27 +173,29 @@ table{border-collapse:collapse;width:100%;}
 .tab:hover{color:var(--text);}
 .tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700;}
 
-/* COMPANY SELECTOR */
-.company-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.company-card{border:2px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:.15s;text-align:center;background:#fff;}
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+.data-table th{text-align:left;padding:10px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border-bottom:1px solid var(--divider);white-space:nowrap;background:var(--surface2);}
+.data-table td{padding:11px 14px;border-bottom:1px solid var(--divider);font-size:13px;vertical-align:middle;}
+.data-table tbody tr:hover{background:var(--surface2);}
+.data-table tbody tr:last-child td{border-bottom:none;}
+.staff-cell{display:flex;align-items:center;gap:10px;}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:#fff;}
+.av-lg{width:44px;height:44px;font-size:16px;}
+
+/* COMPANY CARDS */
+.company-cards-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.company-card{border:2px solid var(--border);border-radius:var(--radius);padding:14px 8px;cursor:pointer;transition:.15s;text-align:center;background:#fff;}
 .company-card:hover{border-color:var(--primary);background:var(--primary-light);}
-.company-card.selected-grover{border-color:var(--grover-color);background:var(--primary-light);}
+.company-card.selected-grover{border-color:#0d6efd;background:var(--primary-light);}
+.company-card.selected-wedding{border-color:var(--wedding-color);background:var(--wedding-light);}
 .company-card.selected-office{border-color:var(--purple);background:var(--purple-light);}
+.company-card-icon{width:38px;height:38px;border-radius:10px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;}
+.company-card-icon svg{width:20px;height:20px;}
+.company-card-name{font-size:12px;font-weight:700;line-height:1.2;}
+.company-card-desc{font-size:10px;color:var(--text-muted);margin-top:2px;}
 
-/* STAFF PORTAL BIG BUTTONS */
-.portal-btn{width:100%;padding:22px 20px;border-radius:var(--radius-lg);font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;border:none;transition:.15s;box-shadow:var(--shadow);}
-.portal-btn svg{width:24px;height:24px;}
-.portal-btn-in{background:var(--primary);color:#fff;}
-.portal-btn-in:hover{background:var(--primary-hover);}
-.portal-btn-out{background:var(--success);color:#fff;}
-.portal-btn-out:hover{opacity:.92;}
-.portal-btn-done{background:var(--surface2);color:var(--text-muted);cursor:default;}
-.company-card-icon{width:44px;height:44px;border-radius:10px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;}
-.company-card-icon svg{width:22px;height:22px;}
-.company-card-name{font-size:13px;font-weight:700;}
-.company-card-desc{font-size:11px;color:var(--text-muted);margin-top:2px;}
-
-/* SELFIE SECTION */
+/* SELFIE */
 .selfie-box{border:2px dashed var(--border);border-radius:var(--radius);padding:24px 16px;text-align:center;background:var(--surface2);cursor:pointer;transition:.15s;}
 .selfie-box:hover{border-color:var(--primary);background:var(--primary-light);}
 .selfie-box.has-photo{border-style:solid;border-color:var(--success);background:var(--success-light);}
@@ -216,18 +206,6 @@ table{border-collapse:collapse;width:100%;}
 .gps-badge.pending{background:var(--warning-light);color:var(--warning);}
 .gps-badge svg{width:13px;height:13px;}
 
-/* CHECKIN GRID */
-.checkin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
-.ci-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow);}
-.ci-card.active-card{border-color:var(--success);background:linear-gradient(135deg,#f0fff4,#fff);}
-.ci-card-top{display:flex;align-items:center;gap:10px;}
-.ci-info{flex:1;min-width:0;}
-.ci-name{font-weight:700;font-size:14px;}
-.ci-role{font-size:12px;color:var(--text-muted);}
-.ci-times{font-size:12px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px;}
-.time-row{display:flex;align-items:center;gap:6px;}
-.ci-actions{display:flex;gap:8px;}
-
 /* EMPTY STATE */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 24px;gap:10px;color:var(--text-muted);}
 .empty svg{width:36px;height:36px;color:var(--text-faint);}
@@ -235,14 +213,15 @@ table{border-collapse:collapse;width:100%;}
 .empty p{font-size:13px;max-width:32ch;}
 
 /* TOAST */
-.toast-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:999;pointer-events:none;}
-.toast{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;max-width:320px;pointer-events:auto;animation:toastIn .2s ease;}
+.toast-wrap{position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:999;pointer-events:none;}
+body:not(.staff-mode) .toast-wrap{bottom:20px;}
+.toast{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;max-width:300px;pointer-events:auto;animation:toastIn .2s ease;}
 .toast svg{width:15px;height:15px;flex-shrink:0;}
 .toast-ok{border-left:3px solid var(--success);}
 .toast-err{border-left:3px solid var(--danger);}
 @keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
 
-/* OVERTIME */
+/* OT BAR */
 .ot-bar{height:6px;background:var(--surface2);border-radius:20px;margin-top:4px;overflow:hidden;}
 .ot-fill{height:100%;border-radius:20px;background:var(--primary);}
 .ot-fill.over{background:var(--danger);}
@@ -255,34 +234,48 @@ table{border-collapse:collapse;width:100%;}
 .info-box svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;}
 
 /* UTILS */
-.mt-4{margin-top:16px;}
-.mt-6{margin-top:22px;}
-.mb-4{margin-bottom:16px;}
-.mb-2{margin-bottom:8px;}
-.flex{display:flex;}
-.items-center{align-items:center;}
-.gap-2{gap:8px;}
-.gap-3{gap:12px;}
-.w-full{width:100%;}
-.text-muted{color:var(--text-muted);}
-.font-bold{font-weight:700;}
-.text-sm{font-size:13px;}
-.text-xs{font-size:12px;}
+.flex{display:flex;} .items-center{align-items:center;} .gap-2{gap:8px;} .gap-3{gap:12px;}
+.text-muted{color:var(--text-muted);} .font-bold{font-weight:700;} .text-sm{font-size:13px;} .text-xs{font-size:12px;}
 .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}
+.mt-6{margin-top:22px;}
+
+/* STAFF PORTAL BIG BUTTONS */
+.portal-btn{width:100%;padding:22px 20px;border-radius:var(--radius-lg);font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;border:none;transition:.15s;box-shadow:var(--shadow);}
+.portal-btn svg{width:24px;height:24px;}
+.portal-btn-in{background:var(--primary);color:#fff;}
+.portal-btn-in:active{background:var(--primary-hover);}
+.portal-btn-out{background:var(--success);color:#fff;}
+.portal-btn-out:active{opacity:.9;}
+.portal-btn-done{background:var(--surface2);color:var(--text-muted);box-shadow:none;}
+
+/* SUCCESS SCREEN */
+.checkin-success{display:none;flex-direction:column;align-items:center;text-align:center;padding:40px 24px;gap:16px;}
+.checkin-success.show{display:flex;}
+.success-icon{width:72px;height:72px;background:var(--success-light);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.success-icon svg{width:36px;height:36px;stroke:var(--success);}
+
+/* STATUS BOARD */
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:500px){.status-grid{grid-template-columns:1fr;}}
+.status-col-title{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.status-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;font-size:13px;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.status-card.on-duty{border-color:var(--success);background:#f0fff4;}
+.status-card.off-duty{border-color:var(--border);background:var(--surface2);}
+
+/* WORK TYPE CHIPS */
+.wt-chip{display:inline-flex;align-items:center;padding:8px 14px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;transition:.15s;user-select:none;}
+.wt-chip.selected{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
 <body>
 
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
+<!-- LOGIN SCREEN -->
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#eef4ff 0%,#f8f9fa 60%,#fce4ec 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
-
-  <!-- Main login card (centred) -->
   <div style="width:100%;max-width:400px;">
-
-    <!-- Brand -->
     <div style="text-align:center;margin-bottom:28px;">
       <div style="width:56px;height:56px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 16px rgba(13,110,253,.25);">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg>
@@ -290,99 +283,64 @@ table{border-collapse:collapse;width:100%;}
       <div style="font-size:22px;font-weight:800;letter-spacing:-.3px;">Fotovision</div>
       <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Attendance Management System</div>
     </div>
-
-    <!-- Login Card -->
     <div class="card">
       <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
-
         <div>
-          <div style="font-size:16px;font-weight:700;" id="loginCardTitle">Staff Sign In</div>
-          <div style="font-size:13px;color:var(--text-muted);margin-top:2px;" id="loginCardSub">Enter your phone number and password</div>
+          <div style="font-size:16px;font-weight:700;">Staff Sign In</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Enter your phone number and password</div>
         </div>
-
-        <!-- Phone (Staff) -->
-        <div class="form-group" id="loginPhoneGroup">
-          <label class="form-label">Phone Number <span class="req">*</span></label>
+        <div class="form-group">
+          <label class="form-label">Phone Number <span class="req" style="color:var(--danger)">*</span></label>
           <div style="position:relative;">
             <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <input class="form-input" id="loginPhone" type="tel" placeholder="9876543210" style="padding-left:36px;" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+            <input class="form-input" id="loginPhone" type="tel" placeholder="e.g. 101" style="padding-left:36px;" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
           </div>
-          <div class="form-hint">Enter digits only, no spaces or + sign</div>
         </div>
-
-        <!-- Password -->
         <div class="form-group">
-          <label class="form-label" id="loginPassLabel">Password <span class="req">*</span></label>
+          <label class="form-label">Password <span class="req" style="color:var(--danger)">*</span></label>
           <div style="position:relative;">
             <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input class="form-input" id="loginPassword" type="password" placeholder="Enter password" style="padding-left:36px;" onkeydown="if(event.key==='Enter')submitLogin()">
+            <input class="form-input" id="loginPassword" type="password" placeholder="Default: 123" style="padding-left:36px;" onkeydown="if(event.key==='Enter')submitLogin()">
           </div>
-          <div class="form-hint" id="loginPassHint">Default password: <strong>123</strong></div>
+          <div class="form-hint">Default password: <strong>123</strong></div>
         </div>
-
-        <!-- Error -->
         <div id="loginError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-weight:500;"></div>
-
-        <!-- Submit -->
-        <button class="btn btn-primary btn-lg w-full" type="button" id="loginSubmitBtn" onclick="submitLogin()" style="justify-content:center;">
+        <button class="btn btn-primary btn-lg w-full" type="button" onclick="submitLogin()" style="justify-content:center;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
           Sign In
         </button>
-
       </div>
     </div>
-
   </div>
-
-  <!-- Hidden admin access — looks like a footer note -->
-  <div style="position:fixed;bottom:16px;right:20px;text-align:right;">
-    <span id="adminAccessNote" onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;letter-spacing:.02em;">
-      © Fotovision v2.1 · All rights reserved
-    </span>
+  <!-- Hidden admin access -->
+  <div style="position:fixed;bottom:16px;right:20px;">
+    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v2.1 · All rights reserved</span>
   </div>
-
-  <!-- Admin login panel — hidden, slides up from bottom-right -->
-  <div id="adminLoginPanel" style="position:fixed;bottom:40px;right:20px;width:280px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:18px;display:none;z-index:1001;animation:slideUp .2s ease;">
+  <div id="adminLoginPanel" style="position:fixed;bottom:40px;right:20px;width:270px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:18px;display:none;z-index:1001;animation:slideUp .2s ease;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span style="font-size:13px;font-weight:700;color:var(--text);">Admin Access</span>
-      </div>
-      <button onclick="hideAdminLogin()" style="border:none;background:none;cursor:pointer;color:var(--text-faint);font-size:16px;line-height:1;padding:2px 4px;">×</button>
+      <span style="font-size:13px;font-weight:700;">Admin Access</span>
+      <button onclick="hideAdminLogin()" style="color:var(--text-faint);font-size:18px;line-height:1;padding:2px 4px;">×</button>
     </div>
     <div class="form-group" style="margin-bottom:12px;">
-      <label class="form-label" style="font-size:12px;">Admin Password</label>
-      <input class="form-input" id="adminPanelPassword" type="password" placeholder="Enter admin password" style="font-size:13px;padding:8px 10px;" onkeydown="if(event.key==='Enter')submitAdminPanel()">
+      <input class="form-input" id="adminPanelPassword" type="password" placeholder="Admin password" style="font-size:13px;" onkeydown="if(event.key==='Enter')submitAdminPanel()">
     </div>
     <div id="adminPanelError" style="display:none;font-size:11px;color:var(--danger);margin-bottom:8px;padding:6px 8px;background:var(--danger-light);border-radius:4px;"></div>
-    <button onclick="submitAdminPanel()" class="btn btn-primary w-full" style="font-size:13px;padding:7px 12px;justify-content:center;">
-      Sign In as Admin
-    </button>
+    <button onclick="submitAdminPanel()" class="btn btn-primary w-full" style="font-size:13px;padding:8px;justify-content:center;">Sign In as Admin</button>
   </div>
-
 </div>
-<style>
-@keyframes slideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
-</style>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg>
-    </div>
-    <div>
-      <div class="logo-text">Fotovision</div>
-      <div class="logo-sub">Attendance System</div>
-    </div>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg></div>
+    <div><div class="logo-text">Fotovision</div><div class="logo-sub">Attendance System</div></div>
   </div>
   <nav class="sidebar-nav">
     <span class="nav-label">Overview</span>
     <div class="nav-item active" onclick="go('dashboard',this)"><i data-lucide="layout-dashboard"></i> Dashboard</div>
-    <div class="nav-item" onclick="go('checkin',this)"><i data-lucide="clock"></i> Check-In / Out</div>
+    <div class="nav-item" onclick="go('checkin',this)"><i data-lucide="clock"></i> Today's Status</div>
     <span class="nav-label">Manage</span>
     <div class="nav-item" onclick="go('staff',this)"><i data-lucide="users"></i> Staff</div>
-    <div class="nav-item" onclick="go('events',this)"><i data-lucide="calendar"></i> Events</div>
     <div class="nav-item" onclick="go('logs',this)"><i data-lucide="clipboard-list"></i> Attendance Log</div>
     <span class="nav-label">Insights</span>
     <div class="nav-item" onclick="go('reports',this)"><i data-lucide="bar-chart-2"></i> Reports</div>
@@ -391,11 +349,8 @@ table{border-collapse:collapse;width:100%;}
   </nav>
   <div class="sidebar-footer">
     <div class="admin-card">
-      <div class="admin-av">R</div>
-      <div>
-        <div class="admin-name">Rahul Gauri</div>
-        <div class="admin-role">Administrator</div>
-      </div>
+      <div class="admin-av" id="sidebarAv">R</div>
+      <div><div class="admin-name" id="sidebarName">Rahul Gauri</div><div class="admin-role" id="sidebarRole">Administrator</div></div>
     </div>
   </div>
 </aside>
@@ -404,15 +359,15 @@ table{border-collapse:collapse;width:100%;}
 <div class="main">
   <header class="topbar">
     <div class="flex items-center gap-2">
-      <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu"><i data-lucide="menu"></i></button>
+      <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu"><i data-lucide="menu"></i></button>
       <span class="topbar-title" id="topbarTitle">Dashboard</span>
     </div>
     <div class="topbar-right">
-      <button id="logoutBtn" class="btn btn-outline btn-sm" type="button" onclick="logout()" style="display:none;">
+      <button id="logoutBtn" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Logout
       </button>
-      <button id="topbarCiBtn" class="btn btn-primary btn-sm" onclick="openCheckinModal()"><i data-lucide="plus"></i> Check In</button>
+      <button id="topbarCiBtn" class="btn btn-primary btn-sm" onclick="openCheckinModal(null)"><i data-lucide="plus"></i> Check In</button>
     </div>
   </header>
 
@@ -420,39 +375,33 @@ table{border-collapse:collapse;width:100%;}
 
     <!-- STAFF PORTAL -->
     <div class="view" id="view-staff-portal">
-      <!-- Header with greeting and logout -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
-        <div>
-          <div style="font-size:22px;font-weight:800;" id="portalGreeting">Welcome</div>
-          <div style="font-size:13px;color:var(--text-muted);margin-top:2px;" id="portalRole"></div>
+      <div id="staffPortalCheckin" class="staff-tab-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div>
+            <div style="font-size:24px;font-weight:800;" id="portalGreeting">Hello 👋</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:2px;" id="portalRoleLine"></div>
+          </div>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="logout()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Logout
-        </button>
+        <div id="portalActionArea" style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;"></div>
+        <!-- Success screen (hidden by default) -->
+        <div class="checkin-success" id="checkinSuccess">
+          <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div style="font-size:20px;font-weight:800;color:var(--success);">Checked In!</div>
+          <div style="font-size:14px;color:var(--text-muted);" id="successMsg"></div>
+          <button class="btn btn-outline" onclick="hideCheckinSuccess()" style="margin-top:8px;">Done</button>
+        </div>
       </div>
-
-      <!-- Big Check-In / Check-Out buttons -->
-      <div id="portalActionArea" style="display:flex;flex-direction:column;gap:14px;margin-bottom:32px;"></div>
-
-      <!-- This month's records -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">My Attendance — <span id="portalMonthLabel"></span></span>
-          <span class="badge badge-blue" id="portalShiftCount">0 shifts</span>
-        </div>
-        <div id="portalLogList"></div>
+      <div id="staffPortalHistory" class="staff-tab-content" style="display:none;">
+        <div style="font-size:20px;font-weight:800;margin-bottom:4px;">My Attendance</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;" id="portalMonthLabel"></div>
+        <div class="card"><div id="portalLogList"></div></div>
       </div>
     </div>
 
     <!-- DASHBOARD -->
-
     <div class="view active" id="view-dashboard">
       <div class="page-header">
-        <div>
-          <h1 class="page-title">Dashboard</h1>
-          <p class="page-sub" id="dashDate"></p>
-        </div>
+        <div><h1 class="page-title">Dashboard</h1><p class="page-sub" id="dashDate"></p></div>
         <button class="btn btn-outline" onclick="go('logs',document.querySelector('[onclick*=logs]'))"><i data-lucide="clipboard-list"></i> View Logs</button>
       </div>
       <div class="kpi-grid" id="kpiGrid"></div>
@@ -462,21 +411,19 @@ table{border-collapse:collapse;width:100%;}
           <div id="dashStaff"></div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Upcoming Events</span></div>
-          <div id="dashEvents"></div>
+          <div class="card-header"><span class="card-title">Staff Overview</span></div>
+          <div id="dashStaffOverview"></div>
         </div>
       </div>
     </div>
 
-    <!-- CHECK-IN / OUT -->
+    <!-- TODAY'S STATUS (admin check-in view) -->
     <div class="view" id="view-checkin">
       <div class="page-header">
-        <div>
-          <h1 class="page-title">Check-In / Out</h1>
-          <p class="page-sub">Tap a card to check in or check out your staff</p>
-        </div>
+        <div><h1 class="page-title">Today's Status</h1><p class="page-sub" id="statusDate"></p></div>
+        <button class="btn btn-primary" onclick="openCheckinModal(null)"><i data-lucide="plus"></i> Check In Staff</button>
       </div>
-      <div class="checkin-grid" id="checkinGrid"></div>
+      <div class="status-grid" id="statusGrid"></div>
     </div>
 
     <!-- STAFF -->
@@ -487,28 +434,12 @@ table{border-collapse:collapse;width:100%;}
       </div>
       <div class="filter-bar">
         <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Search staff..." id="staffSearch" oninput="renderStaff()"></div>
-        <select class="form-select" style="width:auto;" id="staffRoleF" onchange="renderStaff()">
-          <option value="">All Roles</option>
-        </select>
+        <select class="form-select" style="width:auto;" id="staffRoleF" onchange="renderStaff()"><option value="">All Roles</option></select>
       </div>
       <div class="card"><div class="table-wrap">
         <table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Status</th><th>Check-ins</th><th>Actions</th></tr></thead>
         <tbody id="staffTbody"></tbody></table>
       </div></div>
-    </div>
-
-    <!-- EVENTS -->
-    <div class="view" id="view-events">
-      <div class="page-header">
-        <div><h1 class="page-title">Events</h1><p class="page-sub">All scheduled events</p></div>
-        <button class="btn btn-primary" onclick="openAddEvent()"><i data-lucide="calendar-plus"></i> Add Event</button>
-      </div>
-      <div class="tabs">
-        <div class="tab active" onclick="switchEvTab('all',this)">All</div>
-        <div class="tab" onclick="switchEvTab('grover',this)">Grover A/V</div>
-        <div class="tab" onclick="switchEvTab('wedding',this)">Wedding</div>
-      </div>
-      <div id="eventsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;"></div>
     </div>
 
     <!-- ATTENDANCE LOG -->
@@ -519,27 +450,25 @@ table{border-collapse:collapse;width:100%;}
       </div>
       <div class="filter-bar">
         <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name or venue..." id="logSearch" oninput="renderLogs()"></div>
-        <select class="form-select" style="width:auto;" id="logCompF" onchange="renderLogs()"><option value="">All Companies</option><option value="grover">Grover A/V</option><option value="wedding">Wedding</option></select>
+        <select class="form-select" style="width:auto;" id="logCompF" onchange="renderLogs()"><option value="">All</option><option value="grover">Grover A/V</option><option value="wedding">Wedding</option><option value="office">Office</option></select>
         <input type="date" class="form-input" id="logDateF" onchange="renderLogs()" style="max-width:150px;">
       </div>
       <div class="card"><div class="table-wrap">
-        <table class="data-table"><thead><tr><th>Staff</th><th>Company</th><th>Event</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Selfie</th><th>GPS</th></tr></thead>
+        <table class="data-table"><thead><tr><th>Staff</th><th>Duty</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Work Done</th><th>Selfie</th><th>GPS</th></tr></thead>
         <tbody id="logTbody"></tbody></table>
       </div></div>
     </div>
 
     <!-- REPORTS -->
     <div class="view" id="view-reports">
-      <div class="page-header">
-        <div><h1 class="page-title">Reports</h1><p class="page-sub">Attendance & overtime analytics</p></div>
-      </div>
+      <div class="page-header"><div><h1 class="page-title">Reports</h1><p class="page-sub">Attendance & overtime analytics</p></div></div>
       <div class="dash-grid mb-4">
         <div class="card">
-          <div class="card-header"><span class="card-title">Staff Hours & Overtime</span><span class="text-xs text-muted">Standard: 8h/day</span></div>
+          <div class="card-header"><span class="card-title">Staff Hours & Overtime</span><span class="text-xs text-muted">Standard: <span id="stdHrsLabel">8</span>h/day</span></div>
           <div id="staffReportList"></div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Events by Company</span></div>
+          <div class="card-header"><span class="card-title">Duty Breakdown</span></div>
           <div class="card-body" id="companyReport"></div>
         </div>
       </div>
@@ -547,168 +476,134 @@ table{border-collapse:collapse;width:100%;}
         <div class="card-header"><span class="card-title">Top Venues</span></div>
         <div class="card-body" id="venueReport"></div>
       </div>
-      <div class="card mt-4">
+      <div class="card mt-6">
         <div class="card-header"><span class="card-title">Data Copy Log (Grover Events)</span></div>
-        <div class="table-wrap">
-          <table class="data-table"><thead><tr><th>Staff</th><th>Event</th><th>Date</th><th>Copied By</th><th>Phone</th></tr></thead>
-          <tbody id="copyLogTbody"></tbody></table>
-        </div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Staff</th><th>Date</th><th>Venue</th><th>Copied By</th><th>Phone</th></tr></thead><tbody id="copyLogTbody"></tbody></table></div>
       </div>
     </div>
 
     <!-- SETTINGS -->
     <div class="view" id="view-settings">
-      <div class="page-header">
-        <div><h1 class="page-title">Settings</h1><p class="page-sub">Manage roles, hours and admin credentials</p></div>
-      </div>
-
+      <div class="page-header"><div><h1 class="page-title">Settings</h1><p class="page-sub">Manage roles, work types, hours and credentials</p></div></div>
       <div style="display:flex;flex-direction:column;gap:20px;max-width:680px;">
-
-        <!-- ROLES -->
         <div class="card">
-          <div class="card-header">
-            <span class="card-title">Staff Roles</span>
-            <span class="badge badge-gray" id="roleCount">0 roles</span>
-          </div>
+          <div class="card-header"><span class="card-title">Staff Roles</span><span class="badge badge-gray" id="roleCount">0 roles</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
             <div id="rolesList" style="display:flex;flex-direction:column;gap:8px;"></div>
             <div style="display:flex;gap:10px;padding-top:4px;border-top:1px solid var(--divider);">
-              <input class="form-input" id="newRoleInput" type="text" placeholder="e.g. Lighting Technician" maxlength="40"
-                onkeydown="if(event.key==='Enter')addRole()" style="flex:1;">
-              <button class="btn btn-primary" type="button" onclick="addRole()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add Role
-              </button>
+              <input class="form-input" id="newRoleInput" type="text" placeholder="e.g. Lighting Technician" maxlength="40" onkeydown="if(event.key==='Enter')addRole()" style="flex:1;">
+              <button class="btn btn-primary" onclick="addRole()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add</button>
             </div>
-            <div class="form-hint">Roles used by existing staff cannot be deleted until reassigned.</div>
+            <div class="form-hint">Roles used by existing staff cannot be deleted.</div>
           </div>
         </div>
-
-        <!-- WORK TYPES -->
         <div class="card">
-          <div class="card-header">
-            <span class="card-title">Work Types</span>
-            <span class="badge badge-gray" id="wtCount">0 types</span>
-          </div>
+          <div class="card-header"><span class="card-title">Work Types</span><span class="badge badge-gray" id="wtCount">0 types</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
             <div id="wtList" style="display:flex;flex-direction:column;gap:8px;"></div>
             <div style="display:flex;gap:10px;padding-top:4px;border-top:1px solid var(--divider);">
-              <input class="form-input" id="newWtInput" type="text" placeholder="e.g. Aerial Photography" maxlength="40"
-                onkeydown="if(event.key==='Enter')addWorkType()" style="flex:1;">
-              <button class="btn btn-primary" type="button" onclick="addWorkType()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add
-              </button>
+              <input class="form-input" id="newWtInput" type="text" placeholder="e.g. Aerial Photography" maxlength="40" onkeydown="if(event.key==='Enter')addWorkType()" style="flex:1;">
+              <button class="btn btn-primary" onclick="addWorkType()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add</button>
             </div>
-            <div class="form-hint">Shown as checkboxes during staff check-out.</div>
+            <div class="form-hint">Shown as options during staff check-out.</div>
           </div>
         </div>
-
-        <!-- STANDARD HOURS -->
         <div class="card">
           <div class="card-header"><span class="card-title">Standard Working Hours</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
-            <div class="form-hint">Used to calculate overtime in Reports. Currently set to <strong id="stdHrsDisplay">8</strong> hours per shift.</div>
+            <div class="form-hint">Used for overtime calculation and office duty warning. Currently <strong id="stdHrsDisplay">8</strong> hours.</div>
             <div style="display:flex;align-items:center;gap:12px;">
               <div style="position:relative;width:120px;">
                 <input class="form-input" id="stdHrsInput" type="number" min="1" max="24" value="8" style="padding-right:36px;">
                 <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);pointer-events:none;">hrs</span>
               </div>
-              <button class="btn btn-primary" type="button" onclick="saveStdHours()">Save</button>
-              <span id="stdHrsMsg" style="font-size:13px;color:var(--success);display:none;">✓ Saved</span>
+              <button class="btn btn-primary" onclick="saveStdHours()">Save</button>
+              <span id="stdHrsMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
             </div>
           </div>
         </div>
-
-        <!-- CHANGE ADMIN PASSWORD -->
         <div class="card">
           <div class="card-header"><span class="card-title">Change Admin Password</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
-            <div class="form-group">
-              <label class="form-label">Current Password <span class="req">*</span></label>
-              <input class="form-input" id="pwCurrent" type="password" placeholder="Enter current password" autocomplete="current-password">
-            </div>
+            <div class="form-group"><label class="form-label">Current Password <span style="color:var(--danger)">*</span></label><input class="form-input" id="pwCurrent" type="password" placeholder="Current password"></div>
             <div class="form-grid form-grid-2">
-              <div class="form-group">
-                <label class="form-label">New Password <span class="req">*</span></label>
-                <input class="form-input" id="pwNew" type="password" placeholder="New password" autocomplete="new-password">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Confirm New Password <span class="req">*</span></label>
-                <input class="form-input" id="pwConfirm" type="password" placeholder="Repeat new password" autocomplete="new-password">
-              </div>
+              <div class="form-group"><label class="form-label">New Password <span style="color:var(--danger)">*</span></label><input class="form-input" id="pwNew" type="password" placeholder="New password"></div>
+              <div class="form-group"><label class="form-label">Confirm <span style="color:var(--danger)">*</span></label><input class="form-input" id="pwConfirm" type="password" placeholder="Repeat"></div>
             </div>
             <div id="pwError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:9px 13px;font-size:13px;"></div>
-            <div>
-              <button class="btn btn-primary" type="button" onclick="changeAdminPassword()">Update Password</button>
-            </div>
+            <button class="btn btn-primary" onclick="changeAdminPassword()">Update Password</button>
           </div>
         </div>
-
       </div>
     </div>
 
   </div><!-- /page -->
 </div><!-- /main -->
 
-<!-- ====== MODALS ====== -->
+<!-- STAFF TAB BAR -->
+<div class="staff-tab-bar">
+  <div class="staff-tab active" id="staffTab0" onclick="switchStaffTab(0)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    Check In/Out
+  </div>
+  <div class="staff-tab" id="staffTab1" onclick="switchStaffTab(1)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    My Attendance
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <!-- CHECK-IN MODAL -->
 <div class="modal-bg" id="ciModal">
 <div class="modal" role="dialog">
   <div class="modal-header">
-    <span class="modal-title">Staff Check-In</span>
+    <span class="modal-title">Check In</span>
     <button class="close-btn" onclick="closeM('ciModal')"><i data-lucide="x"></i></button>
   </div>
   <div class="modal-body">
-    <!-- Step 1: Company -->
-    <div id="ciStep1">
+    <!-- Step 1: Duty Type -->
+    <div>
       <div class="section-divider">Step 1 — Select Duty Type</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+      <div class="company-cards-3">
         <div class="company-card" id="ccGrover" onclick="selectCompany('grover')">
           <div class="company-card-icon" style="background:#dbeafe;"><svg viewBox="0 0 24 24" fill="none" stroke="#0d6efd" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
           <div class="company-card-name">Grover Audio Visual</div>
-          <div class="company-card-desc">Corporate events</div>
         </div>
         <div class="company-card" id="ccWedding" onclick="selectCompany('wedding')">
           <div class="company-card-icon" style="background:#fce4ec;"><svg viewBox="0 0 24 24" fill="none" stroke="#e83e8c" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
           <div class="company-card-name">Wedding Division</div>
-          <div class="company-card-desc">Wedding events</div>
         </div>
         <div class="company-card" id="ccOffice" onclick="selectCompany('office')">
-          <div class="company-card-icon" style="background:#e8daff;"><svg viewBox="0 0 24 24" fill="none" stroke="#6f42c1" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
+          <div class="company-card-icon" style="background:#e8daff;"><svg viewBox="0 0 24 24" fill="none" stroke="#6f42c1" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div>
           <div class="company-card-name">Office Duty</div>
-          <div class="company-card-desc">In-office work</div>
         </div>
       </div>
-      <!-- Wedding client name — shown only when Wedding selected -->
+      <!-- Wedding: client name -->
       <div id="ciClientNameWrap" style="display:none;margin-top:14px;">
         <div class="form-group">
-          <label class="form-label">Client Name <span class="req">*</span></label>
+          <label class="form-label">Client Name <span style="color:var(--danger)">*</span></label>
           <input class="form-input" type="text" id="ciClientName" placeholder="e.g. Sharma Family">
-          <div class="form-hint">Required for Wedding Division</div>
         </div>
       </div>
     </div>
-    <!-- Step 2: Staff + Event -->
-    <div>
-      <div class="section-divider">Step 2 — Staff & Event Details</div>
+    <!-- Step 2: Details (hidden for office) -->
+    <div id="ciStep2NonOffice">
+      <div class="section-divider">Step 2 — Details</div>
       <div class="form-grid" style="gap:14px;">
-        <div class="form-group">
-          <label class="form-label">Staff Member <span class="req">*</span></label>
+        <!-- Staff selector shown only for admin -->
+        <div class="form-group" id="ciStaffWrap">
+          <label class="form-label">Staff Member <span style="color:var(--danger)">*</span></label>
           <select class="form-select" id="ciStaff"></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Event</label>
-          <select class="form-select" id="ciEvent" onchange="ciEventChange()"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Venue <span class="req">*</span></label>
+          <label class="form-label">Venue <span style="color:var(--danger)">*</span></label>
           <input class="form-input" type="text" id="ciVenue" placeholder="e.g. Taj Palace, New Delhi" oninput="venueChanged()">
-          <div class="form-hint">Start typing — GPS will verify your location</div>
+          <div class="form-hint admin-only-hint">Start typing — GPS will verify your location</div>
         </div>
         <div id="gpsStatusWrap" style="display:none;">
-          <span class="gps-badge pending" id="gpsBadge"><i data-lucide="map-pin"></i> Capturing GPS...</span>
+          <span class="gps-badge pending" id="gpsBadge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Capturing GPS...</span>
           <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="gpsCoords"></div>
         </div>
         <div class="form-group">
@@ -718,20 +613,37 @@ table{border-collapse:collapse;width:100%;}
         </div>
         <div class="form-group">
           <label class="form-label">Notes (optional)</label>
-          <textarea class="form-textarea" id="ciNotes" placeholder="Any notes for this check-in..."></textarea>
+          <textarea class="form-textarea" id="ciNotes" placeholder="Any notes..."></textarea>
+        </div>
+      </div>
+    </div>
+    <!-- Office duty step 2 -->
+    <div id="ciStep2Office" style="display:none;">
+      <div class="section-divider">Step 2 — Details</div>
+      <div class="form-grid" style="gap:14px;">
+        <div class="form-group" id="ciOfficeStaffWrap">
+          <label class="form-label">Staff Member <span style="color:var(--danger)">*</span></label>
+          <select class="form-select" id="ciOfficeStaff"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Check-In Time</label>
+          <input class="form-input" type="text" id="ciOfficeTime" readonly style="background:var(--surface2);color:var(--text-muted);">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes (optional)</label>
+          <textarea class="form-textarea" id="ciOfficeNotes" placeholder="Any notes..."></textarea>
         </div>
       </div>
     </div>
     <!-- Step 3: Selfie -->
     <div>
       <div class="section-divider">Step 3 — Selfie <span style="color:var(--danger);font-size:12px;">Mandatory</span></div>
-      <div class="info-box mb-4"><i data-lucide="info"></i> A face selfie is required for check-in verification. Please ensure your face is clearly visible.</div>
       <div class="selfie-box" id="selfieBox" onclick="triggerCamera()">
         <img id="selfiePreview" class="selfie-preview" style="display:none;" alt="Selfie">
         <div id="selfiePrompt">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5" style="margin:0 auto 8px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           <div style="font-size:14px;font-weight:600;color:var(--text-muted);">Tap to take selfie</div>
-          <div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Face photo only — mandatory</div>
+          <div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Face photo — mandatory</div>
         </div>
       </div>
       <input type="file" id="selfieInput" accept="image/*" capture="user" style="display:none;" onchange="handleSelfie(event)">
@@ -752,10 +664,43 @@ table{border-collapse:collapse;width:100%;}
     <button class="close-btn" onclick="closeM('coModal')"><i data-lucide="x"></i></button>
   </div>
   <div class="modal-body">
-    <!-- Work Types -->
-    <div class="form-group">
-      <label class="form-label">Work Done <span class="req">*</span> <span style="font-size:11px;color:var(--text-muted);font-weight:400;">Select all that apply</span></label>
-      <div id="coWorkTypes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
+    <!-- Office duty warning -->
+    <div id="coOfficeWarning" style="display:none;background:#fff3cd;border:1px solid #ffe69c;color:#664d03;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;font-weight:500;">
+      ⚠️ 8 hours is mandatory for full attendance. You are checking out early.
+    </div>
+    <!-- Work types (hidden for office) -->
+    <div id="coWorkTypesSection">
+      <div class="form-group">
+        <label class="form-label">Work Done <span style="color:var(--danger)">*</span> <span style="font-size:11px;color:var(--text-muted);font-weight:400;">Select all that apply</span></label>
+        <div id="coWorkTypes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
+      </div>
+      <!-- Photobooth extras -->
+      <div id="coPhotboothSection" style="display:none;">
+        <div class="form-grid form-grid-2" style="margin-top:14px;">
+          <div class="form-group">
+            <label class="form-label">No. of Prints</label>
+            <input class="form-input" type="number" id="coPrints" min="0" placeholder="e.g. 120">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Print Size</label>
+            <input class="form-input" type="text" id="coPrintSize" placeholder="e.g. 4×6">
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Grover: data copy (not shown for photobooth) -->
+    <div id="groverCopySection" style="display:none;">
+      <div class="section-divider" style="color:var(--primary);">Grover A/V — Data Copy Details</div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Copied By <span style="color:var(--danger)">*</span></label>
+          <input class="form-input" type="text" id="coCopyName" placeholder="Person's name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Their Phone <span style="color:var(--danger)">*</span></label>
+          <input class="form-input" type="tel" id="coCopyPhone" placeholder="+91 9876543210">
+        </div>
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">Check-Out Time</label>
@@ -764,22 +709,7 @@ table{border-collapse:collapse;width:100%;}
     </div>
     <div class="form-group">
       <label class="form-label">Notes (optional)</label>
-      <textarea class="form-textarea" id="coNotes" placeholder="Any notes for check-out..."></textarea>
-    </div>
-    <!-- Grover Only -->
-    <div id="groverCopySection" style="display:none;">
-      <div class="section-divider" style="color:var(--primary);">Grover A/V — Data Copy Details</div>
-      <div class="info-box mb-4"><i data-lucide="info"></i> Please enter details of the person who copied the event data.</div>
-      <div class="form-grid form-grid-2">
-        <div class="form-group">
-          <label class="form-label">Copied By (Name) <span class="req">*</span></label>
-          <input class="form-input" type="text" id="coCopyName" placeholder="Person's name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Their Phone Number <span class="req">*</span></label>
-          <input class="form-input" type="tel" id="coCopyPhone" placeholder="+91 9876543210">
-        </div>
-      </div>
+      <textarea class="form-textarea" id="coNotes" placeholder="Any notes..."></textarea>
     </div>
   </div>
   <div class="modal-footer">
@@ -798,33 +728,15 @@ table{border-collapse:collapse;width:100%;}
   </div>
   <div class="modal-body">
     <div class="form-grid form-grid-2">
-      <div class="form-group">
-        <label class="form-label">Full Name <span class="req">*</span></label>
-        <input class="form-input" type="text" id="sfName" placeholder="Arjun Sharma">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Role <span class="req">*</span></label>
-        <select class="form-select" id="sfRole"></select>
-      </div>
+      <div class="form-group"><label class="form-label">Full Name <span style="color:var(--danger)">*</span></label><input class="form-input" type="text" id="sfName" placeholder="Arjun Sharma"></div>
+      <div class="form-group"><label class="form-label">Role <span style="color:var(--danger)">*</span></label><select class="form-select" id="sfRole"></select></div>
     </div>
     <div class="form-grid form-grid-2">
-      <div class="form-group">
-        <label class="form-label">Phone</label>
-        <input class="form-input" type="tel" id="sfPhone" placeholder="+91 9876543210">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input class="form-input" type="email" id="sfEmail" placeholder="email@example.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Login Password <span class="req">*</span></label>
-            <input class="form-input" type="text" id="sfPassword" placeholder="Set staff password">
-      </div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" id="sfPhone" placeholder="101"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="sfEmail" placeholder="email@example.com"></div>
+      <div class="form-group"><label class="form-label">Login Password <span style="color:var(--danger)">*</span></label><input class="form-input" type="text" id="sfPassword" placeholder="Set staff password"></div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Status</label>
-      <select class="form-select" id="sfStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select>
-    </div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="sfStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
   </div>
   <div class="modal-footer">
     <button class="btn btn-outline" onclick="closeM('sfModal')">Cancel</button>
@@ -833,58 +745,10 @@ table{border-collapse:collapse;width:100%;}
 </div>
 </div>
 
-<!-- ADD EVENT MODAL -->
-<div class="modal-bg" id="evModal">
-<div class="modal" role="dialog">
-  <div class="modal-header">
-    <span class="modal-title" id="evModalTitle">Add Event</span>
-    <button class="close-btn" onclick="closeM('evModal')"><i data-lucide="x"></i></button>
-  </div>
-  <div class="modal-body">
-    <div class="form-group">
-      <label class="form-label">Event Name <span class="req">*</span></label>
-      <input class="form-input" type="text" id="evName" placeholder="Sharma Wedding / Tech Corp Meet">
-    </div>
-    <div class="form-grid form-grid-2">
-      <div class="form-group">
-        <label class="form-label">Company <span class="req">*</span></label>
-        <select class="form-select" id="evCompany">
-          <option value="grover">Grover Audio Visual Services</option>
-          <option value="wedding">Wedding Division</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Date <span class="req">*</span></label>
-        <input class="form-input" type="date" id="evDate">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Venue <span class="req">*</span></label>
-      <input class="form-input" type="text" id="evVenue" placeholder="Taj Palace, New Delhi">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Client / Contact</label>
-      <input class="form-input" type="text" id="evClient" placeholder="Client name or company">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notes</label>
-      <input class="form-input" type="text" id="evNotes" placeholder="Additional details...">
-    </div>
-  </div>
-  <div class="modal-footer">
-    <button class="btn btn-outline" onclick="closeM('evModal')">Cancel</button>
-    <button class="btn btn-primary" onclick="submitEvent()" id="evSaveBtn">Save Event</button>
-  </div>
-</div>
-</div>
-
 <!-- GPS DETAIL MODAL -->
 <div class="modal-bg" id="gpsModal">
 <div class="modal" style="max-width:380px;" role="dialog">
-  <div class="modal-header">
-    <span class="modal-title">GPS Location Detail</span>
-    <button class="close-btn" onclick="closeM('gpsModal')"><i data-lucide="x"></i></button>
-  </div>
+  <div class="modal-header"><span class="modal-title">GPS Location</span><button class="close-btn" onclick="closeM('gpsModal')"><i data-lucide="x"></i></button></div>
   <div class="modal-body" id="gpsModalBody"></div>
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeM('gpsModal')">Close</button></div>
 </div>
@@ -896,31 +760,26 @@ table{border-collapse:collapse;width:100%;}
 // ===== STATE =====
 const S = {
   staff: [
-    {id:1,name:"Arjun Sharma",role:"Photographer",phone:"101",password:"123",email:"arjun@fs.in",status:"active",color:"#0d6efd"},
-    {id:2,name:"Priya Nair",role:"Cinematographer",phone:"102",password:"123",email:"priya@fs.in",status:"active",color:"#198754"},
-    {id:3,name:"Rohan Mehta",role:"Photographer",phone:"103",password:"123",email:"rohan@fs.in",status:"active",color:"#6f42c1"},
-    {id:4,name:"Sunita Gupta",role:"Editor",phone:"104",password:"123",email:"sunita@fs.in",status:"active",color:"#fd7e14"},
-    {id:5,name:"Vikram Singh",role:"Cinematographer",phone:"105",password:"123",email:"vikram@fs.in",status:"active",color:"#e83e8c"},
-    {id:6,name:"Anjali Patel",role:"Assistant",phone:"106",password:"123",email:"anjali@fs.in",status:"active",color:"#20c997"},
-  ],
-  events: [
-    {id:1,name:"Sharma-Verma Wedding",company:"wedding",date:"2026-06-05",venue:"Taj Palace, New Delhi",client:"Sharma Family",notes:"5-day function"},
-    {id:2,name:"Tech Corp Annual Meet",company:"grover",date:"2026-06-06",venue:"Hyatt Regency, Delhi",client:"Tech Corp India",notes:"2 hour coverage"},
-    {id:3,name:"Gupta-Khanna Engagement",company:"wedding",date:"2026-06-07",venue:"Oberoi Hotel, Gurugram",client:"Gupta Family",notes:"Evening ceremony"},
-    {id:4,name:"Reliance Product Launch",company:"grover",date:"2026-06-10",venue:"Leela Palace, Delhi",client:"Reliance Industries",notes:"Full day"},
+    {id:1,name:"Arjun Sharma",role:"Photographer",phone:"101",password:"123",email:"arjun@fv.in",status:"active",color:"#0d6efd"},
+    {id:2,name:"Priya Nair",role:"Cinematographer",phone:"102",password:"123",email:"priya@fv.in",status:"active",color:"#198754"},
+    {id:3,name:"Rohan Mehta",role:"Photographer",phone:"103",password:"123",email:"rohan@fv.in",status:"active",color:"#6f42c1"},
+    {id:4,name:"Sunita Gupta",role:"Editor",phone:"104",password:"123",email:"sunita@fv.in",status:"active",color:"#fd7e14"},
+    {id:5,name:"Vikram Singh",role:"Cinematographer",phone:"105",password:"123",email:"vikram@fv.in",status:"active",color:"#e83e8c"},
+    {id:6,name:"Anjali Patel",role:"Assistant",phone:"106",password:"123",email:"anjali@fv.in",status:"active",color:"#20c997"},
   ],
   logs: [
-    {id:1,staffId:1,eventId:1,company:"wedding",venue:"Taj Palace, New Delhi",date:"2026-06-04",checkIn:"09:30",checkOut:"18:00",selfie:"",gpsLat:28.6139,gpsLng:77.2090,gpsAddr:"New Delhi, India",ciNotes:"On time",coNotes:"",copyName:"",copyPhone:""},
-    {id:2,staffId:2,eventId:2,company:"grover",venue:"Hyatt Regency, Delhi",date:"2026-06-04",checkIn:"10:00",checkOut:"",selfie:"",gpsLat:28.5562,gpsLng:77.1000,gpsAddr:"Gurugram, India",ciNotes:"",coNotes:"",copyName:"",copyPhone:""},
-    {id:3,staffId:3,eventId:1,company:"wedding",venue:"Taj Palace, New Delhi",date:"2026-06-04",checkIn:"08:45",checkOut:"13:30",selfie:"",gpsLat:28.6139,gpsLng:77.2090,gpsAddr:"New Delhi, India",ciNotes:"",coNotes:"",copyName:"",copyPhone:""},
+    {id:1,staffId:1,company:"wedding",venue:"Taj Palace, New Delhi",date:"2026-06-04",checkIn:"09:30",checkOut:"18:00",selfie:"",gpsLat:28.6139,gpsLng:77.2090,gpsAddr:"New Delhi, India",clientName:"Sharma Family",ciNotes:"On time",coNotes:"",copyName:"",copyPhone:"",workTypes:["Still Photography"],prints:0,printSize:""},
+    {id:2,staffId:2,company:"grover",venue:"Hyatt Regency, Delhi",date:"2026-06-04",checkIn:"10:00",checkOut:"",selfie:"",gpsLat:28.5562,gpsLng:77.1000,gpsAddr:"Gurugram, India",clientName:"",ciNotes:"",coNotes:"",copyName:"",copyPhone:"",workTypes:[],prints:0,printSize:""},
+    {id:3,staffId:3,company:"wedding",venue:"Taj Palace, New Delhi",date:"2026-06-04",checkIn:"08:45",checkOut:"13:30",selfie:"",gpsLat:28.6139,gpsLng:77.2090,gpsAddr:"New Delhi, India",clientName:"Sharma Family",ciNotes:"",coNotes:"",copyName:"",copyPhone:"",workTypes:["Cinematic Video"],prints:0,printSize:""},
   ],
-  nId:{staff:7,event:5,log:4},
-  editSfId:null, editEvId:null, coLogId:null,
+  nId:{staff:7,log:4},
+  editSfId:null, coLogId:null,
   ciCompany:null, ciSelfieData:null, ciGps:null,
-  evTab:'all',
   roles: ['Photographer','Cinematographer','Editor','Assistant','Drone Operator','Photo Booth Operator'],
-  workTypes: ['Still Photography','Cinematic','NX Video','Photobooth','Assistant'],
-  standardHours: 8, admin:{phone:'123',password:'admin123',name:'Rahul Gauri'}, loginMode:'staff', currentUser:null
+  workTypes: ['Still Photography','NX Video','Cinematic Video','Photobooth','Assistant'],
+  standardHours: 8,
+  admin:{password:'admin123',name:'Rahul Gauri'},
+  currentUser:null
 };
 
 // ===== HELPERS =====
@@ -931,138 +790,181 @@ const nowTime = () => new Date().toTimeString().slice(0,5);
 const fmtDate = d => { if(!d) return '—'; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); };
 const toMins = t => { if(!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; };
 const fmtDur = m => { if(!m||m<=0) return '—'; return Math.floor(m/60)+'h '+(m%60)+'m'; };
-const dur = (ci,co) => { const d=toMins(co)-toMins(ci); return d>0?d:null; };
+// Midnight-crossing duration: if checkout < checkin time, add 24hrs
+const dur = (ci,co) => { if(!ci||!co) return null; let d=toMins(co)-toMins(ci); if(d<=0) d+=1440; return d>0?d:null; };
 const getSf = id => S.staff.find(s=>s.id===id);
-const getEv = id => S.events.find(e=>e.id===id);
 const normalizePhone = p => (p||'').replace(/\D/g,'');
-const canEditMasters = () => S.currentUser && S.currentUser.role==='admin';
 const isStaffUser = () => S.currentUser && S.currentUser.role==='staff';
 const currentStaffId = () => isStaffUser() ? S.currentUser.staffId : null;
-const hasPhotoBooth = log => ((log.workType||'')+' '+((getEv(log.eventId)||{}).name||'')).toLowerCase().includes('photo booth') || ((log.workType||'')+' '+((getEv(log.eventId)||{}).name||'')).toLowerCase().includes('photobooth');
 const colors = ['#0d6efd','#198754','#6f42c1','#fd7e14','#e83e8c','#20c997','#dc3545','#0dcaf0'];
+const compLabel = c => c==='grover'?'🎬 Grover A/V':c==='wedding'?'💍 Wedding':'🏢 Office';
 const compBadge = c => c==='grover'
-  ? '<span class="badge badge-blue"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>Grover A/V</span>'
-  : '<span class="badge badge-pink"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Wedding</span>';
+  ? '<span class="badge badge-blue">Grover A/V</span>'
+  : c==='wedding' ? '<span class="badge badge-pink">Wedding</span>'
+  : '<span class="badge badge-purple">Office</span>';
 
-// ===== HIDDEN ADMIN ACCESS =====
-function revealAdminLogin(){
-  const panel = document.getElementById('adminLoginPanel');
-  panel.style.display = 'block';
-  setTimeout(()=>document.getElementById('adminPanelPassword')?.focus(), 50);
-}
-function hideAdminLogin(){
-  const panel = document.getElementById('adminLoginPanel');
-  if(panel) panel.style.display = 'none';
-  const pw = document.getElementById('adminPanelPassword'); if(pw) pw.value = '';
-  const err = document.getElementById('adminPanelError'); if(err) err.style.display = 'none';
-}
+// ===== ADMIN LOGIN =====
+function revealAdminLogin(){ $('adminLoginPanel').style.display='block'; setTimeout(()=>$('adminPanelPassword')?.focus(),50); }
+function hideAdminLogin(){ $('adminLoginPanel').style.display='none'; $('adminPanelPassword').value=''; $('adminPanelError').style.display='none'; }
 function submitAdminPanel(){
-  const errEl = document.getElementById('adminPanelError');
-  errEl.style.display = 'none';
-  const pw = (document.getElementById('adminPanelPassword')?.value || '').trim();
-  if(!pw){ errEl.textContent = 'Enter admin password.'; errEl.style.display = 'block'; return; }
-  if(pw !== S.admin.password){ errEl.textContent = 'Incorrect password.'; errEl.style.display = 'block'; return; }
-  S.currentUser = {role:'admin', name:S.admin.name};
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('logoutBtn').style.display = 'inline-flex';
-  const adminAv = document.querySelector('.admin-av'); if(adminAv) adminAv.textContent = ini(S.admin.name);
-  const adminName = document.querySelector('.admin-name'); if(adminName) adminName.textContent = S.admin.name;
-  const adminRole = document.querySelector('.admin-role'); if(adminRole) adminRole.textContent = 'Administrator';
+  const e=$('adminPanelError'); e.style.display='none';
+  const pw=($('adminPanelPassword').value||'').trim();
+  if(!pw){e.textContent='Enter password.';e.style.display='block';return;}
+  if(pw!==S.admin.password){e.textContent='Incorrect password.';e.style.display='block';return;}
+  S.currentUser={role:'admin',name:S.admin.name};
+  $('loginScreen').style.display='none';
+  $('logoutBtn').style.display='inline-flex';
+  $('sidebarAv').textContent=ini(S.admin.name);
+  $('sidebarName').textContent=S.admin.name;
+  $('sidebarRole').textContent='Administrator';
   hideAdminLogin();
-  toast('Welcome back, ' + S.admin.name + '!');
-  go('dashboard', document.querySelector('.nav-item[onclick*="dashboard"]'));
+  toast('Welcome back, '+S.admin.name+'!');
+  go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
 }
 
-window.setLoginMode = function(mode){ S.loginMode = mode; };
-
+// ===== STAFF LOGIN =====
 window.submitLogin = function(){
-  const errEl = document.getElementById('loginError');
-  errEl.style.display = 'none';
-  const phone = normalizePhone(document.getElementById('loginPhone')?.value || '');
-  const password = (document.getElementById('loginPassword')?.value || '').trim();
-  if(!phone){ errEl.textContent = 'Please enter your phone number.'; errEl.style.display = 'block'; return; }
-  if(!password){ errEl.textContent = 'Please enter your password.'; errEl.style.display = 'block'; return; }
-  const staff = (S.staff || []).find(s => normalizePhone(s.phone) === phone && (s.password || '123') === password && s.status === 'active');
-  if(!staff){ errEl.textContent = 'Phone number or password is incorrect.'; errEl.style.display = 'block'; return; }
-  S.currentUser = {role:'staff', name:staff.name, staffId:staff.id};
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('logoutBtn').style.display = 'inline-flex';
-  document.getElementById('topbarCiBtn').style.display = 'none';
-  // Hide all admin nav items — show nothing in sidebar for staff
-  document.querySelectorAll('.nav-item,.nav-label').forEach(el=>el.style.display='none');
-  const adminAv = document.querySelector('.admin-av'); if(adminAv) adminAv.textContent = ini(staff.name);
-  const adminName = document.querySelector('.admin-name'); if(adminName) adminName.textContent = staff.name;
-  const adminRole = document.querySelector('.admin-role'); if(adminRole) adminRole.textContent = staff.role;
-  // Switch to staff portal view
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-staff-portal').classList.add('active');
-  document.getElementById('topbarTitle').textContent = 'My Portal';
+  const e=$('loginError'); e.style.display='none';
+  const phone=normalizePhone($('loginPhone').value||'');
+  const pw=($('loginPassword').value||'').trim();
+  if(!phone){e.textContent='Please enter your phone number.';e.style.display='block';return;}
+  if(!pw){e.textContent='Please enter your password.';e.style.display='block';return;}
+  const sf=(S.staff||[]).find(s=>normalizePhone(s.phone)===phone&&(s.password||'123')===pw&&s.status==='active');
+  if(!sf){e.textContent='Phone number or password is incorrect.';e.style.display='block';return;}
+  S.currentUser={role:'staff',name:sf.name,staffId:sf.id};
+  $('loginScreen').style.display='none';
+  $('logoutBtn').style.display='inline-flex';
+  $('topbarCiBtn').style.display='none';
+  document.body.classList.add('staff-mode');
+  $('topbarTitle').textContent='Hi '+sf.name.split(' ')[0];
+  $('hamburgerBtn').style.display='none';
+  // Staff mode: hide GPS hint
+  document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='none');
   renderStaffPortal();
-  toast('Welcome, ' + staff.name + '!');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('view-staff-portal').classList.add('active');
+  toast('Welcome, '+sf.name+'!');
 };
 
 window.logout = function(){
-  S.currentUser = null;
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('logoutBtn').style.display = 'none';
-  document.getElementById('topbarCiBtn').style.display = '';
-  document.getElementById('loginPassword').value = '';
-  const ph = document.getElementById('loginPhone'); if(ph) ph.value = '';
-  document.getElementById('loginError').style.display = 'none';
-  // Restore all nav items
-  document.querySelectorAll('.nav-item,.nav-label').forEach(el=>el.style.display='');
+  S.currentUser=null;
+  $('loginScreen').style.display='flex';
+  $('logoutBtn').style.display='none';
+  $('topbarCiBtn').style.display='';
+  $('loginPassword').value='';
+  const ph=$('loginPhone'); if(ph) ph.value='';
+  $('loginError').style.display='none';
+  document.body.classList.remove('staff-mode');
+  $('topbarTitle').textContent='Dashboard';
+  $('hamburgerBtn').style.display='';
+  document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='');
 };
 
-window.addEventListener('keydown', function(e){
-  const ls = document.getElementById('loginScreen');
-  if(!ls || ls.style.display === 'none') return;
-  if(e.key === 'Escape'){ hideAdminLogin(); return; }
-  if(e.key === 'Enter'){
-    const panel = document.getElementById('adminLoginPanel');
-    if(panel && panel.style.display !== 'none') submitAdminPanel();
+window.addEventListener('keydown',function(e){
+  const ls=$('loginScreen');
+  if(!ls||ls.style.display==='none') return;
+  if(e.key==='Escape') hideAdminLogin();
+  if(e.key==='Enter'){
+    if($('adminLoginPanel').style.display!=='none') submitAdminPanel();
     else submitLogin();
   }
 });
 
-// ===== INIT =====
-function init(){
-  lucide.createIcons();
-  S.loginMode = 'staff';
-  renderDash();
+// ===== STAFF PORTAL =====
+function switchStaffTab(idx){
+  $('staffPortalCheckin').style.display = idx===0?'block':'none';
+  $('staffPortalHistory').style.display = idx===1?'block':'none';
+  $('staffTab0').classList.toggle('active',idx===0);
+  $('staffTab1').classList.toggle('active',idx===1);
+  if(idx===1) renderStaffHistory();
 }
-init();
+
+function renderStaffPortal(){
+  const sf=getSf(S.currentUser.staffId); if(!sf) return;
+  $('portalGreeting').textContent='Hi '+sf.name.split(' ')[0]+' 👋';
+  $('portalRoleLine').textContent=sf.role+' · '+new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  const td=today();
+  const activeLog=S.logs.find(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&!l.checkOut);
+  const doneToday=S.logs.filter(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&l.checkOut).length;
+  let html='';
+  if(activeLog){
+    html+=`<div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius-lg);padding:16px 20px;display:flex;align-items:center;gap:12px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <div><div style="font-weight:700;color:var(--success);">Checked In</div><div style="font-size:13px;color:var(--text-muted);">${compLabel(activeLog.company)} · ${activeLog.venue}</div></div>
+    </div>
+    <button class="portal-btn portal-btn-out" onclick="openCheckoutModal(${sf.id})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Check Out
+    </button>`;
+  } else {
+    html+=`<button class="portal-btn portal-btn-in" onclick="openCheckinModal(${sf.id})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      Check In
+    </button>`;
+    if(doneToday>0) html+=`<button class="portal-btn portal-btn-done" style="font-size:14px;">✓ ${doneToday} shift${doneToday>1?'s':''} completed today</button>`;
+  }
+  $('portalActionArea').innerHTML=html;
+  $('checkinSuccess').classList.remove('show');
+}
+
+function renderStaffHistory(){
+  const sf=getSf(S.currentUser.staffId); if(!sf) return;
+  const now=new Date();
+  const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  $('portalMonthLabel').textContent=now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const myLogs=S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym)).sort((a,b)=>b.date.localeCompare(a.date)||b.checkIn.localeCompare(a.checkIn));
+  // Count unique days worked
+  const uniqueDays=new Set(myLogs.map(l=>l.date)).size;
+  $('portalLogList').innerHTML=`
+    <div style="padding:16px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;color:var(--text-muted);">Days Worked</div>
+      <div style="font-size:22px;font-weight:800;color:var(--primary);">${uniqueDays}</div>
+    </div>
+    ${myLogs.length?myLogs.map(l=>{
+      const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
+      return `<div style="padding:14px 16px;border-bottom:1px solid var(--divider);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="font-weight:600;font-size:13px;">${fmtDate(l.date)}</div>
+          <div>${compBadge(l.company)}</div>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);">${l.venue}</div>
+        ${l.clientName?`<div style="font-size:12px;color:var(--text-muted);">Client: ${l.clientName}</div>`:''}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Work: ${wt}</div>
+      </div>`;
+    }).join(''):`<div class="empty" style="padding:32px;"><p>No days worked this month yet</p></div>`}`;
+  lucide.createIcons();
+}
+
+function hideCheckinSuccess(){
+  $('checkinSuccess').classList.remove('show');
+  $('portalActionArea').style.display='flex';
+}
+
 // ===== NAV =====
-function go(view, el) {
+function go(view,el){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   $('view-'+view).classList.add('active');
   if(el) el.classList.add('active');
-  const titles={dashboard:'Dashboard',checkin:'Check-In / Out',staff:'Staff',events:'Events',logs:'Attendance Log',reports:'Reports',settings:'Settings'};
-  $('topbarTitle').textContent = titles[view]||'';
+  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings'};
+  $('topbarTitle').textContent=titles[view]||view;
   closeSidebar();
   if(view==='dashboard') renderDash();
-  if(view==='checkin') renderCheckin();
+  if(view==='checkin') renderStatusBoard();
   if(view==='staff') renderStaff();
-  if(view==='events') renderEvents();
   if(view==='logs') renderLogs();
   if(view==='reports') renderReports();
   if(view==='settings') renderSettings();
 }
 function toggleSidebar(){$('sidebar').classList.toggle('open');$('sidebarOverlay').classList.toggle('open');}
 function closeSidebar(){$('sidebar').classList.remove('open');$('sidebarOverlay').classList.remove('open');}
-
-// ===== MODALS =====
 function openM(id){$(id).classList.add('open');lucide.createIcons();}
 function closeM(id){$(id).classList.remove('open');}
-
-// ===== TOAST =====
 function toast(msg,type='ok'){
-  const w=$('toastWrap');
-  const t=document.createElement('div');
+  const w=$('toastWrap'),t=document.createElement('div');
   t.className='toast toast-'+(type==='ok'?'ok':'err');
-  const icon=type==='ok'?'<svg viewBox="0 0 24 24" fill="none" stroke="#198754" stroke-width="2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-  t.innerHTML=icon+msg; w.appendChild(t);
-  setTimeout(()=>t.remove(),3500);
+  t.innerHTML=(type==='ok'?'<svg viewBox="0 0 24 24" fill="none" stroke="#198754" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>')+msg;
+  w.appendChild(t);setTimeout(()=>t.remove(),3500);
 }
 
 // ===== DASHBOARD =====
@@ -1072,61 +974,61 @@ function renderDash(){
   const tLogs=S.logs.filter(l=>l.date===td);
   const active=tLogs.filter(l=>l.checkIn&&!l.checkOut).length;
   const done=tLogs.filter(l=>l.checkIn&&l.checkOut).length;
-  const upEv=S.events.filter(e=>e.date>=td).sort((a,b)=>a.date.localeCompare(b.date));
   $('kpiGrid').innerHTML=`
     <div class="kpi"><div class="kpi-label">Total Staff</div><div class="kpi-val" style="color:var(--primary)">${S.staff.filter(s=>s.status==='active').length}</div><div class="kpi-sub">active members</div></div>
     <div class="kpi"><div class="kpi-label">Active Today</div><div class="kpi-val" style="color:var(--success)">${active}</div><div class="kpi-sub">checked in now</div></div>
     <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${done}</div><div class="kpi-sub">checked out today</div></div>
-    <div class="kpi"><div class="kpi-label">Upcoming Events</div><div class="kpi-val" style="color:var(--warning)">${upEv.length}</div><div class="kpi-sub">scheduled</div></div>
-  `;
+    <div class="kpi"><div class="kpi-label">Total Logs</div><div class="kpi-val" style="color:var(--warning)">${S.logs.length}</div><div class="kpi-sub">all time</div></div>`;
   $('activeCount').textContent=active+' active';
   $('dashStaff').innerHTML=tLogs.length?tLogs.map(l=>{
     const sf=getSf(l.staffId); if(!sf) return '';
-    const ev=l.eventId?getEv(l.eventId):null;
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--divider);">
       <div class="av" style="background:${sf.color};width:32px;height:32px;font-size:12px;">${ini(sf.name)}</div>
-      <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">${sf.name}</div>
-      <div class="truncate" style="font-size:12px;color:var(--text-muted);">${l.venue}</div></div>
+      <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">${sf.name}</div><div class="truncate" style="font-size:12px;color:var(--text-muted);">${l.venue}</div></div>
       ${l.checkOut?'<span class="badge badge-gray">Out '+l.checkOut+'</span>':'<span class="badge badge-green">In '+l.checkIn+'</span>'}
     </div>`;
   }).join(''):'<div class="empty"><p>No check-ins today yet</p></div>';
-  $('dashEvents').innerHTML=upEv.length?upEv.slice(0,4).map(ev=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--divider);">
-      <div style="width:8px;height:8px;border-radius:50%;background:${ev.company==='wedding'?'var(--wedding-color)':'var(--grover-color)'};flex-shrink:0;"></div>
-      <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ev.name}</div>
-      <div style="font-size:12px;color:var(--text-muted);">${ev.venue} · ${fmtDate(ev.date)}</div></div>
-      ${compBadge(ev.company)}
-    </div>`).join(''):'<div class="empty"><p>No upcoming events</p></div>';
+  // Staff overview
+  $('dashStaffOverview').innerHTML=S.staff.filter(s=>s.status==='active').map(sf=>{
+    const isIn=S.logs.some(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&!l.checkOut);
+    const isDone=S.logs.some(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&l.checkOut);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--divider);">
+      <div class="av" style="background:${sf.color};width:32px;height:32px;font-size:12px;">${ini(sf.name)}</div>
+      <div style="flex:1;"><div style="font-weight:600;font-size:13px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
+      ${isIn?'<span class="badge badge-green">On Duty</span>':isDone?'<span class="badge badge-gray">Done</span>':'<span class="badge badge-orange">Off</span>'}
+    </div>`;
+  }).join('');
   lucide.createIcons();
 }
 
-// ===== CHECK-IN CARDS =====
-function renderCheckin(){
+// ===== STATUS BOARD =====
+function renderStatusBoard(){
   const td=today();
-  const grid=$('checkinGrid');
-  const actSf=S.staff.filter(s=>s.status==='active');
-  if(!actSf.length){grid.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><h3>No Staff</h3><p>Add staff members first</p></div>';return;}
-  grid.innerHTML=actSf.map(sf=>{
-    const log=S.logs.find(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&!l.checkOut);
-    const done=S.logs.find(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&l.checkOut);
-    const isIn=!!log; const isDone=!!done&&!isIn;
-    return `<div class="ci-card ${isIn?'active-card':''}">
-      <div class="ci-card-top">
-        <div class="av av-lg" style="background:${sf.color};">${ini(sf.name)}</div>
-        <div class="ci-info"><div class="ci-name">${sf.name}</div><div class="ci-role">${sf.role}</div></div>
-        ${isIn?'<span class="badge badge-green">Active</span>':isDone?'<span class="badge badge-gray">Done</span>':'<span class="badge badge-orange">Not In</span>'}
+  $('statusDate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const onDuty=S.staff.filter(s=>s.status==='active'&&S.logs.some(l=>l.staffId===s.id&&l.date===td&&l.checkIn&&!l.checkOut));
+  const offDuty=S.staff.filter(s=>s.status==='active'&&!S.logs.some(l=>l.staffId===s.id&&l.date===td&&l.checkIn&&!l.checkOut));
+  const makeCard=(sf,isOn)=>{
+    const log=S.logs.find(l=>l.staffId===sf.id&&l.date===td&&l.checkIn);
+    return `<div class="status-card ${isOn?'on-duty':'off-duty'}">
+      <div class="av" style="background:${sf.color};width:36px;height:36px;font-size:13px;flex-shrink:0;">${ini(sf.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:13px;">${sf.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${sf.role}</div>
+        ${log?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">In: ${log.checkIn}${log.checkOut?' · Out: '+log.checkOut:''}</div>`:''}
+        ${log&&isOn?`<div style="font-size:11px;color:var(--text-muted);">${log.venue}</div>`:''}
       </div>
-      ${log?`<div class="ci-times">
-        <div class="time-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> In: <strong>${log.checkIn}</strong> · ${log.venue}</div>
-        ${log.gpsAddr?`<div class="time-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${log.gpsAddr}</div>`:''}
-      </div>`:''}
-      <div class="ci-actions">
-        ${!isIn&&!isDone?`<button class="btn btn-primary w-full" onclick="openCheckinModal(${sf.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Check In</button>`:''}
-        ${isIn?`<button class="btn btn-success w-full" onclick="openCheckoutModal(${sf.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Check Out</button>`:''}
-        ${isDone?`<button class="btn btn-outline w-full" onclick="openCheckinModal(${sf.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.45"/></svg> New Check-In</button>`:''}
-      </div>
+      ${isOn?`<button class="btn btn-success btn-sm" onclick="openCheckoutModal(${sf.id})" style="font-size:11px;padding:4px 8px;">Check Out</button>`:''}
     </div>`;
-  }).join('');
+  };
+  $('statusGrid').innerHTML=`
+    <div>
+      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;"></span> On Duty (${onDuty.length})</div>
+      ${onDuty.length?onDuty.map(sf=>makeCard(sf,true)).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:12px 0;">No one checked in</div>'}
+    </div>
+    <div>
+      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--border);display:inline-block;"></span> Off Duty (${offDuty.length})</div>
+      ${offDuty.map(sf=>makeCard(sf,false)).join('')}
+    </div>`;
   lucide.createIcons();
 }
 
@@ -1134,32 +1036,41 @@ function renderCheckin(){
 function openCheckinModal(staffId){
   S.ciCompany=null; S.ciSelfieData=null; S.ciGps=null;
   ['ccGrover','ccWedding','ccOffice'].forEach(id=>$(id).className='company-card');
-  $('ciClientNameWrap').style.display='none';
-  $('ciClientName').value='';
-  $('ciStaff').innerHTML=S.staff.filter(s=>s.status==='active').map(s=>`<option value="${s.id}"${s.id===staffId?' selected':''}>${s.name} — ${s.role}</option>`).join('');
-  $('ciEvent').innerHTML='<option value="">— No Event —</option>'+S.events.map(e=>`<option value="${e.id}">${e.name} (${fmtDate(e.date)})</option>`).join('');
+  $('ciClientNameWrap').style.display='none'; $('ciClientName').value='';
+  $('ciStep2NonOffice').style.display='none';
+  $('ciStep2Office').style.display='none';
+  // Staff selector: hide for staff users (they are the staff)
+  const isStaff=isStaffUser();
+  $('ciStaffWrap').style.display=isStaff?'none':'block';
+  $('ciOfficeStaffWrap').style.display=isStaff?'none':'block';
+  if(!isStaff){
+    const opts=S.staff.filter(s=>s.status==='active').map(s=>`<option value="${s.id}"${s.id===staffId?' selected':''}>${s.name} — ${s.role}</option>`).join('');
+    $('ciStaff').innerHTML=opts;
+    $('ciOfficeStaff').innerHTML=opts;
+  }
   $('ciTime').value=nowTime();
-  $('ciVenue').value='';
-  $('ciNotes').value='';
+  $('ciOfficeTime').value=nowTime();
+  $('ciVenue').value=''; $('ciNotes').value=''; $('ciOfficeNotes').value='';
   $('selfiePreview').style.display='none';
   $('selfiePrompt').style.display='block';
   $('selfieBox').className='selfie-box';
   $('gpsStatusWrap').style.display='none';
   openM('ciModal');
 }
+
 function selectCompany(c){
   S.ciCompany=c;
   $('ccGrover').className='company-card'+(c==='grover'?' selected-grover':'');
   $('ccWedding').className='company-card'+(c==='wedding'?' selected-wedding':'');
   $('ccOffice').className='company-card'+(c==='office'?' selected-office':'');
-  // Show client name only for wedding
   $('ciClientNameWrap').style.display=c==='wedding'?'block':'none';
   if(c!=='wedding') $('ciClientName').value='';
+  $('ciStep2NonOffice').style.display=c!=='office'?'block':'none';
+  $('ciStep2Office').style.display=c==='office'?'block':'none';
+  $('ciTime').value=nowTime();
+  $('ciOfficeTime').value=nowTime();
 }
-function ciEventChange(){
-  const evId=parseInt($('ciEvent').value);
-  if(evId){const ev=getEv(evId); if(ev){$('ciVenue').value=ev.venue; venueChanged();}}
-}
+
 function venueChanged(){
   const v=$('ciVenue').value.trim();
   if(!v){$('gpsStatusWrap').style.display='none';return;}
@@ -1173,19 +1084,17 @@ function venueChanged(){
       $('gpsBadge').className='gps-badge';
       $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> GPS Captured ✓';
       $('gpsCoords').textContent='Lat: '+pos.coords.latitude.toFixed(5)+' | Lng: '+pos.coords.longitude.toFixed(5);
-      lucide.createIcons();
-    },err=>{
+    },()=>{
       S.ciGps={lat:28.6139,lng:77.2090};
       $('gpsBadge').className='gps-badge';
       $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location Noted';
       $('gpsCoords').textContent='(Simulated) Delhi, India';
-      lucide.createIcons();
     });
   } else {
     S.ciGps={lat:28.6139,lng:77.2090};
     $('gpsBadge').className='gps-badge';
     $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location Noted';
-    $('gpsCoords').textContent='(Simulated)'; lucide.createIcons();
+    $('gpsCoords').textContent='(Simulated)';
   }
 }
 function triggerCamera(){$('selfieInput').click();}
@@ -1202,32 +1111,49 @@ function handleSelfie(e){
   };
   reader.readAsDataURL(file);
 }
+
 function submitCheckin(){
-  const staffId=parseInt($('ciStaff').value);
-  const evId=parseInt($('ciEvent').value)||null;
-  const venue=$('ciVenue').value.trim();
-  const notes=$('ciNotes').value.trim();
   if(!S.ciCompany){toast('Please select a duty type','err');return;}
-  if(S.ciCompany==='wedding'){
-    const cn=$('ciClientName').value.trim();
-    if(!cn){toast('Client name is required for Wedding Division','err');return;}
+  if(!S.ciSelfieData){toast('Selfie is mandatory','err');return;}
+  const isStaff=isStaffUser();
+  const staffId=isStaff?S.currentUser.staffId:parseInt(S.ciCompany==='office'?$('ciOfficeStaff').value:$('ciStaff').value);
+  let venue,notes,checkInTime,clientName='';
+  if(S.ciCompany==='office'){
+    venue='Office';
+    notes=$('ciOfficeNotes').value.trim();
+    checkInTime=$('ciOfficeTime').value;
+  } else {
+    venue=$('ciVenue').value.trim();
+    notes=$('ciNotes').value.trim();
+    checkInTime=$('ciTime').value;
+    if(!venue){toast('Please enter a venue','err');return;}
+    if(S.ciCompany==='wedding'){
+      clientName=$('ciClientName').value.trim();
+      if(!clientName){toast('Client name is required for Wedding Division','err');return;}
+    }
   }
-  if(!venue){toast('Please enter a venue','err');return;}
-  if(!S.ciSelfieData){toast('Selfie is mandatory — please take a face photo','err');return;}
   const log={
-    id:S.nId.log++, staffId, eventId:evId, company:S.ciCompany,
-    clientName:S.ciCompany==='wedding'?$('ciClientName').value.trim():'',
-    venue, date:today(), checkIn:nowTime(), checkOut:'',
+    id:S.nId.log++,staffId,company:S.ciCompany,venue,clientName,
+    date:today(),checkIn:checkInTime,checkOut:'',
     selfie:S.ciSelfieData,
-    gpsLat:S.ciGps?S.ciGps.lat:null, gpsLng:S.ciGps?S.ciGps.lng:null,
+    gpsLat:S.ciGps?S.ciGps.lat:null,gpsLng:S.ciGps?S.ciGps.lng:null,
     gpsAddr:$('gpsCoords').textContent||'',
-    ciNotes:notes, coNotes:'', copyName:'', copyPhone:'', workTypes:[]
+    ciNotes:notes,coNotes:'',copyName:'',copyPhone:'',
+    workTypes:[],prints:0,printSize:''
   };
   S.logs.push(log);
   closeM('ciModal');
   const sf=getSf(staffId);
-  toast(sf.name+' checked in at '+venue+' — '+log.checkIn);
-  if(isStaffUser()) renderStaffPortal(); else renderCheckin();
+  if(isStaff){
+    // Show success screen
+    $('portalActionArea').style.display='none';
+    $('checkinSuccess').classList.add('show');
+    $('successMsg').textContent='Checked in at '+(S.ciCompany==='office'?'Office':venue)+' — '+checkInTime;
+    renderStaffPortal();
+  } else {
+    toast((sf?sf.name:'Staff')+' checked in — '+checkInTime);
+    renderStatusBoard();
+  }
 }
 
 // ===== CHECKOUT MODAL =====
@@ -1237,51 +1163,77 @@ function openCheckoutModal(staffId){
   if(!log){toast('No active check-in found','err');return;}
   S.coLogId=log.id;
   const sf=getSf(staffId);
-  $('coStaffName').textContent=sf.name;
+  $('coStaffName').textContent=sf?sf.name:'';
   $('coTime').value=nowTime();
   $('coNotes').value='';
-  $('coCopyName').value='';
-  $('coCopyPhone').value='';
-  $('groverCopySection').style.display=log.company==='grover'?'block':'none';
-  // Render work type checkboxes
-  $('coWorkTypes').innerHTML=S.workTypes.map((wt,i)=>`
-    <label style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;transition:.15s;user-select:none;" id="wtLabel_${i}">
-      <input type="checkbox" value="${wt}" id="wt_${i}" onchange="toggleWtChip(${i})" style="display:none;">
-      ${wt}
-    </label>`).join('');
+  $('coCopyName').value=''; $('coCopyPhone').value='';
+  $('coOfficeWarning').style.display='none';
+  // Office: check hours
+  if(log.company==='office'){
+    $('coWorkTypesSection').style.display='none';
+    $('groverCopySection').style.display='none';
+    const mins=dur(log.checkIn,nowTime());
+    if(mins!==null&&mins<S.standardHours*60){
+      $('coOfficeWarning').style.display='block';
+    }
+  } else {
+    $('coWorkTypesSection').style.display='block';
+    // Render work type chips
+    $('coWorkTypes').innerHTML=S.workTypes.map((wt,i)=>`
+      <div class="wt-chip" id="wt_${i}" onclick="toggleWtChip(${i},'${wt}')">${wt}</div>`).join('');
+    $('coPhotboothSection').style.display='none';
+    $('coPrints').value=''; $('coPrintSize').value='';
+    // Grover copy section: shown only if NOT photobooth selected (handled dynamically)
+    $('groverCopySection').style.display=log.company==='grover'?'block':'none';
+  }
   openM('coModal');
 }
-function toggleWtChip(i){
-  const cb=$('wt_'+i); const lb=$('wtLabel_'+i);
-  if(cb.checked){ lb.style.background='var(--primary)'; lb.style.color='#fff'; lb.style.borderColor='var(--primary)'; }
-  else { lb.style.background=''; lb.style.color=''; lb.style.borderColor=''; }
+
+function toggleWtChip(i,wt){
+  const el=$('wt_'+i);
+  el.classList.toggle('selected');
+  // Show/hide photobooth section
+  const pbSelected=S.workTypes.some((w,idx)=>w.toLowerCase()==='photobooth'&&$('wt_'+idx)?.classList.contains('selected'));
+  $('coPhotboothSection').style.display=pbSelected?'block':'none';
+  // Hide data copy if photobooth selected (Grover)
+  const log=S.logs.find(l=>l.id===S.coLogId);
+  if(log&&log.company==='grover'){
+    $('groverCopySection').style.display=pbSelected?'none':'block';
+  }
 }
+
 function submitCheckout(){
   const log=S.logs.find(l=>l.id===S.coLogId);
   if(!log){toast('Log not found','err');return;}
-  // Work types — required
-  const selected=S.workTypes.filter((wt,i)=>$('wt_'+i)&&$('wt_'+i).checked);
-  if(!selected.length){toast('Please select at least one work type','err');return;}
-  log.workTypes=selected;
-  if(log.company==='grover'){
-    const cn=$('coCopyName').value.trim();
-    const cp=$('coCopyPhone').value.trim();
-    if(!cn||!cp){toast('Please enter data copy person name & phone (required for Grover events)','err');return;}
-    log.copyName=cn; log.copyPhone=cp;
+  if(log.company!=='office'){
+    const selected=S.workTypes.filter((wt,i)=>$('wt_'+i)?.classList.contains('selected'));
+    if(!selected.length){toast('Please select at least one work type','err');return;}
+    log.workTypes=selected;
+    const pbSelected=selected.some(w=>w.toLowerCase()==='photobooth');
+    if(pbSelected){
+      log.prints=parseInt($('coPrints').value||'0',10);
+      log.printSize=$('coPrintSize').value.trim();
+    }
+    if(log.company==='grover'&&!pbSelected){
+      const cn=$('coCopyName').value.trim(),cp=$('coCopyPhone').value.trim();
+      if(!cn||!cp){toast('Data copy details required for Grover events','err');return;}
+      log.copyName=cn; log.copyPhone=cp;
+    }
   }
-  log.checkOut=nowTime();
+  // Midnight crossing: if checkout < checkin, it's next day but log stays on checkin date
+  log.checkOut=$('coTime').value;
   log.coNotes=$('coNotes').value.trim();
   closeM('coModal');
   const sf=getSf(log.staffId);
   const d=dur(log.checkIn,log.checkOut);
-  toast(sf.name+' checked out — '+fmtDur(d));
-  if(isStaffUser()) renderStaffPortal(); else renderCheckin();
+  toast((sf?sf.name:'Staff')+' checked out — '+fmtDur(d));
+  if(isStaffUser()) renderStaffPortal(); else renderStatusBoard();
 }
 
 // ===== STAFF =====
-function renderStaff(){ if(isStaffUser()){ $('staffTbody').innerHTML='<tr><td colspan=6><div class="empty"><h3>Access Restricted</h3><p>Staff cannot edit details.</p></div></td></tr>'; return; }
-  // Sync role filter options
-  const rfEl=$('staffRoleF'); const curRole=rfEl.value;
+function renderStaff(){
+  const rfEl=$('staffRoleF');
+  const curRole=rfEl.value;
   rfEl.innerHTML='<option value="">All Roles</option>'+S.roles.map(r=>`<option${r===curRole?' selected':''}>${r}</option>`).join('');
   const q=($('staffSearch').value||'').toLowerCase();
   const rf=rfEl.value;
@@ -1297,8 +1249,8 @@ function renderStaff(){ if(isStaffUser()){ $('staffTbody').innerHTML='<tr><td co
         <div><div style="font-weight:600;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.email||'—'}</div></div></div></td>
       <td><span class="badge badge-gray">${sf.role}</span></td>
       <td style="font-size:13px;color:var(--text-muted);">${sf.phone||'—'}</td>
-      <td>${isIn?'<span class="badge badge-green">Checked In</span>':sf.status==='active'?'<span class="badge badge-blue">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td>
-      <td style="font-variant-numeric:tabular-nums;">${total}</td>
+      <td>${isIn?'<span class="badge badge-green">On Duty</span>':sf.status==='active'?'<span class="badge badge-blue">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td>
+      <td>${total}</td>
       <td><div style="display:flex;gap:6px;">
         <button class="btn btn-outline btn-sm" onclick="editStaff(${sf.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteStaff(${sf.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
@@ -1306,6 +1258,10 @@ function renderStaff(){ if(isStaffUser()){ $('staffTbody').innerHTML='<tr><td co
     </tr>`;
   }).join('');
   lucide.createIcons();
+}
+function populateRoleSelect(val){
+  const sel=$('sfRole'); if(!sel) return;
+  sel.innerHTML=S.roles.map(r=>`<option${r===val?' selected':''}>${r}</option>`).join('');
 }
 function openAddStaff(){
   S.editSfId=null;
@@ -1322,8 +1278,7 @@ function editStaff(id){
   $('sfSaveBtn').textContent='Update';
   $('sfName').value=sf.name; populateRoleSelect(sf.role);
   $('sfPhone').value=sf.phone||''; $('sfEmail').value=sf.email||'';
-  $('sfPassword').value=sf.password||'';
-  $('sfStatus').value=sf.status;
+  $('sfPassword').value=sf.password||''; $('sfStatus').value=sf.status;
   openM('sfModal');
 }
 function submitStaff(){
@@ -1332,78 +1287,13 @@ function submitStaff(){
   const d={name,role:$('sfRole').value,phone:$('sfPhone').value.trim(),email:$('sfEmail').value.trim(),status:$('sfStatus').value};
   const pw=$('sfPassword').value.trim(); if(pw) d.password=pw;
   if(S.editSfId){Object.assign(getSf(S.editSfId),d);toast('Staff updated');}
-  else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];S.staff.push(d);toast(name+' added to team');}
+  else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];d.password=d.password||'123';S.staff.push(d);toast(name+' added');}
   closeM('sfModal');renderStaff();
 }
 function deleteStaff(id){
   if(!confirm('Remove this staff member?')) return;
   S.staff=S.staff.filter(s=>s.id!==id);
   toast('Staff removed');renderStaff();
-}
-
-// ===== EVENTS =====
-function renderEvents(){ if(isStaffUser()){ $('eventsGrid').innerHTML='<div class="empty"><h3>Access Restricted</h3><p>Staff cannot edit events.</p></div>'; return; }
-  const tab=S.evTab;
-  const evs=S.events.filter(e=>tab==='all'||e.company===tab).sort((a,b)=>a.date.localeCompare(b.date));
-  const grid=$('eventsGrid');
-  if(!evs.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><h3>No events</h3><p>Add your first event</p></div>';lucide.createIcons();return;}
-  grid.innerHTML=evs.map(ev=>{
-    const ac=S.logs.filter(l=>l.eventId===ev.id).length;
-    return `<div class="card" style="overflow:hidden;">
-      <div style="height:4px;background:${ev.company==='wedding'?'var(--wedding-color)':'var(--grover-color)'};"></div>
-      <div style="padding:16px;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">
-          <div><div style="font-weight:700;font-size:14px;margin-bottom:5px;">${ev.name}</div>${compBadge(ev.company)}</div>
-          <div style="display:flex;gap:4px;">
-            <button class="btn btn-ghost btn-sm" onclick="editEvent(${ev.id})" title="Edit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})" title="Delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-muted);">
-          <span>📍 ${ev.venue}</span>
-          <span>📅 ${fmtDate(ev.date)}</span>
-          ${ev.client?`<span>👤 ${ev.client}</span>`:''}
-          ${ev.notes?`<span style="background:var(--surface2);padding:4px 8px;border-radius:5px;margin-top:4px;">${ev.notes}</span>`:''}
-        </div>
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--divider);font-size:12px;color:var(--text-muted);">${ac} attendance records</div>
-      </div>
-    </div>`;
-  }).join('');
-  lucide.createIcons();
-}
-function switchEvTab(t,el){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  el.classList.add('active'); S.evTab=t; renderEvents();
-}
-function openAddEvent(){
-  S.editEvId=null;
-  $('evModalTitle').textContent='Add Event';
-  $('evSaveBtn').textContent='Save Event';
-  ['evName','evVenue','evClient','evNotes'].forEach(i=>$(i).value='');
-  $('evCompany').value='grover'; $('evDate').value='';
-  openM('evModal');
-}
-function editEvent(id){
-  const ev=getEv(id); S.editEvId=id;
-  $('evModalTitle').textContent='Edit Event'; $('evSaveBtn').textContent='Update';
-  $('evName').value=ev.name; $('evCompany').value=ev.company;
-  $('evDate').value=ev.date; $('evVenue').value=ev.venue;
-  $('evClient').value=ev.client||''; $('evNotes').value=ev.notes||'';
-  openM('evModal');
-}
-function submitEvent(){
-  const name=$('evName').value.trim(), venue=$('evVenue').value.trim(), date=$('evDate').value;
-  if(!name||!venue||!date){toast('Name, venue and date required','err');return;}
-  const d={name,company:$('evCompany').value,date,venue,client:$('evClient').value.trim(),notes:$('evNotes').value.trim()};
-  if(S.editEvId){Object.assign(getEv(S.editEvId),d);toast('Event updated');}
-  else{d.id=S.nId.event++;S.events.push(d);toast('Event added');}
-  closeM('evModal');renderEvents();
-}
-function deleteEvent(id){
-  if(!confirm('Delete this event?')) return;
-  S.events=S.events.filter(e=>e.id!==id);
-  S.logs=S.logs.filter(l=>l.eventId!==id);
-  toast('Event deleted');renderEvents();
 }
 
 // ===== LOGS =====
@@ -1413,7 +1303,7 @@ function renderLogs(){
   const df=$('logDateF').value;
   const filtered=S.logs.filter(l=>{
     const sf=getSf(l.staffId); if(!sf) return false;
-    if(q&&!sf.name.toLowerCase().includes(q)&&!l.venue.toLowerCase().includes(q)) return false;
+    if(q&&!sf.name.toLowerCase().includes(q)&&!(l.venue||'').toLowerCase().includes(q)) return false;
     if(cf&&l.company!==cf) return false;
     if(df&&l.date!==df) return false;
     return true;
@@ -1422,18 +1312,18 @@ function renderLogs(){
   if(!filtered.length){tbody.innerHTML='<tr><td colspan="10"><div class="empty"><p>No records found</p></div></td></tr>';return;}
   tbody.innerHTML=filtered.map(l=>{
     const sf=getSf(l.staffId); if(!sf) return '';
-    const ev=l.eventId?getEv(l.eventId):null;
     const d=dur(l.checkIn,l.checkOut);
+    const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
     return `<tr>
       <td><div class="staff-cell"><div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;">${ini(sf.name)}</div><span style="font-weight:600;">${sf.name}</span></div></td>
       <td>${compBadge(l.company)}</td>
-      <td style="font-size:13px;">${ev?ev.name:'<span class="text-muted">—</span>'}</td>
-      <td style="font-size:13px;max-width:140px;" class="truncate">${l.venue}</td>
+      <td style="font-size:13px;max-width:130px;" class="truncate">${l.venue}</td>
       <td style="font-size:12px;white-space:nowrap;">${fmtDate(l.date)}</td>
       <td><span class="badge badge-green">${l.checkIn||'—'}</span></td>
-      <td>${l.checkOut?'<span class="badge badge-gray">'+l.checkOut+'</span>':'<span class="badge badge-orange">Pending</span>'}</td>
-      <td style="font-size:13px;white-space:nowrap;">${fmtDur(d)}</td>
-      <td>${l.selfie?`<img src="${l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie('${l.id}')" title="View selfie">`:'<span class="text-muted text-xs">—</span>'}</td>
+      <td>${l.checkOut?'<span class="badge badge-gray">'+l.checkOut+'</span>':'<span class="badge badge-orange">Active</span>'}</td>
+      <td style="font-size:12px;">${fmtDur(d)}</td>
+      <td style="font-size:12px;max-width:120px;" class="truncate">${wt}</td>
+      <td>${l.selfie?`<img src="${l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
       <td>${l.gpsLat?`<button class="badge badge-green" style="cursor:pointer;border:none;" onclick="viewGps(${l.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>View</button>`:'<span class="text-muted text-xs">—</span>'}</td>
     </tr>`;
   }).join('');
@@ -1442,39 +1332,30 @@ function renderLogs(){
 function viewGps(logId){
   const l=S.logs.find(x=>x.id===logId); if(!l||!l.gpsLat) return;
   const sf=getSf(l.staffId);
-  $('gpsModalBody').innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="av" style="background:${sf.color};">${ini(sf.name)}</div>
-        <div><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.checkIn}</div></div>
-      </div>
-      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;">
-        <div><strong>Claimed Venue:</strong> ${l.venue}</div>
-        <div style="margin-top:6px;"><strong>GPS Coordinates:</strong> ${l.gpsLat.toFixed(5)}, ${l.gpsLng.toFixed(5)}</div>
-        ${l.gpsAddr?`<div style="margin-top:4px;"><strong>Location:</strong> ${l.gpsAddr}</div>`:''}
-      </div>
-      <a href="https://www.google.com/maps?q=${l.gpsLat},${l.gpsLng}" target="_blank" rel="noopener" class="btn btn-primary w-full"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Open in Google Maps</a>
-    </div>`;
+  $('gpsModalBody').innerHTML=`<div style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;"><div class="av" style="background:${sf.color};">${ini(sf.name)}</div><div><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)}</div></div></div>
+    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;"><div><strong>Venue:</strong> ${l.venue}</div><div style="margin-top:6px;"><strong>GPS:</strong> ${l.gpsLat.toFixed(5)}, ${l.gpsLng.toFixed(5)}</div>${l.gpsAddr?`<div style="margin-top:4px;"><strong>Location:</strong> ${l.gpsAddr}</div>`:''}</div>
+    <a href="https://www.google.com/maps?q=${l.gpsLat},${l.gpsLng}" target="_blank" rel="noopener" class="btn btn-primary w-full" style="justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Open in Google Maps</a>
+  </div>`;
   openM('gpsModal');
 }
 function viewSelfie(logId){
   const l=S.logs.find(x=>x.id==logId); if(!l||!l.selfie) return;
   const sf=getSf(l.staffId);
-  $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${l.selfie}" style="width:180px;height:180px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;"><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.checkIn}</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${l.venue}</div></div>`;
+  $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${l.selfie}" style="width:180px;height:180px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;"><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue}</div></div>`;
   $('gpsModal').querySelector('.modal-title').textContent='Check-In Selfie';
   openM('gpsModal');
 }
 
 // ===== EXPORT CSV =====
 function exportCSV(){
-  const rows=[['Staff','Role','Company','Event','Venue','Date','Check-In','Check-Out','Duration(mins)','GPS Lat','GPS Lng','Copied By','Copy Phone','CI Notes','CO Notes']];
+  const rows=[['Staff','Role','Duty','Client','Venue','Date','Check-In','Check-Out','Duration(mins)','Work Done','Prints','Print Size','GPS Lat','GPS Lng','Copied By','Copy Phone','CI Notes','CO Notes']];
   S.logs.forEach(l=>{
     const sf=getSf(l.staffId); if(!sf) return;
-    const ev=l.eventId?getEv(l.eventId):null;
     const d=dur(l.checkIn,l.checkOut);
-    rows.push([sf.name,sf.role,l.company,ev?ev.name:'',l.venue,l.date,l.checkIn,l.checkOut||'',d||'',l.gpsLat||'',l.gpsLng||'',l.copyName||'',l.copyPhone||'',l.ciNotes||'',l.coNotes||'']);
+    rows.push([sf.name,sf.role,l.company,l.clientName||'',l.venue,l.date,l.checkIn,l.checkOut||'',d||'',(l.workTypes||[]).join(';'),l.prints||'',l.printSize||'',l.gpsLat||'',l.gpsLng||'',l.copyName||'',l.copyPhone||'',l.ciNotes||'',l.coNotes||'']);
   });
-  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'\"')+'"').join(',')).join('\n');
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download='fotovision_attendance.csv'; a.click();
@@ -1483,7 +1364,7 @@ function exportCSV(){
 
 // ===== REPORTS =====
 function renderReports(){
-  // Staff hours + overtime
+  $('stdHrsLabel').textContent=S.standardHours;
   const sfData=S.staff.filter(s=>s.status==='active').map(sf=>{
     const logs=S.logs.filter(l=>l.staffId===sf.id);
     const totalMins=logs.reduce((acc,l)=>acc+(dur(l.checkIn,l.checkOut)||0),0);
@@ -1498,231 +1379,100 @@ function renderReports(){
       <div style="flex:1;min-width:0;">
         <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
           <span style="font-size:13px;font-weight:600;">${d.sf.name}</span>
-          <span style="font-size:12px;font-weight:700;color:${d.ot>0?'var(--danger)':'var(--text-muted)'};">${fmtDur(d.totalMins)}${d.ot>0?' <span style="color:var(--danger)">(+'+fmtDur(d.ot)+' OT)</span>':''}</span>
+          <span style="font-size:12px;font-weight:700;color:${d.ot>0?'var(--danger)':'var(--text-muted)'};">${fmtDur(d.totalMins)}${d.ot>0?' (+'+fmtDur(d.ot)+' OT)':''}</span>
         </div>
         <div class="ot-bar"><div class="ot-fill ${d.ot>0?'over':''}" style="width:${Math.max((d.totalMins/maxMins)*100,3)}%;"></div></div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${d.count} shifts · ${d.ot>0?`<strong style="color:var(--danger)">Overtime eligible</strong>`:'No overtime'}</div>
       </div>
     </div>`).join('');
-
-  // Company breakdown
-  const groverEv=S.events.filter(e=>e.company==='grover').length;
-  const weddingEv=S.events.filter(e=>e.company==='wedding').length;
-  const groverLogs=S.logs.filter(l=>l.company==='grover').length;
-  const weddingLogs=S.logs.filter(l=>l.company==='wedding').length;
-  $('companyReport').innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <div style="padding:14px;background:var(--primary-light);border-radius:var(--radius-sm);border-left:4px solid var(--grover-color);">
-        <div style="font-weight:700;margin-bottom:4px;">🎬 Grover Audio Visual Services</div>
-        <div style="font-size:13px;color:var(--text-muted);">${groverEv} events · ${groverLogs} attendance records</div>
-      </div>
-      <div style="padding:14px;background:var(--wedding-light);border-radius:var(--radius-sm);border-left:4px solid var(--wedding-color);">
-        <div style="font-weight:700;margin-bottom:4px;">💍 Wedding Division</div>
-        <div style="font-size:13px;color:var(--text-muted);">${weddingEv} events · ${weddingLogs} attendance records</div>
-      </div>
-    </div>`;
-
-  // Top venues
+  const groverL=S.logs.filter(l=>l.company==='grover').length;
+  const weddingL=S.logs.filter(l=>l.company==='wedding').length;
+  const officeL=S.logs.filter(l=>l.company==='office').length;
+  $('companyReport').innerHTML=`<div style="display:flex;flex-direction:column;gap:12px;">
+    <div style="padding:12px;background:var(--primary-light);border-radius:var(--radius-sm);border-left:4px solid var(--primary);"><div style="font-weight:700;margin-bottom:3px;">🎬 Grover Audio Visual</div><div style="font-size:13px;color:var(--text-muted);">${groverL} attendance records</div></div>
+    <div style="padding:12px;background:var(--wedding-light);border-radius:var(--radius-sm);border-left:4px solid var(--wedding-color);"><div style="font-weight:700;margin-bottom:3px;">💍 Wedding Division</div><div style="font-size:13px;color:var(--text-muted);">${weddingL} attendance records</div></div>
+    <div style="padding:12px;background:var(--purple-light);border-radius:var(--radius-sm);border-left:4px solid var(--purple);"><div style="font-weight:700;margin-bottom:3px;">🏢 Office Duty</div><div style="font-size:13px;color:var(--text-muted);">${officeL} attendance records</div></div>
+  </div>`;
   const venues={};
   S.logs.forEach(l=>{venues[l.venue]=(venues[l.venue]||0)+1;});
   const sv=Object.entries(venues).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  $('venueReport').innerHTML=sv.length?sv.map(([v,c])=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--divider);">
-      <span style="font-size:14px;">📍</span>
-      <span style="flex:1;font-size:13px;">${v}</span>
-      <span class="badge badge-gray">${c} visit${c>1?'s':''}</span>
-    </div>`).join(''):'<p style="font-size:13px;color:var(--text-muted);">No data yet</p>';
-
-  // Copy log (Grover only)
+  $('venueReport').innerHTML=sv.length?sv.map(([v,c])=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--divider);"><span style="font-size:14px;">📍</span><span style="flex:1;font-size:13px;">${v}</span><span class="badge badge-gray">${c} visit${c>1?'s':''}</span></div>`).join(''):'<p style="font-size:13px;color:var(--text-muted);">No data yet</p>';
   const copyLogs=S.logs.filter(l=>l.company==='grover'&&l.copyName);
   $('copyLogTbody').innerHTML=copyLogs.length?copyLogs.map(l=>{
-    const sf=getSf(l.staffId); const ev=l.eventId?getEv(l.eventId):null;
-    return `<tr>
-      <td><div class="staff-cell"><div class="av" style="background:${sf?sf.color:'#ccc'};width:28px;height:28px;font-size:11px;">${sf?ini(sf.name):'?'}</div>${sf?sf.name:'—'}</div></td>
-      <td>${ev?ev.name:'—'}</td>
-      <td>${fmtDate(l.date)}</td>
-      <td style="font-weight:600;">${l.copyName}</td>
-      <td>${l.copyPhone}</td>
-    </tr>`;}).join(''):'<tr><td colspan="5"><div class="empty"><p>No data copy records yet</p></div></td></tr>';
-  lucide.createIcons();
-}
-
-// ===== STAFF PORTAL =====
-function renderStaffPortal(){
-  const sf = getSf(S.currentUser.staffId);
-  if(!sf) return;
-  const td = today();
-
-  // Greeting
-  $('portalGreeting').textContent = 'Hello, ' + sf.name.split(' ')[0] + ' 👋';
-  $('portalRole').textContent = sf.role + ' · ' + new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
-
-  // Check if currently checked in today
-  const activeLog = S.logs.find(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&!l.checkOut);
-  const doneToday = S.logs.filter(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&l.checkOut).length;
-
-  let actionHTML = '';
-  if(activeLog){
-    // Currently checked in — show status + big checkout button
-    actionHTML += `
-      <div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius-lg);padding:16px 20px;display:flex;align-items:center;gap:12px;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-        <div>
-          <div style="font-weight:700;color:var(--success);">Checked In</div>
-          <div style="font-size:13px;color:var(--text-muted);">Since ${activeLog.checkIn} · ${activeLog.venue}</div>
-        </div>
-      </div>
-      <button class="portal-btn portal-btn-out" onclick="openCheckoutModal(${sf.id})">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Check Out
-      </button>`;
-  } else {
-    // Not checked in — big check-in button
-    actionHTML += `
-      <button class="portal-btn portal-btn-in" onclick="openCheckinModal(${sf.id})">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-        Check In
-      </button>`;
-    if(doneToday>0){
-      actionHTML += `
-        <button class="portal-btn portal-btn-done" style="font-size:14px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          ${doneToday} shift${doneToday>1?'s':''} completed today
-        </button>`;
-    }
-  }
-  $('portalActionArea').innerHTML = actionHTML;
-
-  // This month's logs
-  const now = new Date();
-  const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  $('portalMonthLabel').textContent = now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
-  const myLogs = S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym)).sort((a,b)=>b.date.localeCompare(a.date)||b.checkIn.localeCompare(a.checkIn));
-  $('portalShiftCount').textContent = myLogs.length+' shift'+(myLogs.length!==1?'s':'');
-
-  $('portalLogList').innerHTML = myLogs.length ? myLogs.map(l=>{
-    const d = dur(l.checkIn,l.checkOut);
-    const compLabel = l.company==='grover'?'🎬 Grover A/V':l.company==='wedding'?'💍 Wedding':'🏢 Office';
-    const wtLabel = (l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
-    return `<div style="padding:12px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:flex-start;gap:12px;">
-      <div style="width:38px;height:38px;border-radius:var(--radius-sm);background:${l.checkOut?'var(--surface2)':'var(--success-light)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${l.checkOut?'var(--text-faint)':'var(--success)'}" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:13px;">${fmtDate(l.date)} <span style="font-weight:400;color:var(--text-muted);">· ${compLabel}</span></div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${l.venue}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Work: ${wtLabel}</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:12px;font-weight:600;">${l.checkIn}${l.checkOut?' → '+l.checkOut:' →  <span style="color:var(--success)">Active</span>'}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${d?fmtDur(d):'In progress'}</div>
-      </div>
-    </div>`;
-  }).join('') : '<div class="empty" style="padding:32px;"><p>No shifts this month yet</p></div>';
-
+    const sf=getSf(l.staffId);
+    return `<tr><td><div class="staff-cell"><div class="av" style="background:${sf?sf.color:'#ccc'};width:28px;height:28px;font-size:11px;">${sf?ini(sf.name):'?'}</div>${sf?sf.name:'—'}</div></td><td>${fmtDate(l.date)}</td><td>${l.venue}</td><td style="font-weight:600;">${l.copyName}</td><td>${l.copyPhone}</td></tr>`;
+  }).join(''):'<tr><td colspan="5"><div class="empty"><p>No data copy records yet</p></div></td></tr>';
   lucide.createIcons();
 }
 
 // ===== SETTINGS =====
-function populateRoleSelect(currentVal){
-  const sel = $('sfRole'); if(!sel) return;
-  sel.innerHTML = S.roles.map(r=>`<option${r===currentVal?' selected':''}>${r}</option>`).join('');
-}
-
 function renderSettings(){
-  const usedRoles = new Set(S.staff.map(s=>s.role));
-  $('roleCount').textContent = S.roles.length + ' role' + (S.roles.length!==1?'s':'');
-  $('rolesList').innerHTML = S.roles.length ? S.roles.map((r,i)=>{
-    const inUse = usedRoles.has(r);
-    const staffCount = S.staff.filter(s=>s.role===r).length;
+  const usedRoles=new Set(S.staff.map(s=>s.role));
+  $('roleCount').textContent=S.roles.length+' role'+(S.roles.length!==1?'s':'');
+  $('rolesList').innerHTML=S.roles.length?S.roles.map((r,i)=>{
+    const inUse=usedRoles.has(r),cnt=S.staff.filter(s=>s.role===r).length;
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
       <span style="flex:1;font-size:14px;font-weight:500;">${r}</span>
-      ${inUse?`<span class="badge badge-blue">${staffCount} staff</span>`:''}
-      <button onclick="deleteRole(${i})" class="btn btn-danger btn-sm" ${inUse?'disabled':''} style="${inUse?'opacity:.4;cursor:not-allowed;':''}">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Delete
-      </button>
+      ${inUse?`<span class="badge badge-blue">${cnt} staff</span>`:''}
+      <button onclick="deleteRole(${i})" class="btn btn-danger btn-sm" ${inUse?'disabled':''} style="${inUse?'opacity:.4;cursor:not-allowed;':''}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete</button>
     </div>`;
-  }).join('') : '<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No roles defined yet.</div>';
-
-  // Work types
-  $('wtCount').textContent = S.workTypes.length + ' type' + (S.workTypes.length!==1?'s':'');
-  $('wtList').innerHTML = S.workTypes.length ? S.workTypes.map((wt,i)=>`
+  }).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No roles defined.</div>';
+  $('wtCount').textContent=S.workTypes.length+' type'+(S.workTypes.length!==1?'s':'');
+  $('wtList').innerHTML=S.workTypes.length?S.workTypes.map((wt,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
       <span style="flex:1;font-size:14px;font-weight:500;">${wt}</span>
-      <button onclick="deleteWorkType(${i})" class="btn btn-danger btn-sm">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Delete
-      </button>
-    </div>`).join('') : '<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No work types defined yet.</div>';
-  $('stdHrsInput').value = S.standardHours;
-  $('stdHrsDisplay').textContent = S.standardHours;
-  $('stdHrsMsg').style.display = 'none';
+      <button onclick="deleteWorkType(${i})" class="btn btn-danger btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete</button>
+    </div>`).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No work types defined.</div>';
+  $('stdHrsInput').value=S.standardHours; $('stdHrsDisplay').textContent=S.standardHours;
+  $('stdHrsMsg').style.display='none';
   ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
   $('pwError').style.display='none';
   lucide.createIcons();
 }
-
 function addRole(){
-  const input = $('newRoleInput');
-  const val = (input.value||'').trim();
-  if(!val){ toast('Enter a role name','err'); return; }
-  if(S.roles.some(r=>r.toLowerCase()===val.toLowerCase())){ toast('Role already exists','err'); return; }
-  S.roles.push(val);
-  input.value = '';
-  renderSettings();
-  toast('"'+val+'" role added');
+  const input=$('newRoleInput'),val=(input.value||'').trim();
+  if(!val){toast('Enter a role name','err');return;}
+  if(S.roles.some(r=>r.toLowerCase()===val.toLowerCase())){toast('Role already exists','err');return;}
+  S.roles.push(val); input.value=''; renderSettings(); toast('"'+val+'" added');
 }
-
-function deleteRole(index){
-  const role = S.roles[index];
-  if(S.staff.some(s=>s.role===role)){ toast('Reassign staff before deleting this role','err'); return; }
-  if(!confirm('Delete role "'+role+'"?')) return;
-  S.roles.splice(index,1);
-  renderSettings();
-  toast('"'+role+'" deleted');
+function deleteRole(i){
+  if(S.staff.some(s=>s.role===S.roles[i])){toast('Reassign staff first','err');return;}
+  if(!confirm('Delete role "'+S.roles[i]+'"?')) return;
+  S.roles.splice(i,1); renderSettings(); toast('Role deleted');
 }
-
 function addWorkType(){
-  const input = $('newWtInput');
-  const val = (input.value||'').trim();
-  if(!val){ toast('Enter a work type name','err'); return; }
-  if(S.workTypes.some(w=>w.toLowerCase()===val.toLowerCase())){ toast('Work type already exists','err'); return; }
-  S.workTypes.push(val);
-  input.value = '';
-  renderSettings();
-  toast('"'+val+'" work type added');
+  const input=$('newWtInput'),val=(input.value||'').trim();
+  if(!val){toast('Enter a work type','err');return;}
+  if(S.workTypes.some(w=>w.toLowerCase()===val.toLowerCase())){toast('Already exists','err');return;}
+  S.workTypes.push(val); input.value=''; renderSettings(); toast('"'+val+'" added');
 }
-function deleteWorkType(index){
-  if(!confirm('Delete work type "'+S.workTypes[index]+'"?')) return;
-  S.workTypes.splice(index,1);
-  renderSettings();
-  toast('Work type deleted');
+function deleteWorkType(i){
+  if(!confirm('Delete "'+S.workTypes[i]+'"?')) return;
+  S.workTypes.splice(i,1); renderSettings(); toast('Deleted');
 }
-
 function saveStdHours(){
-  const val = parseInt($('stdHrsInput').value,10);
-  if(!val||val<1||val>24){ toast('Enter a value between 1 and 24','err'); return; }
-  S.standardHours = val;
-  $('stdHrsDisplay').textContent = val;
-  const msg = $('stdHrsMsg'); msg.style.display='inline';
-  setTimeout(()=>msg.style.display='none', 2500);
+  const val=parseInt($('stdHrsInput').value,10);
+  if(!val||val<1||val>24){toast('Enter 1–24','err');return;}
+  S.standardHours=val; $('stdHrsDisplay').textContent=val;
+  const m=$('stdHrsMsg'); m.style.display='inline'; setTimeout(()=>m.style.display='none',2500);
 }
-
 function changeAdminPassword(){
-  const errEl = $('pwError'); errEl.style.display='none';
-  const cur=($('pwCurrent').value||'').trim();
-  const nw=($('pwNew').value||'').trim();
-  const cfm=($('pwConfirm').value||'').trim();
-  if(!cur||!nw||!cfm){ errEl.textContent='All three fields are required.'; errEl.style.display='block'; return; }
-  if(cur!==S.admin.password){ errEl.textContent='Current password is incorrect.'; errEl.style.display='block'; return; }
-  if(nw.length<4){ errEl.textContent='New password must be at least 4 characters.'; errEl.style.display='block'; return; }
-  if(nw!==cfm){ errEl.textContent='New passwords do not match.'; errEl.style.display='block'; return; }
-  S.admin.password=nw;
-  ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
-  toast('Admin password updated successfully');
+  const e=$('pwError'); e.style.display='none';
+  const cur=($('pwCurrent').value||'').trim(),nw=($('pwNew').value||'').trim(),cfm=($('pwConfirm').value||'').trim();
+  if(!cur||!nw||!cfm){e.textContent='All fields required.';e.style.display='block';return;}
+  if(cur!==S.admin.password){e.textContent='Current password incorrect.';e.style.display='block';return;}
+  if(nw.length<4){e.textContent='New password must be 4+ characters.';e.style.display='block';return;}
+  if(nw!==cfm){e.textContent='Passwords do not match.';e.style.display='block';return;}
+  S.admin.password=nw; ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
+  toast('Admin password updated');
 }
 
+// ===== INIT =====
+function init(){
+  lucide.createIcons();
+  renderDash();
+}
+init();
 </script>
 </body>
 </html>
