@@ -349,9 +349,12 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     <span class="nav-label">Manage</span>
     <div class="nav-item" onclick="go('staff',this)"><i data-lucide="users"></i> Staff</div>
     <div class="nav-item" onclick="go('logs',this)"><i data-lucide="clipboard-list"></i> Attendance Log</div>
+    <span class="nav-label">Divisions</span>
+    <div class="nav-item" onclick="go('grover-duties',this)"><i data-lucide="film"></i> Grover Duties</div>
+    <div class="nav-item" onclick="go('wedding-duties',this)"><i data-lucide="heart"></i> Wedding Duties</div>
+    <div class="nav-item" onclick="go('office-duties',this)"><i data-lucide="building-2"></i> Office Duty</div>
     <span class="nav-label">Insights</span>
     <div class="nav-item" onclick="go('reports',this)"><i data-lucide="bar-chart-2"></i> Reports</div>
-    <div class="nav-item" onclick="go('billing',this)"><i data-lucide="receipt"></i> Grover Billing</div>
     <span class="nav-label">System</span>
     <div class="nav-item" onclick="go('settings',this)"><i data-lucide="settings"></i> Settings</div>
   </nav>
@@ -413,14 +416,25 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <button class="btn btn-outline" onclick="go('logs',document.querySelector('[onclick*=logs]'))"><i data-lucide="clipboard-list"></i> View Logs</button>
       </div>
       <div class="kpi-grid" id="kpiGrid"></div>
-      <div class="dash-grid">
-        <div class="card">
-          <div class="card-header"><span class="card-title">Today's Staff Activity</span><span class="badge badge-green" id="activeCount">0 active</span></div>
-          <div id="dashStaff"></div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">Today's Staff Activity</span><span class="badge badge-green" id="activeCount">0 active</span></div>
+        <div id="dashStaff"></div>
+      </div>
+      <!-- Grover Monthly Sales -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🎬 Grover A/V — Monthly Sales</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="groverSalesPrevMonth()"><i data-lucide="chevron-left"></i></button>
+            <span style="font-size:13px;font-weight:700;min-width:110px;text-align:center;" id="groverSalesMonthLabel"></span>
+            <button class="btn btn-ghost btn-sm" onclick="groverSalesNextMonth()"><i data-lucide="chevron-right"></i></button>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Staff Overview</span></div>
-          <div id="dashStaffOverview"></div>
+        <div class="card-body">
+          <div id="groverSalesKpi" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:18px;"></div>
+          <div id="groverSalesChart" style="margin-bottom:18px;"></div>
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;">Recent Activity</div>
+          <div id="groverSalesRecent"></div>
         </div>
       </div>
     </div>
@@ -445,7 +459,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <select class="form-select" style="width:auto;" id="staffRoleF" onchange="renderStaff()"><option value="">All Roles</option></select>
       </div>
       <div class="card"><div class="table-wrap">
-        <table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Status</th><th>Check-ins</th><th>Actions</th></tr></thead>
+        <table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Status</th><th>Check-ins</th><th>Leaves</th><th>Actions</th></tr></thead>
         <tbody id="staffTbody"></tbody></table>
       </div></div>
     </div>
@@ -469,24 +483,79 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 
     <!-- REPORTS -->
     <div class="view" id="view-reports">
-      <div class="page-header"><div><h1 class="page-title">Reports</h1><p class="page-sub">Attendance & overtime analytics</p></div></div>
-      <div class="dash-grid mb-4">
-        <div class="card">
-          <div class="card-header"><span class="card-title">Staff Hours & Overtime</span><span class="text-xs text-muted">Standard: <span id="stdHrsLabel">8</span>h/day</span></div>
-          <div id="staffReportList"></div>
-        </div>
-        <div class="card">
+      <div class="page-header"><div><h1 class="page-title">Reports</h1><p class="page-sub">Staff analytics & Grover billing</p></div></div>
+      <!-- Report tabs -->
+      <div class="tabs">
+        <div class="tab active" id="repTab0" onclick="switchReportTab(0)">Staff Report</div>
+        <div class="tab" id="repTab1" onclick="switchReportTab(1)">Grover Billing</div>
+      </div>
+
+      <!-- STAFF REPORT TAB -->
+      <div id="repStaffTab">
+        <!-- Duty Breakdown -->
+        <div class="card mb-4">
           <div class="card-header"><span class="card-title">Duty Breakdown</span></div>
           <div class="card-body" id="companyReport"></div>
         </div>
+
+        <!-- Staff-wise Report -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <span class="card-title">Staff-wise Report</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn btn-ghost btn-sm" onclick="staffReportPrevMonth()"><i data-lucide="chevron-left"></i></button>
+              <span style="font-size:13px;font-weight:700;min-width:110px;text-align:center;" id="staffReportMonthLabel"></span>
+              <button class="btn btn-ghost btn-sm" onclick="staffReportNextMonth()"><i data-lucide="chevron-right"></i></button>
+            </div>
+          </div>
+          <div class="card-body" style="padding-bottom:0;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;" id="staffReportFilterTabs">
+              <button class="btn btn-primary btn-sm" onclick="setStaffReportFilter('all',this)">All Duties + Leave</button>
+              <button class="btn btn-outline btn-sm" onclick="setStaffReportFilter('grover',this)">🎬 Grover</button>
+              <button class="btn btn-outline btn-sm" onclick="setStaffReportFilter('wedding',this)">💍 Wedding</button>
+              <button class="btn btn-outline btn-sm" onclick="setStaffReportFilter('office',this)">🏢 Office</button>
+            </div>
+          </div>
+          <div id="staffWiseCards"></div>
+        </div>
+
+        <!-- Data Copy Log -->
+        <div class="card mt-4">
+          <div class="card-header"><span class="card-title">Data Copy Log (Grover Events)</span></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Staff</th><th>Date</th><th>Venue</th><th>Copied By</th><th>Phone</th></tr></thead><tbody id="copyLogTbody"></tbody></table></div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Top Venues</span></div>
-        <div class="card-body" id="venueReport"></div>
-      </div>
-      <div class="card mt-6">
-        <div class="card-header"><span class="card-title">Data Copy Log (Grover Events)</span></div>
-        <div class="table-wrap"><table class="data-table"><thead><tr><th>Staff</th><th>Date</th><th>Venue</th><th>Copied By</th><th>Phone</th></tr></thead><tbody id="copyLogTbody"></tbody></table></div>
+
+      <!-- GROVER BILLING TAB -->
+      <div id="repBillingTab" style="display:none;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <button class="btn btn-outline btn-sm" onclick="billingPrevMonth()"><i data-lucide="chevron-left"></i></button>
+          <span style="font-size:16px;font-weight:700;min-width:140px;text-align:center;" id="billingMonthLabel"></span>
+          <button class="btn btn-outline btn-sm" onclick="billingNextMonth()"><i data-lucide="chevron-right"></i></button>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="exportBillingCSV()"><i data-lucide="download"></i> CSV</button>
+            <button class="btn btn-primary btn-sm" onclick="exportBillingPDF()"><i data-lucide="file-text"></i> PDF</button>
+          </div>
+        </div>
+        <div class="info-box" style="margin-bottom:20px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div><strong>Double Shift Rule:</strong> Check-in between 5:00 AM–12:00 PM AND check-out at or after 8:30 PM = duty billed twice. Rates configured in Settings.</div>
+        </div>
+        <div id="billingPendingWarn" style="display:none;background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:#7c4a00;margin-bottom:16px;"></div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount">0 entries</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Double Shift</th><th>Rate</th><th>Amount</th></tr></thead>
+              <tbody id="billingTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header"><span class="card-title">Staff-wise Subtotals</span></div>
+          <div id="billingSubtotals"></div>
+        </div>
+        <div id="billingGrandTotal" style="background:#1a1a2e;color:#fff;border-radius:var(--radius-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;"></div>
       </div>
     </div>
 
@@ -531,6 +600,29 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           </div>
         </div>
         <div class="card">
+          <div class="card-header"><span class="card-title">Grover Billing Rates</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="form-hint">Rates used for Grover billing report. Photobooth rate can be left empty and filled manually.</div>
+            <div id="settingsRatesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <button class="btn btn-primary" onclick="saveSettingsRates()" style="align-self:flex-start;">Save Rates</button>
+            <span id="ratesSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Rates saved</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Paid Leave Policy</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-hint">Annual paid leaves per staff member. Admin marks leaves manually from the Staff page.</div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="position:relative;width:120px;">
+                <input class="form-input" id="paidLeaveInput" type="number" min="1" max="365" value="18" style="padding-right:50px;">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);pointer-events:none;">days</span>
+              </div>
+              <button class="btn btn-primary" onclick="savePaidLeavePolicy()">Save</button>
+              <span id="plSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-header"><span class="card-title">Change Admin Password</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
             <div class="form-group"><label class="form-label">Current Password <span style="color:var(--danger)">*</span></label><input class="form-input" id="pwCurrent" type="password" placeholder="Current password"></div>
@@ -546,7 +638,67 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     </div>
 
 
-    <!-- GROVER BILLING -->
+    <!-- GROVER DUTIES -->
+    <div class="view" id="view-grover-duties">
+      <div class="page-header">
+        <div><h1 class="page-title">🎬 Grover Duties</h1><p class="page-sub">Grover Audio Visual Services attendance</p></div>
+        <button class="btn btn-outline" onclick="exportDivisionCSV('grover')"><i data-lucide="download"></i> Export CSV</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="gdt0" onclick="switchDivTab('grover',0,this)">Daily</div>
+        <div class="tab" id="gdt1" onclick="switchDivTab('grover',1,this)">Weekly</div>
+        <div class="tab" id="gdt2" onclick="switchDivTab('grover',2,this)">Monthly</div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name or venue..." id="groverSearch" oninput="renderDivision('grover')" style="max-width:200px;"></div>
+        <select class="form-select" style="width:auto;" id="groverStaffF" onchange="renderDivision('grover')"><option value="">All Staff</option></select>
+        <select class="form-select" style="width:auto;" id="groverWtF" onchange="renderDivision('grover')"><option value="">All Work Types</option></select>
+      </div>
+      <div id="groverDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+      <div id="groverDivContent"></div>
+    </div>
+
+    <!-- WEDDING DUTIES -->
+    <div class="view" id="view-wedding-duties">
+      <div class="page-header">
+        <div><h1 class="page-title">💍 Wedding Duties</h1><p class="page-sub">Fotovision Wedding Division attendance</p></div>
+        <button class="btn btn-outline" onclick="exportDivisionCSV('wedding')"><i data-lucide="download"></i> Export CSV</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="wdt0" onclick="switchDivTab('wedding',0,this)">Daily</div>
+        <div class="tab" id="wdt1" onclick="switchDivTab('wedding',1,this)">Weekly</div>
+        <div class="tab" id="wdt2" onclick="switchDivTab('wedding',2,this)">Monthly</div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name, venue or client..." id="weddingSearch" oninput="renderDivision('wedding')" style="max-width:200px;"></div>
+        <select class="form-select" style="width:auto;" id="weddingStaffF" onchange="renderDivision('wedding')"><option value="">All Staff</option></select>
+        <select class="form-select" style="width:auto;" id="weddingClientF" onchange="renderDivision('wedding')"><option value="">All Clients</option></select>
+      </div>
+      <div id="weddingDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+      <div id="weddingDivContent"></div>
+    </div>
+
+    <!-- OFFICE DUTIES -->
+    <div class="view" id="view-office-duties">
+      <div class="page-header">
+        <div><h1 class="page-title">🏢 Office Duty</h1><p class="page-sub">Office attendance & hours tracking</p></div>
+        <button class="btn btn-outline" onclick="exportDivisionCSV('office')"><i data-lucide="download"></i> Export CSV</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="odt0" onclick="switchDivTab('office',0,this)">Daily</div>
+        <div class="tab" id="odt1" onclick="switchDivTab('office',1,this)">Weekly</div>
+        <div class="tab" id="odt2" onclick="switchDivTab('office',2,this)">Monthly</div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Search staff..." id="officeSearch" oninput="renderDivision('office')" style="max-width:200px;"></div>
+        <select class="form-select" style="width:auto;" id="officeStaffF" onchange="renderDivision('office')"><option value="">All Staff</option></select>
+        <select class="form-select" style="width:auto;" id="officeStatusF" onchange="renderDivision('office')"><option value="">All</option><option value="full">Full Days</option><option value="short">Short Days</option></select>
+      </div>
+      <div id="officeDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+      <div id="officeDivContent"></div>
+    </div>
+
+    <!-- GROVER BILLING (old standalone — now hidden, kept for JS compat) -->
     <div class="view" id="view-billing">
       <div class="page-header">
         <div><h1 class="page-title">🎬 Grover Billing Report</h1><p class="page-sub">Monthly invoice to Grover Audio Visual Services</p></div>
@@ -731,10 +883,13 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     <div id="coOfficeWarning" style="display:none;background:#fff3cd;border:1px solid #ffe69c;color:#664d03;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;font-weight:500;">
       ⚠️ 8 hours is mandatory for full attendance. You are checking out early.
     </div>
-    <!-- Work types (hidden for office) -->
+    <!-- Work types -->
     <div id="coWorkTypesSection">
       <div class="form-group">
-        <label class="form-label">Work Done <span style="color:var(--danger)">*</span> <span style="font-size:11px;color:var(--text-muted);font-weight:400;">Select all that apply</span></label>
+        <label class="form-label">Work Done <span style="color:var(--danger)">*</span></label>
+        <!-- Grover: single select radio -->
+        <div id="coWorkTypesGrover" style="display:none;flex-direction:column;gap:8px;margin-top:6px;"></div>
+        <!-- Wedding/other: multi-chip -->
         <div id="coWorkTypes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
       </div>
       <!-- Photobooth extras -->
@@ -751,17 +906,26 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         </div>
       </div>
     </div>
-    <!-- Grover: data copy (not shown for photobooth) -->
+    <!-- Grover: data copy Yes/No -->
     <div id="groverCopySection" style="display:none;">
-      <div class="section-divider" style="color:var(--primary);">Grover A/V — Data Copy Details</div>
-      <div class="form-grid form-grid-2">
-        <div class="form-group">
-          <label class="form-label">Copied By <span style="color:var(--danger)">*</span></label>
-          <input class="form-input" type="text" id="coCopyName" placeholder="Person's name">
+      <div class="section-divider" style="color:var(--primary);">Grover A/V — Data Copy</div>
+      <div class="form-group">
+        <label class="form-label">Was data copied at this event?</label>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <div id="copyYesBtn" onclick="selectDataCopy(true)" style="flex:1;border:2px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;transition:.15s;">✅ Yes</div>
+          <div id="copyNoBtn" onclick="selectDataCopy(false)" style="flex:1;border:2px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;transition:.15s;">❌ No</div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Their Phone <span style="color:var(--danger)">*</span></label>
-          <input class="form-input" type="tel" id="coCopyPhone" placeholder="+91 9876543210">
+      </div>
+      <div id="copyDetailsSection" style="display:none;">
+        <div class="form-grid form-grid-2" style="margin-top:12px;">
+          <div class="form-group">
+            <label class="form-label">Copied By <span style="color:var(--danger)">*</span></label>
+            <input class="form-input" type="text" id="coCopyName" placeholder="Person's name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Their Phone <span style="color:var(--danger)">*</span></label>
+            <input class="form-input" type="tel" id="coCopyPhone" placeholder="+91 9876543210">
+          </div>
         </div>
       </div>
     </div>
@@ -844,7 +1008,18 @@ const S = {
   admin:{password:'admin123',name:'Rahul Gauri'},
   currentUser:null,
   groverRates:{'Still Photography':3000,'NX Video':5000,'Cinematic Video':8000,'Candid Photography':8000,'Photobooth':null},
-  billingMonth: new Date().toISOString().slice(0,7)
+  billingMonth: new Date().toISOString().slice(0,7),
+  staffReportMonth: new Date().toISOString().slice(0,7),
+  staffReportFilter: 'all',
+  groverSalesMonth: new Date().toISOString().slice(0,7),
+  paidLeavesPerYear: 18,
+  leaves: {},
+  divState: {
+    grover: {tab:0, date:new Date().toISOString().slice(0,10), weekStart:null, month:new Date().toISOString().slice(0,7)},
+    wedding: {tab:0, date:new Date().toISOString().slice(0,10), weekStart:null, month:new Date().toISOString().slice(0,7)},
+    office: {tab:0, date:new Date().toISOString().slice(0,10), weekStart:null, month:new Date().toISOString().slice(0,7)}
+  },
+  dataCopyAnswer: null
 };
 
 // ===== HELPERS =====
@@ -1034,7 +1209,7 @@ function go(view,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   $('view-'+view).classList.add('active');
   if(el) el.classList.add('active');
-  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings',billing:'Grover Billing'};
+  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings',billing:'Grover Billing','grover-duties':'Grover Duties','wedding-duties':'Wedding Duties','office-duties':'Office Duty'};
   $('topbarTitle').textContent=titles[view]||view;
   closeSidebar();
   if(view==='dashboard') renderDash();
@@ -1044,6 +1219,10 @@ function go(view,el){
   if(view==='reports') renderReports();
   if(view==='settings') renderSettings();
   if(view==='billing') renderBilling();
+  if(view==='grover-duties') initDivision('grover');
+  if(view==='wedding-duties') initDivision('wedding');
+  if(view==='office-duties') initDivision('office');
+  if(view==='reports'){renderReports();renderStaffWiseReport();}
 }
 function toggleSidebar(){$('sidebar').classList.toggle('open');$('sidebarOverlay').classList.toggle('open');}
 function closeSidebar(){$('sidebar').classList.remove('open');$('sidebarOverlay').classList.remove('open');}
@@ -1069,25 +1248,126 @@ function renderDash(){
     <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${done}</div><div class="kpi-sub">checked out today</div></div>
     <div class="kpi"><div class="kpi-label">Total Logs</div><div class="kpi-val" style="color:var(--warning)">${S.logs.length}</div><div class="kpi-sub">all time</div></div>`;
   $('activeCount').textContent=active+' active';
-  $('dashStaff').innerHTML=tLogs.length?tLogs.map(l=>{
-    const sf=getSf(l.staffId); if(!sf) return '';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--divider);">
-      <div class="av" style="background:${sf.color};width:32px;height:32px;font-size:12px;">${ini(sf.name)}</div>
-      <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">${sf.name}</div><div class="truncate" style="font-size:12px;color:var(--text-muted);">${l.venue}</div></div>
-      ${l.checkOut?'<span class="badge badge-gray">Out '+l.checkOut+'</span>':'<span class="badge badge-green">In '+l.checkIn+'</span>'}
-    </div>`;
-  }).join(''):'<div class="empty"><p>No check-ins today yet</p></div>';
-  // Staff overview
-  $('dashStaffOverview').innerHTML=S.staff.filter(s=>s.status==='active').map(sf=>{
-    const isIn=S.logs.some(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&!l.checkOut);
-    const isDone=S.logs.some(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&l.checkOut);
-    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--divider);">
-      <div class="av" style="background:${sf.color};width:32px;height:32px;font-size:12px;">${ini(sf.name)}</div>
-      <div style="flex:1;"><div style="font-weight:600;font-size:13px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
-      ${isIn?'<span class="badge badge-green">On Duty</span>':isDone?'<span class="badge badge-gray">Done</span>':'<span class="badge badge-orange">Off</span>'}
-    </div>`;
-  }).join('');
+
+  // All staff — sorted: on duty first, then done, then not in
+  const allStaff=S.staff.filter(s=>s.status==='active');
+  const onDuty=allStaff.filter(sf=>tLogs.some(l=>l.staffId===sf.id&&l.checkIn&&!l.checkOut));
+  const doneToday=allStaff.filter(sf=>!onDuty.includes(sf)&&tLogs.some(l=>l.staffId===sf.id&&l.checkIn&&l.checkOut));
+  const notIn=allStaff.filter(sf=>!onDuty.includes(sf)&&!doneToday.includes(sf));
+  const sorted=[...onDuty,...doneToday,...notIn];
+
+  $('dashStaff').innerHTML=sorted.map(sf=>{
+    const sfLogs=tLogs.filter(l=>l.staffId===sf.id&&l.checkIn).sort((a,b)=>a.checkIn.localeCompare(b.checkIn));
+    const isOn=sfLogs.some(l=>!l.checkOut);
+    const isDone=sfLogs.length>0&&sfLogs.every(l=>l.checkOut);
+    if(!sfLogs.length){
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);opacity:.6;">
+        <div class="av" style="background:${sf.color};width:34px;height:34px;font-size:12px;">${ini(sf.name)}</div>
+        <div style="flex:1;"><div style="font-weight:600;font-size:13px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
+        <span class="badge badge-gray">Not Checked In</span>
+      </div>`;
+    }
+    return sfLogs.map((l,idx)=>{
+      const double=l.checkOut&&isDoubleShift(l.checkIn,l.checkOut);
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);${idx>0?'background:var(--surface2);':''}>
+        <div class="av" style="background:${sf.color};width:34px;height:34px;font-size:12px;flex-shrink:0;">${idx===0?ini(sf.name):'↳'}</div>
+        <div style="flex:1;min-width:0;">
+          ${idx===0?`<div style="font-weight:700;font-size:13px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div>`:''}
+          <div style="font-size:12px;color:var(--text-muted);margin-top:${idx===0?'4':'0'}px;">${compBadge(l.company)} <span style="margin-left:4px;">${l.venue}</span></div>
+          <div style="font-size:12px;margin-top:2px;">
+            <span style="color:var(--success);font-weight:600;">In: ${l.checkIn}</span>
+            ${l.checkOut?`<span style="color:var(--text-muted);margin-left:8px;">Out: ${l.checkOut}</span>`:'<span style="color:var(--text-faint);margin-left:8px;">Out: —</span>'}
+            ${double?'<span class="billing-double-badge" style="margin-left:6px;">🔁 Double</span>':''}
+          </div>
+        </div>
+        ${!l.checkOut?'<span class="badge badge-green">On Duty</span>':l===sfLogs[sfLogs.length-1]?'<span class="badge badge-gray">Done</span>':''}
+      </div>`;
+    }).join('');
+  }).join('')||'<div class="empty"><p>No staff yet</p></div>';
+
+  renderGroverSales();
   lucide.createIcons();
+}
+
+// ===== GROVER MONTHLY SALES =====
+function groverSalesPrevMonth(){
+  const [y,m]=S.groverSalesMonth.split('-').map(Number);
+  const d=new Date(y,m-2,1);
+  S.groverSalesMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderGroverSales();
+}
+function groverSalesNextMonth(){
+  const [y,m]=S.groverSalesMonth.split('-').map(Number);
+  const d=new Date(y,m,1);
+  const now=new Date();
+  if(d>now) return;
+  S.groverSalesMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderGroverSales();
+}
+function renderGroverSales(){
+  const [y,m]=S.groverSalesMonth.split('-').map(Number);
+  const monthLabel=new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  if($('groverSalesMonthLabel')) $('groverSalesMonthLabel').textContent=monthLabel;
+  const logs=S.logs.filter(l=>l.company==='grover'&&l.date.startsWith(S.groverSalesMonth));
+  // Revenue: confirmed (checkout done) + include double
+  let totalRev=0, totalShifts=0, totalDoubles=0;
+  const byWt={};
+  const staffSet=new Set();
+  logs.forEach(l=>{
+    const sf=getSf(l.staffId); if(!sf) return;
+    if(!l.workTypes||!l.workTypes.length) return;
+    const wt=l.workTypes[0];
+    if(wt.toLowerCase()==='assistant') return;
+    staffSet.add(l.staffId);
+    const rate=S.groverRates[wt]||0;
+    const double=l.checkOut&&isDoubleShift(l.checkIn,l.checkOut);
+    const amt=double?rate*2:rate;
+    totalRev+=amt; totalShifts++;
+    if(double) totalDoubles++;
+    if(!byWt[wt]) byWt[wt]={count:0,doubles:0,rev:0};
+    byWt[wt].count++;
+    if(double) byWt[wt].doubles++;
+    byWt[wt].rev+=amt;
+  });
+  // Also count check-ins without checkout (TBD)
+  const pending=logs.filter(l=>!l.checkOut);
+
+  if($('groverSalesKpi')) $('groverSalesKpi').innerHTML=`
+    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Revenue</div><div class="kpi-val" style="color:var(--success);font-size:20px;">₹${totalRev.toLocaleString('en-IN')}</div><div class="kpi-sub">${pending.length?' + '+pending.length+' pending':''}</div></div>
+    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Shifts</div><div class="kpi-val" style="font-size:20px;">${totalShifts}</div><div class="kpi-sub">confirmed</div></div>
+    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Double Shifts</div><div class="kpi-val" style="color:var(--warning);font-size:20px;">${totalDoubles}</div><div class="kpi-sub">billed twice</div></div>
+    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${staffSet.size}</div><div class="kpi-sub">deployed</div></div>`;
+
+  // Bar chart
+  const maxRev=Math.max(...Object.values(byWt).map(v=>v.rev),1);
+  const wtColors={'Still Photography':'#0d6efd','NX Video':'#198754','Cinematic Video':'#6f42c1','Candid Photography':'#e83e8c','Photobooth':'#fd7e14'};
+  if($('groverSalesChart')) $('groverSalesChart').innerHTML=Object.keys(byWt).length?Object.entries(byWt).map(([wt,v])=>`
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+        <span style="font-weight:600;">${wt}</span>
+        <span style="color:var(--text-muted);">${v.count} shift${v.count>1?'s':''}${v.doubles?' ('+v.doubles+' double)':''} · <strong>₹${v.rev.toLocaleString('en-IN')}</strong></span>
+      </div>
+      <div style="height:8px;background:var(--surface2);border-radius:20px;overflow:hidden;">
+        <div style="height:100%;width:${Math.max((v.rev/maxRev)*100,2)}%;background:${wtColors[wt]||'#adb5bd'};border-radius:20px;transition:.4s;"></div>
+      </div>
+    </div>`).join(''):'<div style="font-size:13px;color:var(--text-muted);">No confirmed billing data yet for this month.</div>';
+
+  // Recent 5
+  const recent=[...logs].sort((a,b)=>b.date.localeCompare(a.date)||b.checkIn.localeCompare(a.checkIn)).slice(0,5);
+  if($('groverSalesRecent')) $('groverSalesRecent').innerHTML=recent.length?recent.map(l=>{
+    const sf=getSf(l.staffId); if(!sf) return '';
+    const wt=l.workTypes&&l.workTypes.length?l.workTypes[0]:'—';
+    const rate=S.groverRates[wt]||0;
+    const double=l.checkOut&&isDoubleShift(l.checkIn,l.checkOut);
+    const amt=l.checkOut?(double?rate*2:rate):null;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--divider);">
+      <div class="av" style="background:${sf.color};width:28px;height:28px;font-size:10px;">${ini(sf.name)}</div>
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${wt} · ${fmtDate(l.date)}</div></div>
+      <div style="text-align:right;">
+        ${!l.checkOut?'<span class="badge badge-orange">⏳ Active</span>':double?`<span class="billing-double-badge">🔁 ₹${amt.toLocaleString('en-IN')}</span>`:`<span style="font-weight:700;font-size:13px;color:var(--success);">₹${amt.toLocaleString('en-IN')}</span>`}
+      </div>
+    </div>`;
+  }).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No Grover check-ins this month.</div>';
 }
 
 // ===== STATUS BOARD =====
@@ -1267,13 +1547,33 @@ function openCheckoutModal(staffId){
     }
   } else {
     $('coWorkTypesSection').style.display='block';
-    // Render work type chips
-    $('coWorkTypes').innerHTML=S.workTypes.map((wt,i)=>`
-      <div class="wt-chip" id="wt_${i}" onclick="toggleWtChip(${i},'${wt}')">${wt}</div>`).join('');
     $('coPhotboothSection').style.display='none';
     $('coPrints').value=''; $('coPrintSize').value='';
-    // Grover copy section: shown only if NOT photobooth selected (handled dynamically)
-    $('groverCopySection').style.display=log.company==='grover'?'block':'none';
+    if(log.company==='grover'){
+      // GROVER: single radio select
+      $('coWorkTypesGrover').style.display='flex';
+      $('coWorkTypes').style.display='none';
+      const groverWts=S.workTypes.filter(w=>w.toLowerCase()!=='assistant');
+      $('coWorkTypesGrover').innerHTML=groverWts.map(wt=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:.15s;" id="gwr_${wt.replace(/\s/g,'_')}">
+          <input type="radio" name="groverWt" value="${wt}" onchange="onGroverWtChange('${wt}')" style="width:16px;height:16px;">
+          <span style="font-size:14px;">${wt}</span>
+        </label>`).join('');
+      $('coPhotboothSection').style.display='none';
+      // Yes/No data copy
+      S.dataCopyAnswer=null;
+      $('groverCopySection').style.display='block';
+      $('copyYesBtn').style.cssText='flex:1;border:2px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;transition:.15s;';
+      $('copyNoBtn').style.cssText='flex:1;border:2px solid var(--border);border-radius:var(--border);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;transition:.15s;border-radius:var(--radius);';
+      $('copyDetailsSection').style.display='none';
+      $('coCopyName').value=''; $('coCopyPhone').value='';
+    } else {
+      $('coWorkTypesGrover').style.display='none';
+      $('coWorkTypes').style.display='flex';
+      $('coWorkTypes').innerHTML=S.workTypes.map((wt,i)=>`
+        <div class="wt-chip" id="wt_${i}" onclick="toggleWtChip(${i},'${wt}')">${wt}</div>`).join('');
+      $('groverCopySection').style.display='none';
+    }
   }
   openM('coModal');
 }
@@ -1295,18 +1595,33 @@ function submitCheckout(){
   const log=S.logs.find(l=>l.id===S.coLogId);
   if(!log){toast('Log not found','err');return;}
   if(log.company!=='office'){
-    const selected=S.workTypes.filter((wt,i)=>$('wt_'+i)?.classList.contains('selected'));
-    if(!selected.length){toast('Please select at least one work type','err');return;}
-    log.workTypes=selected;
-    const pbSelected=selected.some(w=>w.toLowerCase()==='photobooth');
-    if(pbSelected){
-      log.prints=parseInt($('coPrints').value||'0',10);
-      log.printSize=$('coPrintSize').value.trim();
-    }
-    if(log.company==='grover'&&!pbSelected){
-      const cn=$('coCopyName').value.trim(),cp=$('coCopyPhone').value.trim();
-      if(!cn||!cp){toast('Data copy details required for Grover events','err');return;}
-      log.copyName=cn; log.copyPhone=cp;
+    if(log.company==='grover'){
+      const sel=document.querySelector('input[name="groverWt"]:checked');
+      if(!sel){toast('Please select a work type','err');return;}
+      log.workTypes=[sel.value];
+      // Data copy
+      if(sel.value.toLowerCase()!=='photobooth'){
+        if(S.dataCopyAnswer===null){toast('Please indicate if data was copied','err');return;}
+        if(S.dataCopyAnswer){
+          const cn=$('coCopyName').value.trim(),cp=$('coCopyPhone').value.trim();
+          if(!cn||!cp){toast('Please fill data copy name and phone','err');return;}
+          log.copyName=cn; log.copyPhone=cp;
+        } else {
+          log.copyName=''; log.copyPhone='';
+        }
+      } else {
+        log.prints=parseInt($('coPrints').value||'0',10);
+        log.printSize=$('coPrintSize').value.trim();
+      }
+    } else {
+      const selected=S.workTypes.filter((wt,i)=>$('wt_'+i)?.classList.contains('selected'));
+      if(!selected.length){toast('Please select at least one work type','err');return;}
+      log.workTypes=selected;
+      const pbSelected=selected.some(w=>w.toLowerCase()==='photobooth');
+      if(pbSelected){
+        log.prints=parseInt($('coPrints').value||'0',10);
+        log.printSize=$('coPrintSize').value.trim();
+      }
     }
   }
   // Midnight crossing: if checkout < checkin, it's next day but log stays on checkin date
@@ -1340,6 +1655,7 @@ function renderStaff(){
       <td style="font-size:13px;color:var(--text-muted);">${sf.phone||'—'}</td>
       <td>${isIn?'<span class="badge badge-green">On Duty</span>':sf.status==='active'?'<span class="badge badge-blue">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td>
       <td>${total}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openLeaveModal(${sf.id})" style="font-size:12px;">${(()=>{const yr=new Date().getFullYear();const taken=(S.leaves[sf.id]||[]).filter(l=>l.year===yr).length;const rem=S.paidLeavesPerYear-taken;const col=rem<=0?'var(--danger)':rem<5?'var(--warning)':'var(--success)';return `<span style="font-weight:700;color:${col};">${taken}/${S.paidLeavesPerYear}</span>`;})()}</button></td>
       <td><div style="display:flex;gap:6px;">
         <button class="btn btn-outline btn-sm" onclick="editStaff(${sf.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteStaff(${sf.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
@@ -1452,46 +1768,137 @@ function exportCSV(){
 }
 
 // ===== REPORTS =====
+function switchReportTab(idx){
+  $('repTab0').classList.toggle('active',idx===0);
+  $('repTab1').classList.toggle('active',idx===1);
+  $('repStaffTab').style.display=idx===0?'block':'none';
+  $('repBillingTab').style.display=idx===1?'block':'none';
+  if(idx===1) renderBilling();
+}
 function renderReports(){
-  $('stdHrsLabel').textContent=S.standardHours;
-  const sfData=S.staff.filter(s=>s.status==='active').map(sf=>{
-    const logs=S.logs.filter(l=>l.staffId===sf.id);
-    const totalMins=logs.reduce((acc,l)=>acc+(dur(l.checkIn,l.checkOut)||0),0);
-    const std=S.standardHours*60*logs.filter(l=>l.checkIn&&l.checkOut).length;
-    const ot=Math.max(0,totalMins-std);
-    return {sf,count:logs.length,totalMins,ot};
-  }).sort((a,b)=>b.totalMins-a.totalMins);
-  const maxMins=Math.max(...sfData.map(d=>d.totalMins),1);
-  $('staffReportList').innerHTML=sfData.map(d=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--divider);">
-      <div class="av" style="background:${d.sf.color};">${ini(d.sf.name)}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-          <span style="font-size:13px;font-weight:600;">${d.sf.name}</span>
-          <span style="font-size:12px;font-weight:700;color:${d.ot>0?'var(--danger)':'var(--text-muted)'};">${fmtDur(d.totalMins)}${d.ot>0?' (+'+fmtDur(d.ot)+' OT)':''}</span>
-        </div>
-        <div class="ot-bar"><div class="ot-fill ${d.ot>0?'over':''}" style="width:${Math.max((d.totalMins/maxMins)*100,3)}%;"></div></div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${d.count} shifts · ${d.ot>0?`<strong style="color:var(--danger)">Overtime eligible</strong>`:'No overtime'}</div>
-      </div>
-    </div>`).join('');
   const groverL=S.logs.filter(l=>l.company==='grover').length;
   const weddingL=S.logs.filter(l=>l.company==='wedding').length;
   const officeL=S.logs.filter(l=>l.company==='office').length;
   $('companyReport').innerHTML=`<div style="display:flex;flex-direction:column;gap:12px;">
-    <div style="padding:12px;background:var(--primary-light);border-radius:var(--radius-sm);border-left:4px solid var(--primary);"><div style="font-weight:700;margin-bottom:3px;">🎬 Grover Audio Visual</div><div style="font-size:13px;color:var(--text-muted);">${groverL} attendance records</div></div>
-    <div style="padding:12px;background:var(--wedding-light);border-radius:var(--radius-sm);border-left:4px solid var(--wedding-color);"><div style="font-weight:700;margin-bottom:3px;">💍 Wedding Division</div><div style="font-size:13px;color:var(--text-muted);">${weddingL} attendance records</div></div>
-    <div style="padding:12px;background:var(--purple-light);border-radius:var(--radius-sm);border-left:4px solid var(--purple);"><div style="font-weight:700;margin-bottom:3px;">🏢 Office Duty</div><div style="font-size:13px;color:var(--text-muted);">${officeL} attendance records</div></div>
+    <div style="padding:12px;background:var(--primary-light);border-radius:var(--radius-sm);border-left:4px solid var(--primary);cursor:pointer;" onclick="go('grover-duties',document.querySelector('[onclick*=grover-duties]'))"><div style="font-weight:700;margin-bottom:3px;">🎬 Grover Audio Visual</div><div style="font-size:13px;color:var(--text-muted);">${groverL} attendance records</div></div>
+    <div style="padding:12px;background:var(--wedding-light);border-radius:var(--radius-sm);border-left:4px solid var(--wedding-color);cursor:pointer;" onclick="go('wedding-duties',document.querySelector('[onclick*=wedding-duties]'))"><div style="font-weight:700;margin-bottom:3px;">💍 Wedding Division</div><div style="font-size:13px;color:var(--text-muted);">${weddingL} attendance records</div></div>
+    <div style="padding:12px;background:var(--purple-light);border-radius:var(--radius-sm);border-left:4px solid var(--purple);cursor:pointer;" onclick="go('office-duties',document.querySelector('[onclick*=office-duties]'))"><div style="font-weight:700;margin-bottom:3px;">🏢 Office Duty</div><div style="font-size:13px;color:var(--text-muted);">${officeL} attendance records</div></div>
   </div>`;
-  const venues={};
-  S.logs.forEach(l=>{venues[l.venue]=(venues[l.venue]||0)+1;});
-  const sv=Object.entries(venues).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  $('venueReport').innerHTML=sv.length?sv.map(([v,c])=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--divider);"><span style="font-size:14px;">📍</span><span style="flex:1;font-size:13px;">${v}</span><span class="badge badge-gray">${c} visit${c>1?'s':''}</span></div>`).join(''):'<p style="font-size:13px;color:var(--text-muted);">No data yet</p>';
   const copyLogs=S.logs.filter(l=>l.company==='grover'&&l.copyName);
   $('copyLogTbody').innerHTML=copyLogs.length?copyLogs.map(l=>{
     const sf=getSf(l.staffId);
     return `<tr><td><div class="staff-cell"><div class="av" style="background:${sf?sf.color:'#ccc'};width:28px;height:28px;font-size:11px;">${sf?ini(sf.name):'?'}</div>${sf?sf.name:'—'}</div></td><td>${fmtDate(l.date)}</td><td>${l.venue}</td><td style="font-weight:600;">${l.copyName}</td><td>${l.copyPhone}</td></tr>`;
   }).join(''):'<tr><td colspan="5"><div class="empty"><p>No data copy records yet</p></div></td></tr>';
+  renderStaffWiseReport();
   lucide.createIcons();
+}
+
+// ===== STAFF-WISE REPORT =====
+function staffReportPrevMonth(){
+  const [y,m]=S.staffReportMonth.split('-').map(Number);
+  const d=new Date(y,m-2,1);
+  S.staffReportMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderStaffWiseReport();
+}
+function staffReportNextMonth(){
+  const [y,m]=S.staffReportMonth.split('-').map(Number);
+  const d=new Date(y,m,1);
+  if(d>new Date()) return;
+  S.staffReportMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderStaffWiseReport();
+}
+function setStaffReportFilter(f,btn){
+  S.staffReportFilter=f;
+  document.querySelectorAll('#staffReportFilterTabs button').forEach(b=>{b.className='btn btn-outline btn-sm';});
+  btn.className='btn btn-primary btn-sm';
+  renderStaffWiseReport();
+}
+function renderStaffWiseReport(){
+  if(!$('staffWiseCards')) return;
+  const [y,m]=S.staffReportMonth.split('-').map(Number);
+  if($('staffReportMonthLabel')) $('staffReportMonthLabel').textContent=new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const ym=S.staffReportMonth;
+  const now=new Date(); const todayStr=today();
+  const daysInMonth=new Date(y,m,0).getDate();
+  const lastDay=Math.min(daysInMonth,(y===now.getFullYear()&&m-1===now.getMonth())?now.getDate():daysInMonth);
+  const f=S.staffReportFilter;
+  const html=S.staff.filter(s=>s.status==='active').map(sf=>{
+    const myLogs=S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym)&&(f==='all'||l.company===f));
+    const allLogs=S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym));
+    let expanded=false;
+    // summary stats
+    const groverC=allLogs.filter(l=>l.company==='grover').length;
+    const weddingC=allLogs.filter(l=>l.company==='wedding').length;
+    const officeC=allLogs.filter(l=>l.company==='office').length;
+    let leaveDays=0;
+    for(let d=1;d<=lastDay;d++){
+      const ds=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      if(ds>todayStr) break;
+      const hasLog=allLogs.some(l=>l.date===ds);
+      const isPL=(S.leaves[sf.id]||[]).some(l=>l.year===y&&l.date===ds);
+      if(!hasLog&&!isPL) leaveDays++;
+    }
+    const plDays=(S.leaves[sf.id]||[]).filter(l=>l.year===y&&l.date.startsWith(ym)).length;
+    // day rows
+    let dayRows='';
+    for(let d=lastDay;d>=1;d--){
+      const ds=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      if(ds>todayStr) continue;
+      const dt=new Date(y,m-1,d);
+      const dlabel=dt.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+      const dayLogs=f==='all'?allLogs.filter(l=>l.date===ds):myLogs.filter(l=>l.date===ds);
+      const isPL=(S.leaves[sf.id]||[]).some(l=>l.year===y&&l.date===ds);
+      if(dayLogs.length){
+        dayLogs.forEach(l=>{
+          const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
+          const d2=dur(l.checkIn,l.checkOut);
+          dayRows+=`<div style="padding:10px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:10px;">
+            <div style="width:80px;font-size:12px;font-weight:600;color:var(--text-muted);flex-shrink:0;">${dlabel}</div>
+            <div style="flex:1;font-size:13px;">${compBadge(l.company)} ${l.venue}${l.clientName?' · '+l.clientName:''}</div>
+            <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;">${l.checkIn}${l.checkOut?'–'+l.checkOut:' (active)'} ${d2?'· '+fmtDur(d2):''}</div>
+          </div>`;
+        });
+      } else if(f==='all'){
+        if(isPL){
+          dayRows+=`<div style="padding:8px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:10px;background:var(--success-light);">
+            <div style="width:80px;font-size:12px;font-weight:600;color:var(--text-muted);">${dlabel}</div>
+            <span style="font-size:12px;font-weight:700;color:var(--success);">🟢 Paid Leave</span>
+          </div>`;
+        } else {
+          dayRows+=`<div style="padding:8px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:10px;">
+            <div style="width:80px;font-size:12px;font-weight:600;color:var(--text-muted);">${dlabel}</div>
+            <span style="background:var(--danger-light);color:var(--danger);font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;">Leave</span>
+          </div>`;
+        }
+      }
+    }
+    const cardId='swc_'+sf.id;
+    return `<div class="card" style="margin:0 0 14px;">
+      <div class="card-header" style="cursor:pointer;" onclick="toggleSwCard('${cardId}')">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="av" style="background:${sf.color};">${ini(sf.name)}</div>
+          <div><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          ${f==='all'?`<span class="badge badge-blue">🎬 ${groverC}</span><span class="badge badge-pink">💍 ${weddingC}</span><span class="badge badge-purple">🏢 ${officeC}</span><span class="badge badge-red">🔴 ${leaveDays} leave</span>${plDays?`<span class="badge badge-green">🟢 ${plDays} PL</span>`:''}`:
+          f==='grover'?`<span class="badge badge-blue">${groverC} shifts</span>`:
+          f==='wedding'?`<span class="badge badge-pink">${weddingC} shifts</span>`:
+          `<span class="badge badge-purple">${officeC} days</span>`}
+          <svg id="${cardId}_icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div id="${cardId}" style="display:none;">${dayRows||'<div class="empty" style="padding:24px;"><p>No duties this month</p></div>'}</div>
+    </div>`;
+  }).join('');
+  $('staffWiseCards').innerHTML=html||'<div class="empty"><p>No active staff</p></div>';
+  lucide.createIcons();
+}
+function toggleSwCard(id){
+  const el=$(id); if(!el) return;
+  const open=el.style.display==='block';
+  el.style.display=open?'none':'block';
+  const icon=$(id+'_icon');
+  if(icon) icon.style.transform=open?'':'rotate(180deg)';
 }
 
 // ===== SETTINGS =====
@@ -1514,6 +1921,8 @@ function renderSettings(){
     </div>`).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No work types defined.</div>';
   $('stdHrsInput').value=S.standardHours; $('stdHrsDisplay').textContent=S.standardHours;
   $('stdHrsMsg').style.display='none';
+  $('paidLeaveInput').value=S.paidLeavesPerYear;
+  renderSettingsRates();
   ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
   $('pwError').style.display='none';
   lucide.createIcons();
@@ -1835,6 +2244,301 @@ function exportBillingPDF(){
   win.document.write(pdfHTML);
   win.document.close();
   toast('PDF ready — use browser Print to save');
+}
+
+
+// ===== DATA COPY YES/NO =====
+function selectDataCopy(yes){
+  S.dataCopyAnswer=yes;
+  $('copyYesBtn').style.cssText=`flex:1;border:2px solid ${yes?'var(--success)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${yes?'var(--success-light)':'#fff'};`;
+  $('copyNoBtn').style.cssText=`flex:1;border:2px solid ${!yes?'var(--danger)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${!yes?'var(--danger-light)':'#fff'};`;
+  $('copyDetailsSection').style.display=yes?'block':'none';
+  if(!yes){$('coCopyName').value='';$('coCopyPhone').value='';}
+}
+
+function onGroverWtChange(wt){
+  const isPb=wt.toLowerCase()==='photobooth';
+  $('coPhotboothSection').style.display=isPb?'block':'none';
+  $('groverCopySection').style.display=isPb?'none':'block';
+  if(isPb){ S.dataCopyAnswer=null; }
+}
+
+// ===== SETTINGS — RATES & PAID LEAVE =====
+function renderSettingsRates(){
+  if(!$('settingsRatesList')) return;
+  const wts=['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth'];
+  $('settingsRatesList').innerHTML=wts.map(wt=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--divider);">
+      <span style="flex:1;font-size:14px;font-weight:500;">${wt}</span>
+      <span style="font-size:13px;color:var(--text-muted);">₹</span>
+      <input class="form-input" type="number" id="srate_${wt.replace(/[^a-z]/gi,'_')}" value="${S.groverRates[wt]??''}" placeholder="${wt==='Photobooth'?'Fill manually':'e.g. 5000'}" style="width:130px;">
+    </div>`).join('');
+}
+function saveSettingsRates(){
+  ['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth'].forEach(wt=>{
+    const el=$('srate_'+wt.replace(/[^a-z]/gi,'_'));
+    if(!el) return;
+    const v=el.value.trim();
+    S.groverRates[wt]=v===''?null:parseInt(v,10)||null;
+  });
+  const m=$('ratesSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
+  toast('Billing rates saved');
+}
+function savePaidLeavePolicy(){
+  const v=parseInt($('paidLeaveInput').value,10);
+  if(!v||v<1||v>365){toast('Enter 1–365','err');return;}
+  S.paidLeavesPerYear=v;
+  const m=$('plSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
+  toast('Paid leave policy saved');
+}
+
+// ===== STAFF LEAVES (Admin) =====
+function openLeaveModal(sfId){
+  const sf=getSf(sfId); if(!sf) return;
+  const yr=new Date().getFullYear();
+  if(!S.leaves[sfId]) S.leaves[sfId]=[];
+  const taken=S.leaves[sfId].filter(l=>l.year===yr).length;
+  const rem=S.paidLeavesPerYear-taken;
+  $('gpsModalBody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div class="av" style="background:${sf.color};">${ini(sf.name)}</div>
+      <div><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:16px;">
+      <div class="kpi" style="padding:10px 14px;flex:1;"><div class="kpi-label">Total</div><div class="kpi-val" style="font-size:20px;">${S.paidLeavesPerYear}</div></div>
+      <div class="kpi" style="padding:10px 14px;flex:1;"><div class="kpi-label">Used</div><div class="kpi-val" style="font-size:20px;color:var(--warning);">${taken}</div></div>
+      <div class="kpi" style="padding:10px 14px;flex:1;"><div class="kpi-label">Remaining</div><div class="kpi-val" style="font-size:20px;color:var(--success);">${rem}</div></div>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;">Leave History ${yr}</div>
+    <div id="leaveHistory" style="max-height:180px;overflow-y:auto;border:1px solid var(--divider);border-radius:var(--radius-sm);margin-bottom:14px;"></div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;">Mark Paid Leave</div>
+    <div style="display:flex;gap:8px;">
+      <input class="form-input" type="date" id="leaveDate" style="flex:1;" max="${today()}">
+      <button class="btn btn-success" onclick="markPaidLeave(${sfId})">Mark as Paid Leave</button>
+    </div>`;
+  renderLeaveHistory(sfId,yr);
+  $('gpsModal').querySelector('.modal-title').textContent='Paid Leave — '+sf.name;
+  openM('gpsModal');
+}
+function renderLeaveHistory(sfId,yr){
+  const el=$('leaveHistory'); if(!el) return;
+  const leaves=(S.leaves[sfId]||[]).filter(l=>l.year===yr).sort((a,b)=>b.date.localeCompare(a.date));
+  el.innerHTML=leaves.length?leaves.map(l=>`
+    <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--divider);">
+      <span style="flex:1;font-size:13px;">🟢 ${fmtDate(l.date)}</span>
+      <button class="btn btn-danger btn-sm" onclick="deletePaidLeave(${sfId},'${l.date}')">Remove</button>
+    </div>`).join(''):'<div style="padding:12px;font-size:13px;color:var(--text-muted);">No paid leaves marked yet.</div>';
+}
+function markPaidLeave(sfId){
+  const d=$('leaveDate').value;
+  if(!d){toast('Select a date','err');return;}
+  if(!S.leaves[sfId]) S.leaves[sfId]=[];
+  const yr=new Date(d+'T00:00:00').getFullYear();
+  if(S.leaves[sfId].some(l=>l.date===d)){toast('Already marked as paid leave','err');return;}
+  // Check if staff has check-in that day
+  const hasCI=S.logs.some(l=>l.staffId===sfId&&l.date===d);
+  if(hasCI&&!confirm('Staff has a check-in on this date. Mark as paid leave anyway?')) return;
+  S.leaves[sfId].push({date:d,year:yr});
+  renderLeaveHistory(sfId,yr);
+  const taken=S.leaves[sfId].filter(l=>l.year===yr).length;
+  toast('Paid leave marked for '+fmtDate(d));
+}
+function deletePaidLeave(sfId,date){
+  if(!confirm('Remove paid leave for '+fmtDate(date)+'?')) return;
+  S.leaves[sfId]=(S.leaves[sfId]||[]).filter(l=>l.date!==date);
+  const yr=new Date(date+'T00:00:00').getFullYear();
+  renderLeaveHistory(sfId,yr);
+  toast('Paid leave removed');
+}
+
+// ===== DIVISION VIEWS =====
+function initDivision(div){
+  const ds=S.divState[div];
+  // Populate staff filter
+  const sfSel=$(div+'StaffF');
+  if(sfSel){ sfSel.innerHTML='<option value="">All Staff</option>'+S.staff.filter(s=>s.status==='active').map(s=>`<option value="${s.id}">${s.name}</option>`).join(''); }
+  // Populate extra filters
+  if(div==='wedding'){
+    const clients=[...new Set(S.logs.filter(l=>l.company==='wedding'&&l.clientName).map(l=>l.clientName))].sort();
+    const cf=$('weddingClientF');
+    if(cf) cf.innerHTML='<option value="">All Clients</option>'+clients.map(c=>`<option>${c}</option>`).join('');
+  }
+  if(div==='grover'){
+    const wts=[...new Set(S.logs.filter(l=>l.company==='grover'&&l.workTypes&&l.workTypes.length).map(l=>l.workTypes[0]))].filter(Boolean);
+    const wf=$('groverWtF');
+    if(wf) wf.innerHTML='<option value="">All Work Types</option>'+wts.map(w=>`<option>${w}</option>`).join('');
+  }
+  renderDivision(div);
+}
+
+function switchDivTab(div,tab,el){
+  S.divState[div].tab=tab;
+  ['0','1','2'].forEach(i=>{ const t=$(div[0]+'dt'+i); if(t) t.classList.toggle('active',String(tab)===i); });
+  renderDivision(div);
+}
+
+function renderDivision(div){
+  const ds=S.divState[div];
+  const nav=$(div+'DivNav');
+  const content=$(div+'DivContent');
+  if(!nav||!content) return;
+  const company=div==='grover'?'grover':div==='wedding'?'wedding':'office';
+  // Get filter values
+  const sq=($(div+'Search')||{}).value||'';
+  const sfF=parseInt(($(div+'StaffF')||{}).value||'0')||0;
+  // Nav bar
+  if(ds.tab===0){
+    nav.innerHTML=`<button class="btn btn-outline btn-sm" onclick="divNavPrev('${div}')"><i data-lucide="chevron-left"></i></button>
+      <span style="font-size:14px;font-weight:700;">${fmtDate(ds.date)}</span>
+      <button class="btn btn-outline btn-sm" onclick="divNavNext('${div}')"><i data-lucide="chevron-right"></i></button>`;
+    renderDivDaily(div,company,ds.date,sq,sfF);
+  } else if(ds.tab===1){
+    if(!ds.weekStart) ds.weekStart=getWeekStart(ds.date);
+    const we=new Date(ds.weekStart); we.setDate(we.getDate()+6);
+    const ws=ds.weekStart; const weStr=we.toISOString().slice(0,10);
+    nav.innerHTML=`<button class="btn btn-outline btn-sm" onclick="divNavPrev('${div}')"><i data-lucide="chevron-left"></i></button>
+      <span style="font-size:13px;font-weight:700;">${fmtDate(ws)} – ${fmtDate(weStr)}</span>
+      <button class="btn btn-outline btn-sm" onclick="divNavNext('${div}')"><i data-lucide="chevron-right"></i></button>`;
+    renderDivWeekly(div,company,ws,sq,sfF);
+  } else {
+    nav.innerHTML=`<button class="btn btn-outline btn-sm" onclick="divNavPrev('${div}')"><i data-lucide="chevron-left"></i></button>
+      <span style="font-size:14px;font-weight:700;">${new Date(ds.month+'-01').toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</span>
+      <button class="btn btn-outline btn-sm" onclick="divNavNext('${div}')"><i data-lucide="chevron-right"></i></button>`;
+    renderDivMonthly(div,company,ds.month,sq,sfF);
+  }
+  lucide.createIcons();
+}
+
+function getWeekStart(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const day=d.getDay(); const diff=d.getDate()-day+(day===0?-6:1);
+  d.setDate(diff); return d.toISOString().slice(0,10);
+}
+
+function divNavPrev(div){
+  const ds=S.divState[div];
+  if(ds.tab===0){const d=new Date(ds.date+'T00:00:00');d.setDate(d.getDate()-1);ds.date=d.toISOString().slice(0,10);}
+  else if(ds.tab===1){if(!ds.weekStart)ds.weekStart=getWeekStart(today());const d=new Date(ds.weekStart+'T00:00:00');d.setDate(d.getDate()-7);ds.weekStart=d.toISOString().slice(0,10);}
+  else{const[y,m]=ds.month.split('-').map(Number);const d=new Date(y,m-2,1);ds.month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+  renderDivision(div);
+}
+function divNavNext(div){
+  const ds=S.divState[div]; const now=new Date();
+  if(ds.tab===0){const d=new Date(ds.date+'T00:00:00');d.setDate(d.getDate()+1);if(d>now)return;ds.date=d.toISOString().slice(0,10);}
+  else if(ds.tab===1){if(!ds.weekStart)ds.weekStart=getWeekStart(today());const d=new Date(ds.weekStart+'T00:00:00');d.setDate(d.getDate()+7);if(d>now)return;ds.weekStart=d.toISOString().slice(0,10);}
+  else{const[y,m]=ds.month.split('-').map(Number);const d=new Date(y,m,1);if(d>now)return;ds.month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+  renderDivision(div);
+}
+
+function filterDivLogs(logs,company,sq,sfF){
+  return logs.filter(l=>{
+    if(l.company!==company) return false;
+    if(sfF&&l.staffId!==sfF) return false;
+    if(sq){
+      const sf=getSf(l.staffId);
+      const q=sq.toLowerCase();
+      if(!sf) return false;
+      if(!sf.name.toLowerCase().includes(q)&&!(l.venue||'').toLowerCase().includes(q)&&!(l.clientName||'').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function makeDivCard(l,company){
+  const sf=getSf(l.staffId); if(!sf) return '';
+  const d=dur(l.checkIn,l.checkOut);
+  const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
+  const double=l.checkOut&&isDoubleShift(l.checkIn,l.checkOut);
+  return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;${company==='grover'?'border-left:3px solid var(--primary);':company==='wedding'?'border-left:3px solid var(--wedding-color);':'border-left:3px solid var(--purple);'}">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div class="av" style="background:${sf.color};width:32px;height:32px;font-size:12px;">${ini(sf.name)}</div>
+      <div style="flex:1;"><div style="font-weight:700;font-size:13px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
+      ${l.checkOut?`<span class="badge badge-gray">${l.checkIn}–${l.checkOut}${d?' · '+fmtDur(d):''}</span>`:'<span class="badge badge-green">Active · In '+l.checkIn+'</span>'}
+      ${double?'<span class="billing-double-badge">🔁</span>':''}
+    </div>
+    <div style="font-size:13px;"><span style="color:var(--text-muted);">📍</span> ${l.venue}</div>
+    ${l.clientName?`<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">👨‍👩‍👧 ${l.clientName}</div>`:''}
+    ${company!=='office'?`<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">🎬 ${wt}</div>`:''}
+    ${l.copyName?`<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">📋 ${l.copyName} · ${l.copyPhone}</div>`:''}
+  </div>`;
+}
+
+function renderDivDaily(div,company,date,sq,sfF){
+  const el=$(div+'DivContent'); if(!el) return;
+  let logs=filterDivLogs(S.logs.filter(l=>l.date===date),company,sq,sfF);
+  if(div==='grover'){const wf=($('groverWtF')||{}).value;if(wf)logs=logs.filter(l=>l.workTypes&&l.workTypes[0]===wf);}
+  if(div==='office'){const sf=($('officeStatusF')||{}).value;if(sf==='full')logs=logs.filter(l=>l.checkOut&&dur(l.checkIn,l.checkOut)>=S.standardHours*60);else if(sf==='short')logs=logs.filter(l=>l.checkOut&&dur(l.checkIn,l.checkOut)<S.standardHours*60);}
+  // summary
+  const totalH=logs.reduce((a,l)=>a+(dur(l.checkIn,l.checkOut)||0),0);
+  const html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Shifts</div><div class="kpi-val" style="font-size:20px;">${logs.length}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${new Set(logs.map(l=>l.staffId)).size}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Hours</div><div class="kpi-val" style="font-size:20px;">${fmtDur(totalH)||'—'}</div></div>
+  </div>
+  ${logs.length?logs.map(l=>makeDivCard(l,company)).join(''):`<div class="empty"><p>No ${company} duties on ${fmtDate(date)}</p></div>`}`;
+  el.innerHTML=html;
+}
+
+function renderDivWeekly(div,company,weekStart,sq,sfF){
+  const el=$(div+'DivContent'); if(!el) return;
+  const days=[];
+  for(let i=0;i<7;i++){const d=new Date(weekStart+'T00:00:00');d.setDate(d.getDate()+i);days.push(d.toISOString().slice(0,10));}
+  let allLogs=filterDivLogs(S.logs.filter(l=>days.includes(l.date)),company,sq,sfF);
+  const totalH=allLogs.reduce((a,l)=>a+(dur(l.checkIn,l.checkOut)||0),0);
+  const html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Shifts</div><div class="kpi-val" style="font-size:20px;">${allLogs.length}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${new Set(allLogs.map(l=>l.staffId)).size}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Hours</div><div class="kpi-val" style="font-size:20px;">${fmtDur(totalH)||'—'}</div></div>
+  </div>
+  ${days.map(date=>{
+    const dayLogs=allLogs.filter(l=>l.date===date);
+    const dt=new Date(date+'T00:00:00');
+    const dlabel=dt.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+    const isWeekend=dt.getDay()===0||dt.getDay()===6;
+    return `<div style="margin-bottom:14px;${isWeekend?'opacity:.7':''}">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;padding:6px 0;border-bottom:2px solid var(--divider);color:${isWeekend?'var(--text-muted)':'var(--text)'};">${dlabel}${isWeekend?' · Weekend':''}</div>
+      ${dayLogs.length?dayLogs.map(l=>makeDivCard(l,company)).join(''):`<div style="font-size:13px;color:var(--text-faint);padding:8px 0;">No duties</div>`}
+    </div>`;
+  }).join('')}`;
+  el.innerHTML=html;
+}
+
+function renderDivMonthly(div,company,month,sq,sfF){
+  const el=$(div+'DivContent'); if(!el) return;
+  let logs=filterDivLogs(S.logs.filter(l=>l.date.startsWith(month)),company,sq,sfF);
+  const totalH=logs.reduce((a,l)=>a+(dur(l.checkIn,l.checkOut)||0),0);
+  // Group by date descending
+  const byDate={};
+  logs.forEach(l=>{if(!byDate[l.date])byDate[l.date]=[];byDate[l.date].push(l);});
+  const sorted=Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0]));
+  const html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Total Shifts</div><div class="kpi-val" style="font-size:20px;">${logs.length}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${new Set(logs.map(l=>l.staffId)).size}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Total Hours</div><div class="kpi-val" style="font-size:20px;">${fmtDur(totalH)||'—'}</div></div>
+    ${company==='grover'?`<div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Double Shifts</div><div class="kpi-val" style="font-size:20px;color:var(--warning);">${logs.filter(l=>l.checkOut&&isDoubleShift(l.checkIn,l.checkOut)).length}</div></div>`:''}
+    ${company==='wedding'?`<div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Clients</div><div class="kpi-val" style="font-size:20px;">${new Set(logs.map(l=>l.clientName).filter(Boolean)).size}</div></div>`:''}
+  </div>
+  ${sorted.length?sorted.map(([date,dayLogs])=>`
+    <div style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;padding:6px 0;border-bottom:2px solid var(--divider);">${fmtDate(date)}</div>
+      ${dayLogs.map(l=>makeDivCard(l,company)).join('')}
+    </div>`).join(''):`<div class="empty"><p>No ${company} duties this month</p></div>`}`;
+  el.innerHTML=html;
+}
+
+function exportDivisionCSV(div){
+  const company=div==='grover'?'grover':div==='wedding'?'wedding':'office';
+  const logs=S.logs.filter(l=>l.company===company);
+  const rows=[['Staff','Role','Venue','Client','Date','Check-In','Check-Out','Duration','Work Done','Copy Name','Copy Phone','Notes']];
+  logs.forEach(l=>{
+    const sf=getSf(l.staffId); if(!sf) return;
+    rows.push([sf.name,sf.role,l.venue,l.clientName||'',l.date,l.checkIn,l.checkOut||'',fmtDur(dur(l.checkIn,l.checkOut))||'',(l.workTypes||[]).join(';'),l.copyName||'',l.copyPhone||'',l.ciNotes||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=div+'_duties.csv'; a.click();
+  toast('CSV exported');
 }
 
 // ===== INIT =====
