@@ -1262,10 +1262,10 @@ function renderDash(){
 
   // All staff — sorted: on duty first, then done, then not in
   const allStaff=S.staff.filter(s=>s.status==='active');
-  const onDuty=allStaff.filter(sf=>tLogs.some(l=>l.staffId===sf.id&&l.checkIn&&!l.checkOut));
-  const doneToday=allStaff.filter(sf=>!onDuty.includes(sf)&&tLogs.some(l=>l.staffId===sf.id&&l.checkIn&&l.checkOut));
-  const notIn=allStaff.filter(sf=>!onDuty.includes(sf)&&!doneToday.includes(sf));
-  const sorted=[...onDuty,...doneToday,...notIn];
+  const staffOnDuty=allStaff.filter(sf=>tLogs.some(l=>l.staffId===sf.id&&l.checkIn&&!l.checkOut));
+  const doneToday=allStaff.filter(sf=>!staffOnDuty.includes(sf)&&tLogs.some(l=>l.staffId===sf.id&&l.checkIn&&l.checkOut));
+  const notIn=allStaff.filter(sf=>!staffOnDuty.includes(sf)&&!doneToday.includes(sf));
+  const sorted=[...staffOnDuty,...doneToday,...notIn];
 
   $('dashStaff').innerHTML=sorted.map(sf=>{
     const sfLogs=tLogs.filter(l=>l.staffId===sf.id&&l.checkIn).sort((a,b)=>a.checkIn.localeCompare(b.checkIn));
@@ -1298,9 +1298,9 @@ function renderDash(){
 
   renderGroverSales();
   // On Duty / Off Duty board
-  const onDuty=S.staff.filter(s=>s.status==='active'&&tLogs.some(l=>l.staffId===s.id&&l.checkIn&&!l.checkOut));
-  const offDuty=S.staff.filter(s=>s.status==='active'&&!tLogs.some(l=>l.staffId===s.id&&l.checkIn&&!l.checkOut));
-  $('onDutyCount').textContent=onDuty.length+' on duty';
+  const dutyOn=S.staff.filter(s=>s.status==='active'&&tLogs.some(l=>l.staffId===s.id&&l.checkIn&&!l.checkOut));
+  const dutyOff=S.staff.filter(s=>s.status==='active'&&!tLogs.some(l=>l.staffId===s.id&&l.checkIn&&!l.checkOut));
+  $('onDutyCount').textContent=dutyOn.length+' on duty';
   const makeStatusCard=(sf,isOn)=>{
     const log=tLogs.find(l=>l.staffId===sf.id&&l.checkIn);
     return `<div class="status-card ${isOn?'on-duty':'off-duty'}">
@@ -1316,12 +1316,12 @@ function renderDash(){
   };
   $('dashStatusGrid').innerHTML=`
     <div>
-      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;"></span> On Duty (${onDuty.length})</div>
-      ${onDuty.length?onDuty.map(sf=>makeStatusCard(sf,true)).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No one checked in yet</div>'}
+      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;"></span> On Duty (${dutyOn.length})</div>
+      ${dutyOn.length?dutyOn.map(sf=>makeStatusCard(sf,true)).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No one checked in yet</div>'}
     </div>
     <div>
-      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--border);display:inline-block;"></span> Off Duty (${offDuty.length})</div>
-      ${offDuty.map(sf=>makeStatusCard(sf,false)).join('')}
+      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--border);display:inline-block;"></span> Off Duty (${dutyOff.length})</div>
+      ${dutyOff.map(sf=>makeStatusCard(sf,false)).join('')}
     </div>`;
   lucide.createIcons();
 }
