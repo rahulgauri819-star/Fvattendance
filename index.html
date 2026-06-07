@@ -291,11 +291,11 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 /* EXCEL TABLE */
 .evt-section{margin-bottom:28px;}
 .evt-heading{font-size:15px;font-weight:800;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--primary);}
-.evt-table{border-collapse:collapse;width:100%;min-width:max-content;}
-.evt-table th,.evt-table td{border:1px solid var(--border);padding:0;}
-.evt-row-label{padding:8px 12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);background:var(--surface2);white-space:nowrap;min-width:60px;}
-.evt-name-cell{padding:6px 12px;font-size:12px;font-weight:600;text-align:center;background:var(--surface);min-width:80px;max-width:120px;word-break:break-word;}
-.evt-status-cell{width:100%;min-width:80px;max-width:120px;cursor:pointer;transition:.15s;}
+.evt-table{border-collapse:collapse;width:auto;table-layout:fixed;}
+.evt-table th,.evt-table td{border:1px solid var(--border);padding:0;width:100px;}
+.evt-row-label{padding:8px 12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);background:var(--surface2);white-space:nowrap;width:70px!important;}
+.evt-name-cell{padding:6px 12px;font-size:12px;font-weight:600;text-align:center;background:var(--surface);width:100px!important;word-break:break-word;overflow:hidden;}
+.evt-status-cell{width:100px!important;height:36px;cursor:pointer;transition:.15s;display:table-cell;}
 .evt-status-cell.copied{background:#bbf7d0;}
 .evt-status-cell.pending{background:#fecaca;}
 .evt-status-cell:hover{opacity:.8;transform:scale(.97);}
