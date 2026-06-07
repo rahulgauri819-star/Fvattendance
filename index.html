@@ -350,10 +350,6 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     <span class="nav-label">Manage</span>
     <div class="nav-item" onclick="go('staff',this)"><i data-lucide="users"></i> Staff</div>
     <div class="nav-item" onclick="go('logs',this)"><i data-lucide="clipboard-list"></i> Attendance Log</div>
-    <span class="nav-label">Divisions</span>
-    <div class="nav-item" onclick="go('grover-duties',this)"><i data-lucide="film"></i> Grover Duties</div>
-    <div class="nav-item" onclick="go('wedding-duties',this)"><i data-lucide="heart"></i> Wedding Duties</div>
-    <div class="nav-item" onclick="go('office-duties',this)"><i data-lucide="building-2"></i> Office Duty</div>
     <span class="nav-label">Insights</span>
     <div class="nav-item" onclick="go('reports',this)"><i data-lucide="bar-chart-2"></i> Reports</div>
     <span class="nav-label">System</span>
@@ -439,14 +435,6 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         </div>
       </div>
 
-      <!-- ON DUTY / OFF DUTY BOARD -->
-      <div class="card" style="margin-top:20px;">
-        <div class="card-header">
-          <span class="card-title">On Duty / Off Duty</span>
-          <span class="badge badge-green" id="onDutyCount">0 on duty</span>
-        </div>
-        <div class="status-grid" id="dashStatusGrid" style="padding:16px;gap:14px;"></div>
-      </div>
     </div>
 
     <!-- TODAY'S STATUS (admin check-in view) -->
@@ -495,9 +483,12 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     <div class="view" id="view-reports">
       <div class="page-header"><div><h1 class="page-title">Reports</h1><p class="page-sub">Staff analytics & Grover billing</p></div></div>
       <!-- Report tabs -->
-      <div class="tabs">
+      <div class="tabs" style="flex-wrap:wrap;">
         <div class="tab active" id="repTab0" onclick="switchReportTab(0)">Staff Report</div>
-        <div class="tab" id="repTab1" onclick="switchReportTab(1)">Grover Billing</div>
+        <div class="tab" id="repTab1" onclick="switchReportTab(1)">🎬 Grover Duties</div>
+        <div class="tab" id="repTab2" onclick="switchReportTab(2)">💍 Wedding Duties</div>
+        <div class="tab" id="repTab3" onclick="switchReportTab(3)">🏢 Office Duty</div>
+        <div class="tab" id="repTab4" onclick="switchReportTab(4)">Grover Billing</div>
       </div>
 
       <!-- STAFF REPORT TAB -->
@@ -566,6 +557,54 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           <div id="billingSubtotals"></div>
         </div>
         <div id="billingGrandTotal" style="background:#1a1a2e;color:#fff;border-radius:var(--radius-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;"></div>
+      </div>
+
+      <!-- GROVER DUTIES TAB -->
+      <div id="repGroverTab" style="display:none;">
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name or venue..." id="repGroverSearch" oninput="renderDivision('grover')" style="max-width:200px;"></div>
+          <select class="form-select" style="width:auto;" id="repGroverStaffF" onchange="renderDivision('grover')"><option value="">All Staff</option></select>
+          <select class="form-select" style="width:auto;" id="repGroverWtF" onchange="renderDivision('grover')"><option value="">All Work Types</option></select>
+        </div>
+        <div class="tabs" style="margin-bottom:16px;">
+          <div class="tab active" id="rgdt0" onclick="switchDivTab('grover',0,this)">Daily</div>
+          <div class="tab" id="rgdt1" onclick="switchDivTab('grover',1,this)">Weekly</div>
+          <div class="tab" id="rgdt2" onclick="switchDivTab('grover',2,this)">Monthly</div>
+        </div>
+        <div id="groverDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+        <div id="groverDivContent"></div>
+      </div>
+
+      <!-- WEDDING DUTIES TAB -->
+      <div id="repWeddingTab" style="display:none;">
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name, venue or client..." id="repWeddingSearch" oninput="renderDivision('wedding')" style="max-width:200px;"></div>
+          <select class="form-select" style="width:auto;" id="repWeddingStaffF" onchange="renderDivision('wedding')"><option value="">All Staff</option></select>
+          <select class="form-select" style="width:auto;" id="repWeddingClientF" onchange="renderDivision('wedding')"><option value="">All Clients</option></select>
+        </div>
+        <div class="tabs" style="margin-bottom:16px;">
+          <div class="tab active" id="rwdt0" onclick="switchDivTab('wedding',0,this)">Daily</div>
+          <div class="tab" id="rwdt1" onclick="switchDivTab('wedding',1,this)">Weekly</div>
+          <div class="tab" id="rwdt2" onclick="switchDivTab('wedding',2,this)">Monthly</div>
+        </div>
+        <div id="weddingDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+        <div id="weddingDivContent"></div>
+      </div>
+
+      <!-- OFFICE DUTY TAB -->
+      <div id="repOfficeTab" style="display:none;">
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Search staff..." id="repOfficeSearch" oninput="renderDivision('office')" style="max-width:200px;"></div>
+          <select class="form-select" style="width:auto;" id="repOfficeStaffF" onchange="renderDivision('office')"><option value="">All Staff</option></select>
+          <select class="form-select" style="width:auto;" id="repOfficeStatusF" onchange="renderDivision('office')"><option value="">All</option><option value="full">Full Days</option><option value="short">Short Days</option></select>
+        </div>
+        <div class="tabs" style="margin-bottom:16px;">
+          <div class="tab active" id="rodt0" onclick="switchDivTab('office',0,this)">Daily</div>
+          <div class="tab" id="rodt1" onclick="switchDivTab('office',1,this)">Weekly</div>
+          <div class="tab" id="rodt2" onclick="switchDivTab('office',2,this)">Monthly</div>
+        </div>
+        <div id="officeDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+        <div id="officeDivContent"></div>
       </div>
     </div>
 
@@ -1220,7 +1259,7 @@ function go(view,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   $('view-'+view).classList.add('active');
   if(el) el.classList.add('active');
-  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings',billing:'Grover Billing','grover-duties':'Grover Duties','wedding-duties':'Wedding Duties','office-duties':'Office Duty'};
+  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings',billing:'Grover Billing'};
   $('topbarTitle').textContent=titles[view]||view;
   closeSidebar();
   if(view==='dashboard') renderDash();
@@ -1230,9 +1269,6 @@ function go(view,el){
   if(view==='reports') renderReports();
   if(view==='settings') renderSettings();
   if(view==='billing') renderBilling();
-  if(view==='grover-duties') initDivision('grover');
-  if(view==='wedding-duties') initDivision('wedding');
-  if(view==='office-duties') initDivision('office');
   if(view==='reports'){renderReports();renderStaffWiseReport();}
 }
 function toggleSidebar(){$('sidebar').classList.toggle('open');$('sidebarOverlay').classList.toggle('open');}
@@ -1297,32 +1333,6 @@ function renderDash(){
   }).join('')||'<div class="empty"><p>No staff yet</p></div>';
 
   renderGroverSales();
-  // On Duty / Off Duty board
-  const dutyOn=S.staff.filter(s=>s.status==='active'&&tLogs.some(l=>l.staffId===s.id&&l.checkIn&&!l.checkOut));
-  const dutyOff=S.staff.filter(s=>s.status==='active'&&!tLogs.some(l=>l.staffId===s.id&&l.checkIn&&!l.checkOut));
-  $('onDutyCount').textContent=dutyOn.length+' on duty';
-  const makeStatusCard=(sf,isOn)=>{
-    const log=tLogs.find(l=>l.staffId===sf.id&&l.checkIn);
-    return `<div class="status-card ${isOn?'on-duty':'off-duty'}">
-      <div class="av" style="background:${sf.color};width:36px;height:36px;font-size:13px;flex-shrink:0;">${ini(sf.name)}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;font-size:13px;">${sf.name}</div>
-        <div style="font-size:11px;color:var(--text-muted);">${sf.role}</div>
-        ${log?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${compLabel(log.company)} · ${log.venue}</div>`:''}
-        ${log?`<div style="font-size:11px;margin-top:1px;">In: <strong>${log.checkIn}</strong>${log.checkOut?' · Out: <strong>'+log.checkOut+'</strong>':''}</div>`:''}
-      </div>
-      ${isOn?`<button class="btn btn-success btn-sm" onclick="openCheckoutModal(${sf.id})" style="font-size:11px;padding:4px 8px;">Check Out</button>`:''}
-    </div>`;
-  };
-  $('dashStatusGrid').innerHTML=`
-    <div>
-      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;"></span> On Duty (${dutyOn.length})</div>
-      ${dutyOn.length?dutyOn.map(sf=>makeStatusCard(sf,true)).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No one checked in yet</div>'}
-    </div>
-    <div>
-      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--border);display:inline-block;"></span> Off Duty (${dutyOff.length})</div>
-      ${dutyOff.map(sf=>makeStatusCard(sf,false)).join('')}
-    </div>`;
   lucide.createIcons();
 }
 
@@ -1808,11 +1818,18 @@ function exportCSV(){
 
 // ===== REPORTS =====
 function switchReportTab(idx){
-  $('repTab0').classList.toggle('active',idx===0);
-  $('repTab1').classList.toggle('active',idx===1);
+  [0,1,2,3,4].forEach(i=>{
+    const t=$('repTab'+i); if(t) t.classList.toggle('active',i===idx);
+  });
   $('repStaffTab').style.display=idx===0?'block':'none';
-  $('repBillingTab').style.display=idx===1?'block':'none';
-  if(idx===1) renderBilling();
+  $('repGroverTab').style.display=idx===1?'block':'none';
+  $('repWeddingTab').style.display=idx===2?'block':'none';
+  $('repOfficeTab').style.display=idx===3?'block':'none';
+  $('repBillingTab').style.display=idx===4?'block':'none';
+  if(idx===1) initDivision('grover');
+  else if(idx===2) initDivision('wedding');
+  else if(idx===3) initDivision('office');
+  else if(idx===4) renderBilling();
 }
 function renderReports(){
   const groverL=S.logs.filter(l=>l.company==='grover').length;
@@ -1946,16 +1963,18 @@ function renderSettings(){
   $('roleCount').textContent=S.roles.length+' role'+(S.roles.length!==1?'s':'');
   $('rolesList').innerHTML=S.roles.length?S.roles.map((r,i)=>{
     const inUse=usedRoles.has(r),cnt=S.staff.filter(s=>s.role===r).length;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
+    return `<div id="roleRow_${i}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
       <span style="flex:1;font-size:14px;font-weight:500;">${r}</span>
       ${inUse?`<span class="badge badge-blue">${cnt} staff</span>`:''}
+      <button onclick="editRole(${i})" class="btn btn-outline btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>
       <button onclick="deleteRole(${i})" class="btn btn-danger btn-sm" ${inUse?'disabled':''} style="${inUse?'opacity:.4;cursor:not-allowed;':''}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete</button>
     </div>`;
   }).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No roles defined.</div>';
   $('wtCount').textContent=S.workTypes.length+' type'+(S.workTypes.length!==1?'s':'');
   $('wtList').innerHTML=S.workTypes.length?S.workTypes.map((wt,i)=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
+    <div id="wtRow_${i}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
       <span style="flex:1;font-size:14px;font-weight:500;">${wt}</span>
+      <button onclick="editWorkType(${i})" class="btn btn-outline btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>
       <button onclick="deleteWorkType(${i})" class="btn btn-danger btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete</button>
     </div>`).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No work types defined.</div>';
   $('stdHrsInput').value=S.standardHours; $('stdHrsDisplay').textContent=S.standardHours;
@@ -1965,6 +1984,48 @@ function renderSettings(){
   ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
   $('pwError').style.display='none';
   lucide.createIcons();
+}
+function editRole(i){
+  const row=$('roleRow_'+i); if(!row) return;
+  const oldName=S.roles[i];
+  row.innerHTML=`<input class="form-input" id="editRoleInput_${i}" value="${oldName}" style="flex:1;font-size:14px;" maxlength="40">
+    <button onclick="saveRole(${i},'${oldName}')" class="btn btn-primary btn-sm">Save</button>
+    <button onclick="renderSettings()" class="btn btn-outline btn-sm">Cancel</button>`;
+  setTimeout(()=>{ const inp=$('editRoleInput_'+i); if(inp){inp.focus();inp.select();} },50);
+}
+function saveRole(i, oldName){
+  const inp=$('editRoleInput_'+i); if(!inp) return;
+  const newName=inp.value.trim();
+  if(!newName){toast('Role name cannot be empty','err');return;}
+  if(S.roles.some((r,j)=>j!==i&&r.toLowerCase()===newName.toLowerCase())){toast('Role already exists','err');return;}
+  // Update all staff with old role
+  S.staff.forEach(s=>{ if(s.role===oldName) s.role=newName; });
+  S.roles[i]=newName;
+  saveData();
+  renderSettings();
+  toast('Role updated to "'+newName+'"');
+}
+function editWorkType(i){
+  const row=$('wtRow_'+i); if(!row) return;
+  const oldName=S.workTypes[i];
+  row.innerHTML=`<input class="form-input" id="editWtInput_${i}" value="${oldName}" style="flex:1;font-size:14px;" maxlength="40">
+    <button onclick="saveWorkType(${i},'${oldName}')" class="btn btn-primary btn-sm">Save</button>
+    <button onclick="renderSettings()" class="btn btn-outline btn-sm">Cancel</button>`;
+  setTimeout(()=>{ const inp=$('editWtInput_'+i); if(inp){inp.focus();inp.select();} },50);
+}
+function saveWorkType(i, oldName){
+  const inp=$('editWtInput_'+i); if(!inp) return;
+  const newName=inp.value.trim();
+  if(!newName){toast('Work type cannot be empty','err');return;}
+  if(S.workTypes.some((w,j)=>j!==i&&w.toLowerCase()===newName.toLowerCase())){toast('Already exists','err');return;}
+  // Update all logs with old work type
+  S.logs.forEach(l=>{ if(l.workTypes) l.workTypes=l.workTypes.map(w=>w===oldName?newName:w); });
+  // Update groverRates key
+  if(S.groverRates[oldName]!==undefined){ S.groverRates[newName]=S.groverRates[oldName]; delete S.groverRates[oldName]; }
+  S.workTypes[i]=newName;
+  saveData();
+  renderSettings();
+  toast('Work type updated to "'+newName+'"');
 }
 function addRole(){
   const input=$('newRoleInput'),val=(input.value||'').trim();
@@ -2398,18 +2459,17 @@ function deletePaidLeave(sfId,date){
 // ===== DIVISION VIEWS =====
 function initDivision(div){
   const ds=S.divState[div];
-  // Populate staff filter
-  const sfSel=$(div+'StaffF');
+  // Support both old sidebar IDs and new report tab IDs
+  const sfSel=$('rep'+div.charAt(0).toUpperCase()+div.slice(1)+'StaffF')||$(div+'StaffF');
   if(sfSel){ sfSel.innerHTML='<option value="">All Staff</option>'+S.staff.filter(s=>s.status==='active').map(s=>`<option value="${s.id}">${s.name}</option>`).join(''); }
-  // Populate extra filters
   if(div==='wedding'){
     const clients=[...new Set(S.logs.filter(l=>l.company==='wedding'&&l.clientName).map(l=>l.clientName))].sort();
-    const cf=$('weddingClientF');
+    const cf=$('repWeddingClientF')||$('weddingClientF');
     if(cf) cf.innerHTML='<option value="">All Clients</option>'+clients.map(c=>`<option>${c}</option>`).join('');
   }
   if(div==='grover'){
     const wts=[...new Set(S.logs.filter(l=>l.company==='grover'&&l.workTypes&&l.workTypes.length).map(l=>l.workTypes[0]))].filter(Boolean);
-    const wf=$('groverWtF');
+    const wf=$('repGroverWtF')||$('groverWtF');
     if(wf) wf.innerHTML='<option value="">All Work Types</option>'+wts.map(w=>`<option>${w}</option>`).join('');
   }
   renderDivision(div);
@@ -2417,7 +2477,9 @@ function initDivision(div){
 
 function switchDivTab(div,tab,el){
   S.divState[div].tab=tab;
-  ['0','1','2'].forEach(i=>{ const t=$(div[0]+'dt'+i); if(t) t.classList.toggle('active',String(tab)===i); });
+  // Try both old sidebar prefix and new report tab prefix
+  const prefixes = [div[0], 'r'+div[0]];
+  prefixes.forEach(p=>['0','1','2'].forEach(i=>{const t=$(p+'dt'+i);if(t)t.classList.toggle('active',String(tab)===i);}));
   renderDivision(div);
 }
 
@@ -2428,8 +2490,8 @@ function renderDivision(div){
   if(!nav||!content) return;
   const company=div==='grover'?'grover':div==='wedding'?'wedding':'office';
   // Get filter values
-  const sq=($(div+'Search')||{}).value||'';
-  const sfF=parseInt(($(div+'StaffF')||{}).value||'0')||0;
+  const sq=($('rep'+div.charAt(0).toUpperCase()+div.slice(1)+'Search')||$(div+'Search')||{}).value||'';
+  const sfF=parseInt(($('rep'+div.charAt(0).toUpperCase()+div.slice(1)+'StaffF')||$(div+'StaffF')||{}).value||'0')||0;
   // Nav bar
   if(ds.tab===0){
     nav.innerHTML=`<button class="btn btn-outline btn-sm" onclick="divNavPrev('${div}')"><i data-lucide="chevron-left"></i></button>
@@ -2510,8 +2572,8 @@ function makeDivCard(l,company){
 function renderDivDaily(div,company,date,sq,sfF){
   const el=$(div+'DivContent'); if(!el) return;
   let logs=filterDivLogs(S.logs.filter(l=>l.date===date),company,sq,sfF);
-  if(div==='grover'){const wf=($('groverWtF')||{}).value;if(wf)logs=logs.filter(l=>l.workTypes&&l.workTypes[0]===wf);}
-  if(div==='office'){const sf=($('officeStatusF')||{}).value;if(sf==='full')logs=logs.filter(l=>l.checkOut&&dur(l.checkIn,l.checkOut)>=S.standardHours*60);else if(sf==='short')logs=logs.filter(l=>l.checkOut&&dur(l.checkIn,l.checkOut)<S.standardHours*60);}
+  if(div==='grover'){const wf=($('repGroverWtF')||$('groverWtF')||{}).value;if(wf)logs=logs.filter(l=>l.workTypes&&l.workTypes[0]===wf);}
+  if(div==='office'){const sf=($('repOfficeStatusF')||$('officeStatusF')||{}).value;if(sf==='full')logs=logs.filter(l=>l.checkOut&&dur(l.checkIn,l.checkOut)>=S.standardHours*60);else if(sf==='short')logs=logs.filter(l=>l.checkOut&&dur(l.checkIn,l.checkOut)<S.standardHours*60);}
   // summary
   const totalH=logs.reduce((a,l)=>a+(dur(l.checkIn,l.checkOut)||0),0);
   const html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
