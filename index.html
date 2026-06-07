@@ -332,7 +332,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
   <div style="padding:20px;">
     <div class="page-header">
-      <div><h1 class="page-title">💒 Wedding Groups</h1><p class="page-sub">Photo & video data management</p></div>
+      <div><h1 class="page-title">💒 Data Management</h1><p class="page-sub">Photo & video data management</p></div>
       <button class="btn btn-primary" onclick="openNewWeddingGroup()"><i data-lucide="plus"></i> New Wedding Group</button>
     </div>
     <div id="mgrWeddingGroupsList"></div>
@@ -407,7 +407,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     <span class="nav-label">Manage</span>
     <div class="nav-item" onclick="go('staff',this)"><i data-lucide="users"></i> Staff</div>
     <div class="nav-item" onclick="go('logs',this)"><i data-lucide="clipboard-list"></i> Attendance Log</div>
-    <span class="nav-label">Wedding Data</span>
+    <span class="nav-label">Data Management</span>
     <div class="nav-item" onclick="go('wedding-data',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Wedding Groups</div>
     <span class="nav-label">Insights</span>
     <div class="nav-item" onclick="go('reports',this)"><i data-lucide="bar-chart-2"></i> Reports</div>
@@ -733,7 +733,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <div class="card">
           <div class="card-header"><span class="card-title">Freelancers</span><span class="badge badge-gray" id="flCount">0</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
-            <div class="form-hint">Saved freelancers appear as options when assigning staff to wedding ceremonies.</div>
+            <div class="form-hint">Saved freelancers appear as options when assigning staff to wedding events.</div>
             <div id="freelancersList" style="display:flex;flex-direction:column;gap:6px;"></div>
             <div style="display:flex;gap:8px;margin-top:4px;">
               <input class="form-input" id="newFreelancerInput" placeholder="Freelancer name" style="flex:1;">
@@ -889,7 +889,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     <!-- WEDDING DATA -->
     <div class="view" id="view-wedding-data">
       <div class="page-header">
-        <div><h1 class="page-title">💒 Wedding Groups</h1><p class="page-sub">Photo & video data management</p></div>
+        <div><h1 class="page-title">💒 Data Management</h1><p class="page-sub">Photo & video data management</p></div>
         <button class="btn btn-primary" onclick="openNewWeddingGroup()"><i data-lucide="plus"></i> New Wedding Group</button>
       </div>
       <div id="weddingGroupsList"></div>
@@ -1369,7 +1369,7 @@ function go(view,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   $('view-'+view).classList.add('active');
   if(el) el.classList.add('active');
-  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings',billing:'Grover Billing','wedding-data':'Wedding Groups'};
+  const titles={dashboard:'Dashboard',checkin:"Today's Status",staff:'Staff',logs:'Attendance Log',reports:'Reports',settings:'Settings',billing:'Grover Billing','wedding-data':'Data Management'};
   $('topbarTitle').textContent=titles[view]||view;
   closeSidebar();
   if(view==='dashboard') renderDash();
@@ -2330,174 +2330,88 @@ function renderWeddingGroups(containerId){
 }
 function openWeddingGroup(id){
   const g=(S.weddingGroups||[]).find(w=>w.id===id); if(!g) return;
-  const body=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <div style="font-size:18px;font-weight:800;">💒 ${g.name}</div>
-      <button class="btn btn-primary btn-sm" onclick="openAddCeremony(${id})"><i data-lucide="plus"></i> Add Ceremony</button>
-    </div>
-    ${(g.ceremonies||[]).length===0?'<div class="empty"><p>No ceremonies yet. Add one!</p></div>':(g.ceremonies||[]).sort((a,b)=>a.date.localeCompare(b.date)).map(c=>renderCeremonyCard(c,id)).join('')}`;
+  const evts=(g.ceremonies||[]).sort((a,b)=>a.date.localeCompare(b.date));
+  const tableRows=evts.map(c=>{
+    if(!c.stillData) c.stillData=(c.stillStaff||[]).map(n=>({name:n,type:n.endsWith('(F)')?'freelancer':'staff',status:c.stillStatus||'pending'}));
+    if(!c.videoData) c.videoData=(c.videoStaff||[]).map(n=>({name:n,type:n.endsWith('(F)')?'freelancer':'staff',status:c.videoStatus||'pending'}));
+    const allCopied=[...c.stillData,...c.videoData].length>0&&[...c.stillData,...c.videoData].every(p=>p.status==='copied');
+    const anyPending=[...c.stillData,...c.videoData].some(p=>p.status==='pending');
+    const rowBg=allCopied?'background:#f0fff4;':anyPending?'background:#fff5f5;':'';
+    const makeChips=(data,type)=>data.length?data.map((p,i)=>{
+      const green=p.status==='copied';
+      return '<span onclick="togglePersonInTable('+id+','+c.id+',\''+type+'\','+i+')" style="cursor:pointer;display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600;margin:2px;white-space:nowrap;background:'+(green?'#d1fae5':'#fee2e2')+';color:'+(green?'#065f46':'#991b1b')+';border:1px solid '+(green?'#6ee7b7':'#fca5a5')+';">'+p.name.replace(' (F)','')+' '+(p.type==='freelancer'?'<span style="font-size:9px;opacity:.7;">(F)</span>':'')+'</span>';
+    }).join(''):'<span style="font-size:11px;color:#adb5bd;">—</span>';
+    return '<tr style="'+rowBg+'border-bottom:1px solid #e9ecef;">'
+      +'<td style="padding:10px 12px;font-size:13px;white-space:nowrap;font-weight:600;">'+c.date+'</td>'
+      +'<td style="padding:10px 12px;font-size:13px;font-weight:700;">'+c.name+'</td>'
+      +'<td style="padding:8px 12px;">'+makeChips(c.stillData,'still')+'</td>'
+      +'<td style="padding:8px 12px;">'+makeChips(c.videoData,'video')+'</td>'
+      +'<td style="padding:8px 12px;text-align:center;"><div style="display:flex;gap:6px;justify-content:center;">'
+      +'<button class="btn btn-ghost btn-sm" onclick="editCeremony('+id+','+c.id+')" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+      +'<button class="btn btn-danger btn-sm" onclick="deleteCeremony('+id+','+c.id+')" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
+      +'</div></td></tr>';
+  }).join('');
+  const tableHTML=evts.length
+    ?'<div style="overflow-x:auto;border-radius:8px;border:1px solid #dee2e6;">'
+      +'<table style="width:100%;border-collapse:collapse;min-width:480px;">'
+      +'<thead><tr style="background:#f1f3f5;">'
+      +'<th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Date</th>'
+      +'<th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Event</th>'
+      +'<th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">📷 Still</th>'
+      +'<th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">🎬 Video</th>'
+      +'<th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Actions</th>'
+      +'</tr></thead><tbody>'+tableRows+'</tbody></table></div>'
+    :'<div style="text-align:center;padding:32px;color:#6c757d;">No events yet. Click &ldquo;+ Add Event&rdquo; to create one.</div>';
+  const body='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">'
+    +'<div style="font-size:16px;font-weight:800;">💒 '+g.name+'</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button class="btn btn-danger btn-sm" onclick="deleteWeddingGroup('+id+')">Delete Group</button>'
+    +'<button class="btn btn-primary btn-sm" onclick="openAddCeremony('+id+')">+ Add Event</button>'
+    +'</div></div>'+tableHTML;
   $('gpsModalBody').innerHTML=body;
   $('gpsModal').querySelector('.modal-title').textContent=g.name;
   openM('gpsModal');
   lucide.createIcons();
 }
-function renderCeremonyCard(c,gId){
-  // Per-person status: stillData/videoData are arrays of {name,type,status}
-  if(!c.stillData) c.stillData=(c.stillStaff||[]).map(n=>({name:n,type:n.endsWith('(F)')?'freelancer':'staff',status:c.stillStatus||'pending'}));
-  if(!c.videoData) c.videoData=(c.videoStaff||[]).map(n=>({name:n,type:n.endsWith('(F)')?'freelancer':'staff',status:c.videoStatus||'pending'}));
-  const allCopied=[...c.stillData,...c.videoData].length>0&&[...c.stillData,...c.videoData].every(p=>p.status==='copied');
-  const anyPending=[...c.stillData,...c.videoData].some(p=>p.status==='pending')||([...c.stillData,...c.videoData].length===0);
-  const borderColor=allCopied?'var(--success)':anyPending?'var(--danger)':'var(--border)';
-  const bg=allCopied?'#f0fff4':anyPending?'#fff5f5':'var(--surface)';
-
-  const makeTable=(data,type)=>{
-    if(!data.length) return `<div style="font-size:12px;color:var(--text-faint);padding:8px 0;">No staff assigned — <button class="btn btn-ghost btn-sm" onclick="addFreelancerToData(${gId},${c.id},'${type}')">+ Add Freelancer</button></div>`;
-    return `<div style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr style="background:var(--surface2);">
-        <th style="padding:7px 10px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:700;border-bottom:1px solid var(--divider);">Name</th>
-        <th style="padding:7px 10px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:700;border-bottom:1px solid var(--divider);">Type</th>
-        <th style="padding:7px 10px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:700;border-bottom:1px solid var(--divider);">Data Status</th>
-        <th style="padding:7px 10px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:700;border-bottom:1px solid var(--divider);">Action</th>
-      </tr></thead>
-      <tbody>
-        ${data.map((p,i)=>`<tr style="border-bottom:1px solid var(--divider);">
-          <td style="padding:8px 10px;font-weight:600;">${p.name.replace(' (F)','')}</td>
-          <td style="padding:8px 10px;"><span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${p.type==='freelancer'?'var(--warning-light)':'var(--primary-light)'};color:${p.type==='freelancer'?'var(--warning)':'var(--primary)'};">${p.type==='freelancer'?'Freelancer':'Staff'}</span></td>
-          <td style="padding:8px 10px;"><span class="wg-status-badge ${p.status}">${p.status==='copied'?'🟢 Copied':'🔴 Pending'}</span></td>
-          <td style="padding:8px 10px;">
-            ${p.status==='pending'?`<button class="btn btn-success btn-sm" onclick="markPersonStatus(${gId},${c.id},'${type}',${i},'copied')">Mark Copied</button>`:`<button class="btn btn-outline btn-sm" onclick="markPersonStatus(${gId},${c.id},'${type}',${i},'pending')">Mark Pending</button>`}
-          </td>
-        </tr>`).join('')}
-        <tr><td colspan="4" style="padding:6px 8px;"><button class="btn btn-ghost btn-sm" onclick="addFreelancerToData(${gId},${c.id},'${type}')">+ Add Freelancer</button></td></tr>
-      </tbody>
-    </table></div>`;
-  };
-
-  return `<div style="border:2px solid ${borderColor};border-radius:var(--radius);padding:14px;margin-bottom:10px;background:${bg};">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div>
-        <div style="font-weight:700;font-size:15px;">${c.date} — ${c.name}</div>
-        ${c.notes?`<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${c.notes}</div>`:''}
-      </div>
-      <div style="display:flex;gap:6px;">
-        <button class="btn btn-ghost btn-sm" onclick="editCeremony(${gId},${c.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCeremony(${gId},${c.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
-      </div>
-    </div>
-    <div style="margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">📷 Still Photography</div>
-      ${makeTable(c.stillData,'still')}
-    </div>
-    <div>
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">🎬 Video</div>
-      ${makeTable(c.videoData,'video')}
-    </div>
-  </div>`;
-}
-function markPersonStatus(gId,cId,type,idx,status){
+function togglePersonInTable(gId,cId,type,idx){
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
   const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
   const arr=type==='still'?c.stillData:c.videoData;
-  if(arr&&arr[idx]) arr[idx].status=status;
-  // sync legacy fields
-  c.stillStatus=(c.stillData||[]).every(p=>p.status==='copied')?'copied':'pending';
-  c.videoStatus=(c.videoData||[]).every(p=>p.status==='copied')?'copied':'pending';
+  if(!arr||arr[idx]===undefined) return;
+  arr[idx].status=arr[idx].status==='copied'?'pending':'copied';
+  c.stillStatus=(c.stillData||[]).every(p=>p.status==='copied')&&c.stillData.length>0?'copied':'pending';
+  c.videoStatus=(c.videoData||[]).every(p=>p.status==='copied')&&c.videoData.length>0?'copied':'pending';
   saveData();
   openWeddingGroup(gId);
-  toast(arr[idx].name+': '+status);
 }
-
-function addFreelancerToData(gId,cId,type){
-  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
-  const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
-  // Build freelancer suggestion list
-  const existing=S.freelancers||[];
-  const suggHTML=existing.length?`<datalist id="flSuggestions">${existing.map(f=>`<option value="${f.name}">`).join('')}</datalist>`:'';
-  const modal=document.createElement('div');
-  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:700;display:flex;align-items:flex-end;justify-content:center;padding:0;';
-  modal.innerHTML=`<div style="background:#fff;border-radius:14px 14px 0 0;width:100%;max-width:480px;padding:20px;">
-    ${suggHTML}
-    <div style="font-weight:700;font-size:15px;margin-bottom:14px;">Add Freelancer to ${type==='still'?'Still':'Video'}</div>
-    <div class="form-group" style="margin-bottom:14px;">
-      <label class="form-label">Freelancer Name</label>
-      <input class="form-input" id="flNameInput" list="flSuggestions" placeholder="Type name or select saved freelancer" style="font-size:16px;" autocomplete="off">
-    </div>
-    <div style="display:flex;gap:10px;">
-      <button class="btn btn-outline" style="flex:1;" onclick="this.closest('[style*=fixed]').remove()">Cancel</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="confirmAddFreelancer(${gId},${cId},'${type}',this)">Add Freelancer</button>
-    </div>
-  </div>`;
-  document.body.appendChild(modal);
-  setTimeout(()=>{ const inp=$('flNameInput'); if(inp) inp.focus(); },100);
+function showInlineFlInput(type){
+  const wrap=document.getElementById(type+'_fl_input_wrap');
+  if(wrap){ wrap.style.display='flex'; setTimeout(()=>{const inp=document.getElementById(type+'_fl_name');if(inp)inp.focus();},50); }
 }
-
-function confirmAddFreelancer(gId,cId,type,btn){
-  const inp=$('flNameInput'); if(!inp) return;
+function addInlineFreelancer(type){
+  const inp=document.getElementById(type+'_fl_name'); if(!inp) return;
   const name=inp.value.trim();
   if(!name){toast('Enter freelancer name','err');return;}
-  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
-  const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
-  // Save to freelancers list if new
   if(!S.freelancers) S.freelancers=[];
   if(!S.freelancers.some(f=>f.name.toLowerCase()===name.toLowerCase())){
     S.freelancers.push({id:S.freelancerIdCounter++,name});
-    toast('Freelancer "'+name+'" saved');
+    saveData();
   }
-  // Add to ceremony data
-  const entry={name:name+' (F)',type:'freelancer',status:'pending'};
-  if(type==='still'){if(!c.stillData)c.stillData=[];c.stillData.push(entry);}
-  else{if(!c.videoData)c.videoData=[];c.videoData.push(entry);}
-  // Sync staff arrays
-  if(type==='still') c.stillStaff=(c.stillData||[]).map(p=>p.name);
-  else c.videoStaff=(c.videoData||[]).map(p=>p.name);
-  saveData();
-  btn.closest('[style*=fixed]').remove();
-  openWeddingGroup(gId);
+  const fullName=name+' (F)';
+  const uid=type+'_fl_'+Date.now();
+  const container=document.getElementById(type+'_fl_add_row');
+  if(container){
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid var(--primary);border-radius:20px;cursor:pointer;font-size:13px;background:var(--primary-light);';
+    lbl.id=type+'_lbl_'+uid;
+    lbl.innerHTML='<input type="checkbox" name="'+type+'Staff" value="'+fullName+'" checked onchange="toggleCerStaff(this,\''+type+'_lbl_'+uid+'\')" style="width:14px;height:14px;">'+name+'<span style="font-size:10px;color:var(--warning);margin-left:2px;">(F)</span>';
+    container.parentNode.insertBefore(lbl,container);
+  }
+  inp.value='';
+  document.getElementById(type+'_fl_input_wrap').style.display='none';
+  toast('"'+name+'" added');
 }
 
-function markDataStatus(gId,cId,type,status){
-  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
-  const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
-  if(type==='still') c.stillStatus=status;
-  else c.videoStatus=status;
-  saveData();
-  openWeddingGroup(gId);
-  toast(type==='still'?'Still data '+status:'Video data '+status);
-}
-function deleteCeremony(gId,cId){
-  if(!confirm('Delete this ceremony?')) return;
-  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
-  g.ceremonies=(g.ceremonies||[]).filter(c=>c.id!==cId);
-  saveData();
-  openWeddingGroup(gId);
-  toast('Ceremony deleted');
-}
-function openNewWeddingGroup(){
-  $('gpsModalBody').innerHTML=`
-    <div class="form-group"><label class="form-label">Wedding Group Name <span style="color:var(--danger)">*</span></label>
-      <input class="form-input" id="wgNameInput" placeholder="e.g. Varun &amp; Asha Wedding" style="font-size:16px;"></div>
-    <div class="form-group"><label class="form-label">Date Range</label>
-      <input class="form-input" id="wgDateInput" placeholder="e.g. 1–3 Feb 2026" style="font-size:16px;"></div>
-    <div class="modal-footer" style="padding:0;border:none;justify-content:flex-end;gap:10px;display:flex;margin-top:8px;">
-      <button class="btn btn-outline" onclick="closeM('gpsModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveNewWeddingGroup()">Create Group</button>
-    </div>`;
-  $('gpsModal').querySelector('.modal-title').textContent='New Wedding Group';
-  openM('gpsModal');
-}
-function saveNewWeddingGroup(){
-  const name=$('wgNameInput').value.trim();
-  if(!name){toast('Enter wedding group name','err');return;}
-  const g={id:S.wgIdCounter++,name,dateRange:$('wgDateInput').value.trim(),ceremonies:[],createdBy:S.currentUser?.type||'admin'};
-  if(!S.weddingGroups) S.weddingGroups=[];
-  S.weddingGroups.unshift(g);
-  saveData();
-  closeM('gpsModal');
-  renderWeddingGroups('weddingGroupsList');
-  renderWeddingGroups('mgrWeddingGroupsList');
-  toast('Wedding group created');
-}
 let _editCeremonyData=null;
 function openAddCeremony(gId){
   _editCeremonyData={gId,cId:null};
@@ -2515,7 +2429,6 @@ function showCeremonyForm(gId,cId){
   const stdNames=['Ring Ceremony','Roka','Engagement','Mehendi','Haldi','Sangeet','Wedding Day','Reception','Other'];
   const isOther=c&&!stdNames.includes(c.name);
   const selectedName=isOther?'Other':(c?c.name:'Ring Ceremony');
-  // Get existing still/video staff from stillData/videoData if available
   const stillChecked=c?(c.stillData?c.stillData.map(p=>p.name):c.stillStaff||[]):[];
   const videoChecked=c?(c.videoData?c.videoData.map(p=>p.name):c.videoStaff||[]):[];
   const makeStaffSection=(type,checked)=>{
@@ -2523,22 +2436,29 @@ function showCeremonyForm(gId,cId){
       ...activeStaff.map(s=>({name:s.name,id:'s_'+s.id,isFL:false})),
       ...freelancers.map(f=>({name:f.name+' (F)',id:'fl_'+f.id,isFL:true}))
     ];
-    return allPeople.map(p=>`
+    const chips=allPeople.map(p=>`
       <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid ${checked.includes(p.name)?'var(--primary)':'var(--border)'};border-radius:20px;cursor:pointer;font-size:13px;background:${checked.includes(p.name)?'var(--primary-light)':'#fff'};" id="${type}_lbl_${p.id}">
         <input type="checkbox" name="${type}Staff" value="${p.name}" ${checked.includes(p.name)?'checked':''} onchange="toggleCerStaff(this,'${type}_lbl_${p.id}')" style="width:14px;height:14px;">
-        ${p.name}${p.isFL?'':''} 
-        ${p.isFL?'<span style="font-size:10px;color:var(--warning);margin-left:2px;">(F)</span>':''}
+        ${p.name.replace(' (F)','')}${p.isFL?'<span style="font-size:10px;color:var(--warning);margin-left:2px;">(F)</span>':''}
       </label>`).join('');
+    return chips+`<div id="${type}_fl_add_row" style="display:flex;align-items:center;gap:6px;margin-top:6px;width:100%;">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="showInlineFlInput('${type}')">+ Add Freelancer</button>
+      <div id="${type}_fl_input_wrap" style="display:none;flex;gap:6px;align-items:center;">
+        <input class="form-input" id="${type}_fl_name" placeholder="Freelancer name" style="font-size:15px;width:180px;" autocomplete="off">
+        <button type="button" class="btn btn-primary btn-sm" onclick="addInlineFreelancer('${type}')">Add</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('${type}_fl_input_wrap').style.display='none'">✕</button>
+      </div>
+    </div>`;
   };
   $('gpsModalBody').innerHTML=`
     <div class="form-group"><label class="form-label">Date <span style="color:var(--danger)">*</span></label>
       <input class="form-input" type="date" id="cerDate" value="${c?c.date:''}" style="font-size:16px;"></div>
-    <div class="form-group"><label class="form-label">Ceremony Name <span style="color:var(--danger)">*</span></label>
+    <div class="form-group"><label class="form-label">Event Name <span style="color:var(--danger)">*</span></label>
       <select class="form-select" id="cerName" style="font-size:16px;" onchange="toggleOtherName(this)">
         ${stdNames.map(n=>`<option${n===selectedName?' selected':''}>${n}</option>`).join('')}
       </select></div>
-    <div class="form-group" id="otherNameGroup" style="${isOther?'':'display:none;'}">
-      <label class="form-label">Custom Ceremony Name <span style="color:var(--danger)">*</span></label>
+    <div class="form-group" id="otherNameGroup" style="${isOther?'':'display:none;}">
+      <label class="form-label">Custom Event Name <span style="color:var(--danger)">*</span></label>
       <input class="form-input" id="cerCustomName" value="${isOther&&c?c.name:''}" placeholder="e.g. Tilak, Pre-Wedding Shoot" style="font-size:16px;"></div>
     <div class="form-group">
       <label class="form-label">📷 Still Photography Staff</label>
@@ -2552,9 +2472,9 @@ function showCeremonyForm(gId,cId){
       <textarea class="form-textarea" id="cerNotes" placeholder="Any notes...">${c?c.notes||'':''}</textarea></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
       <button class="btn btn-outline" onclick="openWeddingGroup(${gId})">Back</button>
-      <button class="btn btn-primary" onclick="saveCeremony()">${c?'Update Ceremony':'Add Ceremony'}</button>
+      <button class="btn btn-primary" onclick="saveCeremony()">${c?'Update Event':'Add Event'}</button>
     </div>`;
-  $('gpsModal').querySelector('.modal-title').textContent=(c?'Edit':'Add')+' Ceremony — '+g.name;
+  $('gpsModal').querySelector('.modal-title').textContent=(c?'Edit':'Add')+' Event — '+g.name;
 }
 function toggleOtherName(sel){
   const grp=$('otherNameGroup');
@@ -2570,15 +2490,15 @@ function saveCeremony(){
   let name=$('cerName').value;
   if(name==='Other'){
     const custom=$('cerCustomName'); 
-    if(!custom||!custom.value.trim()){toast('Enter custom ceremony name','err');return;}
+    if(!custom||!custom.value.trim()){toast('Enter custom event name','err');return;}
     name=custom.value.trim();
   }
-  if(!d||!name){toast('Date and ceremony name required','err');return;}
+  if(!d||!name){toast('Date and event name required','err');return;}
   const stillStaff=[...document.querySelectorAll('input[name="stillStaff"]:checked')].map(c=>c.value);
   const videoStaff=[...document.querySelectorAll('input[name="videoStaff"]:checked')].map(c=>c.value);
-  const {gId,cId}=_editCeremonyData;
+  const {gId,cId}=_editEventData;
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
-  if(!g.ceremonies) g.ceremonies=[];
+  if(!g.events) g.events=[];
   // Build per-person data arrays preserving existing statuses
   const buildData=(names,existing)=>names.map(n=>{
     const prev=existing?existing.find(p=>p.name===n):null;
@@ -2586,12 +2506,12 @@ function saveCeremony(){
     return {name:n,type:isFL?'freelancer':'staff',status:prev?prev.status:'pending'};
   });
   if(cId){
-    const idx=g.ceremonies.findIndex(c=>c.id===cId);
+    const idx=g.events.findIndex(c=>c.id===cId);
     if(idx>=0){
-      const old=g.ceremonies[idx];
+      const old=g.events[idx];
       const stillData=buildData(stillStaff,old.stillData);
       const videoData=buildData(videoStaff,old.videoData);
-      g.ceremonies[idx]={...old,date:d,name,stillStaff,videoStaff,stillData,videoData,
+      g.events[idx]={...old,date:d,name,stillStaff,videoStaff,stillData,videoData,
         stillStatus:stillData.every(p=>p.status==='copied')&&stillData.length>0?'copied':'pending',
         videoStatus:videoData.every(p=>p.status==='copied')&&videoData.length>0?'copied':'pending',
         notes:$('cerNotes').value.trim()};
@@ -2600,16 +2520,16 @@ function saveCeremony(){
     const stillData=buildData(stillStaff,null);
     const videoData=buildData(videoStaff,null);
     const newC={id:Date.now(),date:d,name,stillStaff,videoStaff,stillData,videoData,stillStatus:'pending',videoStatus:'pending',notes:$('cerNotes').value.trim()};
-    g.ceremonies.push(newC);
+    g.events.push(newC);
   }
   saveData();
   renderWeddingGroups('weddingGroupsList');
   renderWeddingGroups('mgrWeddingGroupsList');
   openWeddingGroup(gId);
-  toast(cId?'Ceremony updated':'Ceremony added');
+  toast(cId?'Event updated':'Event added');
 }
 function deleteWeddingGroup(id){
-  if(!confirm('Delete this wedding group and all its ceremonies?')) return;
+  if(!confirm('Delete this wedding group and all its events?')) return;
   S.weddingGroups=(S.weddingGroups||[]).filter(g=>g.id!==id);
   saveData();
   renderWeddingGroups('weddingGroupsList');
