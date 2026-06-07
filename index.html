@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root{
   --bg:#f8f9fa;--surface:#fff;--surface2:#f1f3f5;--border:#dee2e6;--divider:#e9ecef;
@@ -345,7 +347,6 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   <nav class="sidebar-nav">
     <span class="nav-label">Overview</span>
     <div class="nav-item active" onclick="go('dashboard',this)"><i data-lucide="layout-dashboard"></i> Dashboard</div>
-    <div class="nav-item" onclick="go('checkin',this)"><i data-lucide="clock"></i> Today's Status</div>
     <span class="nav-label">Manage</span>
     <div class="nav-item" onclick="go('staff',this)"><i data-lucide="users"></i> Staff</div>
     <div class="nav-item" onclick="go('logs',this)"><i data-lucide="clipboard-list"></i> Attendance Log</div>
@@ -378,7 +379,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Logout
       </button>
-      <button id="topbarCiBtn" class="btn btn-primary btn-sm" onclick="openCheckinModal(null)"><i data-lucide="plus"></i> Check In</button>
+
     </div>
   </header>
 
@@ -436,6 +437,15 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;">Recent Activity</div>
           <div id="groverSalesRecent"></div>
         </div>
+      </div>
+
+      <!-- ON DUTY / OFF DUTY BOARD -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <span class="card-title">On Duty / Off Duty</span>
+          <span class="badge badge-green" id="onDutyCount">0 on duty</span>
+        </div>
+        <div class="status-grid" id="dashStatusGrid" style="padding:16px;gap:14px;"></div>
       </div>
     </div>
 
@@ -539,7 +549,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         </div>
         <div class="info-box" style="margin-bottom:20px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div><strong>Double Shift Rule:</strong> Check-in between 5:00 AM–12:00 PM AND check-out at or after 8:30 PM = duty billed twice. Rates configured in Settings.</div>
+          <div><strong>Dinner Shift Rule:</strong> Check-in between 5:00 AM–12:00 PM AND check-out at or after 8:30 PM = duty billed as Shift + Dinner (twice). Rates configured in Settings.</div>
         </div>
         <div id="billingPendingWarn" style="display:none;background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:#7c4a00;margin-bottom:16px;"></div>
         <div class="card" style="margin-bottom:16px;">
@@ -1019,7 +1029,8 @@ const S = {
     wedding: {tab:0, date:new Date().toISOString().slice(0,10), weekStart:null, month:new Date().toISOString().slice(0,7)},
     office: {tab:0, date:new Date().toISOString().slice(0,10), weekStart:null, month:new Date().toISOString().slice(0,7)}
   },
-  dataCopyAnswer: null
+  dataCopyAnswer: null,
+  medicalLeaves: {}
 };
 
 // ===== HELPERS =====
@@ -1074,7 +1085,7 @@ window.submitLogin = function(){
   S.currentUser={role:'staff',name:sf.name,staffId:sf.id};
   $('loginScreen').style.display='none';
   $('logoutBtn').style.display='inline-flex';
-  $('topbarCiBtn').style.display='none';
+
   document.body.classList.add('staff-mode');
   $('topbarTitle').textContent='Hi '+sf.name.split(' ')[0];
   $('hamburgerBtn').style.display='none';
@@ -1090,7 +1101,7 @@ window.logout = function(){
   S.currentUser=null;
   $('loginScreen').style.display='flex';
   $('logoutBtn').style.display='none';
-  $('topbarCiBtn').style.display='';
+
   $('loginPassword').value='';
   const ph=$('loginPhone'); if(ph) ph.value='';
   $('loginError').style.display='none';
@@ -1277,7 +1288,7 @@ function renderDash(){
           <div style="font-size:12px;margin-top:2px;">
             <span style="color:var(--success);font-weight:600;">In: ${l.checkIn}</span>
             ${l.checkOut?`<span style="color:var(--text-muted);margin-left:8px;">Out: ${l.checkOut}</span>`:'<span style="color:var(--text-faint);margin-left:8px;">Out: —</span>'}
-            ${double?'<span class="billing-double-badge" style="margin-left:6px;">🔁 Double</span>':''}
+            ${double?'<span class="billing-double-badge" style="margin-left:6px;">🌙 Dinner</span>':''}
           </div>
         </div>
         ${!l.checkOut?'<span class="badge badge-green">On Duty</span>':l===sfLogs[sfLogs.length-1]?'<span class="badge badge-gray">Done</span>':''}
@@ -1286,6 +1297,32 @@ function renderDash(){
   }).join('')||'<div class="empty"><p>No staff yet</p></div>';
 
   renderGroverSales();
+  // On Duty / Off Duty board
+  const onDuty=S.staff.filter(s=>s.status==='active'&&tLogs.some(l=>l.staffId===s.id&&l.checkIn&&!l.checkOut));
+  const offDuty=S.staff.filter(s=>s.status==='active'&&!tLogs.some(l=>l.staffId===s.id&&l.checkIn&&!l.checkOut));
+  $('onDutyCount').textContent=onDuty.length+' on duty';
+  const makeStatusCard=(sf,isOn)=>{
+    const log=tLogs.find(l=>l.staffId===sf.id&&l.checkIn);
+    return `<div class="status-card ${isOn?'on-duty':'off-duty'}">
+      <div class="av" style="background:${sf.color};width:36px;height:36px;font-size:13px;flex-shrink:0;">${ini(sf.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:13px;">${sf.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${sf.role}</div>
+        ${log?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${compLabel(log.company)} · ${log.venue}</div>`:''}
+        ${log?`<div style="font-size:11px;margin-top:1px;">In: <strong>${log.checkIn}</strong>${log.checkOut?' · Out: <strong>'+log.checkOut+'</strong>':''}</div>`:''}
+      </div>
+      ${isOn?`<button class="btn btn-success btn-sm" onclick="openCheckoutModal(${sf.id})" style="font-size:11px;padding:4px 8px;">Check Out</button>`:''}
+    </div>`;
+  };
+  $('dashStatusGrid').innerHTML=`
+    <div>
+      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;"></span> On Duty (${onDuty.length})</div>
+      ${onDuty.length?onDuty.map(sf=>makeStatusCard(sf,true)).join(''):'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No one checked in yet</div>'}
+    </div>
+    <div>
+      <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--border);display:inline-block;"></span> Off Duty (${offDuty.length})</div>
+      ${offDuty.map(sf=>makeStatusCard(sf,false)).join('')}
+    </div>`;
   lucide.createIcons();
 }
 
@@ -1335,7 +1372,7 @@ function renderGroverSales(){
   if($('groverSalesKpi')) $('groverSalesKpi').innerHTML=`
     <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Revenue</div><div class="kpi-val" style="color:var(--success);font-size:20px;">₹${totalRev.toLocaleString('en-IN')}</div><div class="kpi-sub">${pending.length?' + '+pending.length+' pending':''}</div></div>
     <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Shifts</div><div class="kpi-val" style="font-size:20px;">${totalShifts}</div><div class="kpi-sub">confirmed</div></div>
-    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Double Shifts</div><div class="kpi-val" style="color:var(--warning);font-size:20px;">${totalDoubles}</div><div class="kpi-sub">billed twice</div></div>
+    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Dinner Shifts</div><div class="kpi-val" style="color:var(--warning);font-size:20px;">${totalDoubles}</div><div class="kpi-sub">billed twice</div></div>
     <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${staffSet.size}</div><div class="kpi-sub">deployed</div></div>`;
 
   // Bar chart
@@ -1511,6 +1548,7 @@ function submitCheckin(){
     workTypes:[],prints:0,printSize:''
   };
   S.logs.push(log);
+  saveData();
   closeM('ciModal');
   const sf=getSf(staffId);
   if(isStaff){
@@ -1698,6 +1736,7 @@ function submitStaff(){
 function deleteStaff(id){
   if(!confirm('Remove this staff member?')) return;
   S.staff=S.staff.filter(s=>s.id!==id);
+  saveData();
   toast('Staff removed');renderStaff();
 }
 
@@ -1931,27 +1970,27 @@ function addRole(){
   const input=$('newRoleInput'),val=(input.value||'').trim();
   if(!val){toast('Enter a role name','err');return;}
   if(S.roles.some(r=>r.toLowerCase()===val.toLowerCase())){toast('Role already exists','err');return;}
-  S.roles.push(val); input.value=''; renderSettings(); toast('"'+val+'" added');
+  S.roles.push(val); input.value=''; saveData(); renderSettings(); toast('"'+val+'" added');
 }
 function deleteRole(i){
   if(S.staff.some(s=>s.role===S.roles[i])){toast('Reassign staff first','err');return;}
   if(!confirm('Delete role "'+S.roles[i]+'"?')) return;
-  S.roles.splice(i,1); renderSettings(); toast('Role deleted');
+  S.roles.splice(i,1); saveData(); renderSettings(); toast('Role deleted');
 }
 function addWorkType(){
   const input=$('newWtInput'),val=(input.value||'').trim();
   if(!val){toast('Enter a work type','err');return;}
   if(S.workTypes.some(w=>w.toLowerCase()===val.toLowerCase())){toast('Already exists','err');return;}
-  S.workTypes.push(val); input.value=''; renderSettings(); toast('"'+val+'" added');
+  S.workTypes.push(val); input.value=''; saveData(); renderSettings(); toast('"'+val+'" added');
 }
 function deleteWorkType(i){
   if(!confirm('Delete "'+S.workTypes[i]+'"?')) return;
-  S.workTypes.splice(i,1); renderSettings(); toast('Deleted');
+  S.workTypes.splice(i,1); saveData(); renderSettings(); toast('Deleted');
 }
 function saveStdHours(){
   const val=parseInt($('stdHrsInput').value,10);
   if(!val||val<1||val>24){toast('Enter 1–24','err');return;}
-  S.standardHours=val; $('stdHrsDisplay').textContent=val;
+  S.standardHours=val; $('stdHrsDisplay').textContent=val; saveData();
   const m=$('stdHrsMsg'); m.style.display='inline'; setTimeout(()=>m.style.display='none',2500);
 }
 function changeAdminPassword(){
@@ -1962,6 +2001,7 @@ function changeAdminPassword(){
   if(nw.length<4){e.textContent='New password must be 4+ characters.';e.style.display='block';return;}
   if(nw!==cfm){e.textContent='Passwords do not match.';e.style.display='block';return;}
   S.admin.password=nw; ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
+  saveData();
   toast('Admin password updated');
 }
 
@@ -2093,7 +2133,7 @@ function renderBilling(){
         <td style="font-size:13px;">${e.wt}</td>
         <td style="font-size:12px;">${e.log.checkIn}</td>
         <td style="font-size:12px;">${e.log.checkOut}</td>
-        <td>${e.isSecond?'<span class="billing-double-badge">🔁 Double</span>':e.double&&!e.isSecond?'<span style="font-size:11px;color:var(--text-muted);">1st shift</span>':'—'}</td>
+        <td>${e.isSecond?'<span class="billing-double-badge">🌙 Dinner</span>':'<span style="font-size:12px;color:var(--text-muted);">Shift</span>'}</td>
         <td style="font-size:13px;">${e.rate!=null?'₹'+e.rate.toLocaleString('en-IN'):'<span style="color:var(--text-faint);">TBD</span>'}</td>
         <td style="font-weight:700;font-size:13px;">${amtStr}</td>
       </tr>`;
@@ -2116,7 +2156,7 @@ function renderBilling(){
     return `<div class="billing-subtotal-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <div class="av" style="background:${d.sf.color};">${ini(d.sf.name)}</div>
-        <div style="flex:1;"><div style="font-weight:700;">${d.sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${d.entries.length} entr${d.entries.length===1?'y':'ies'}${doubles?' · '+doubles+' double shift'+(doubles>1?'s':''):''}</div></div>
+        <div style="flex:1;"><div style="font-weight:700;">${d.sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${d.entries.length} entr${d.entries.length===1?'y':'ies'}${doubles?' · '+doubles+' dinner shift'+(doubles>1?'s':''):''}</div></div>
         <div style="font-size:18px;font-weight:800;color:var(--primary);">₹${d.total.toLocaleString('en-IN')}${d.hasTBD?' <span style="font-size:12px;color:var(--text-faint);">+TBD</span>':''}</div>
       </div>
       <div style="border-top:1px solid var(--divider);padding-top:8px;display:flex;flex-direction:column;gap:4px;">
@@ -2138,7 +2178,7 @@ function renderBilling(){
   $('billingGrandTotal').innerHTML=`
     <div style="display:flex;gap:24px;flex-wrap:wrap;">
       <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Total Entries</div><div style="font-size:22px;font-weight:800;">${entries.length}</div></div>
-      <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Double Shifts</div><div style="font-size:22px;font-weight:800;color:#ffd700;">${doubleCount}</div></div>
+      <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Dinner Shifts</div><div style="font-size:22px;font-weight:800;color:#ffd700;">${doubleCount}</div></div>
       <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Photobooth</div><div style="font-size:22px;font-weight:800;color:#aaa;">${pbEntries.length} ${S.groverRates['Photobooth']==null?'(TBD)':''}</div></div>
     </div>
     <div style="text-align:right;">
@@ -2199,7 +2239,7 @@ function exportBillingPDF(){
       <td>${e.wt}</td>
       <td>${e.log.checkIn}</td>
       <td>${e.log.checkOut}</td>
-      <td>${e.isSecond?'🔁 Double':''}</td>
+      <td>${e.isSecond?'🌙 Dinner':'Shift'}</td>
       <td style="text-align:right;">${e.rate!=null?'₹'+e.rate.toLocaleString('en-IN'):'TBD'}</td>
       <td style="text-align:right;font-weight:700;">${e.rate!=null?'₹'+e.rate.toLocaleString('en-IN'):'TBD'}</td>
     </tr>`).join('');
@@ -2281,6 +2321,7 @@ function saveSettingsRates(){
     const v=el.value.trim();
     S.groverRates[wt]=v===''?null:parseInt(v,10)||null;
   });
+  saveData();
   const m=$('ratesSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
   toast('Billing rates saved');
 }
@@ -2288,6 +2329,7 @@ function savePaidLeavePolicy(){
   const v=parseInt($('paidLeaveInput').value,10);
   if(!v||v<1||v>365){toast('Enter 1–365','err');return;}
   S.paidLeavesPerYear=v;
+  saveData();
   const m=$('plSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
   toast('Paid leave policy saved');
 }
@@ -2339,6 +2381,7 @@ function markPaidLeave(sfId){
   const hasCI=S.logs.some(l=>l.staffId===sfId&&l.date===d);
   if(hasCI&&!confirm('Staff has a check-in on this date. Mark as paid leave anyway?')) return;
   S.leaves[sfId].push({date:d,year:yr});
+  saveData();
   renderLeaveHistory(sfId,yr);
   const taken=S.leaves[sfId].filter(l=>l.year===yr).length;
   toast('Paid leave marked for '+fmtDate(d));
@@ -2346,6 +2389,7 @@ function markPaidLeave(sfId){
 function deletePaidLeave(sfId,date){
   if(!confirm('Remove paid leave for '+fmtDate(date)+'?')) return;
   S.leaves[sfId]=(S.leaves[sfId]||[]).filter(l=>l.date!==date);
+  saveData();
   const yr=new Date(date+'T00:00:00').getFullYear();
   renderLeaveHistory(sfId,yr);
   toast('Paid leave removed');
@@ -2454,7 +2498,7 @@ function makeDivCard(l,company){
       <div class="av" style="background:${sf.color};width:32px;height:32px;font-size:12px;">${ini(sf.name)}</div>
       <div style="flex:1;"><div style="font-weight:700;font-size:13px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
       ${l.checkOut?`<span class="badge badge-gray">${l.checkIn}–${l.checkOut}${d?' · '+fmtDur(d):''}</span>`:'<span class="badge badge-green">Active · In '+l.checkIn+'</span>'}
-      ${double?'<span class="billing-double-badge">🔁</span>':''}
+      ${double?'<span class="billing-double-badge">🌙 Dinner</span>':''}
     </div>
     <div style="font-size:13px;"><span style="color:var(--text-muted);">📍</span> ${l.venue}</div>
     ${l.clientName?`<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">👨‍👩‍👧 ${l.clientName}</div>`:''}
@@ -2541,10 +2585,120 @@ function exportDivisionCSV(div){
   toast('CSV exported');
 }
 
+// ===== FIREBASE =====
+const firebaseConfig = {
+  apiKey: "AIzaSyC5e4fS-kUUTym3eRYQmOAmZ6V5JDiGGUU",
+  authDomain: "fotovision-attendance.firebaseapp.com",
+  databaseURL: "https://fotovision-attendance-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "fotovision-attendance",
+  storageBucket: "fotovision-attendance.firebasestorage.app",
+  messagingSenderId: "840529583846",
+  appId: "1:840529583846:web:2330162371103b8f912527",
+  measurementId: "G-R000NDYGLM"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Save entire state to Firebase (debounced)
+let saveTimer = null;
+function saveData(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    const toSave = {
+      staff: S.staff,
+      logs: S.logs.map(l=>({...l, selfie: l.selfie?'[photo]':''})), // strip selfies from DB
+      nId: S.nId,
+      roles: S.roles,
+      workTypes: S.workTypes,
+      standardHours: S.standardHours,
+      admin: S.admin,
+      groverRates: S.groverRates,
+      paidLeavesPerYear: S.paidLeavesPerYear,
+      leaves: S.leaves,
+      medicalLeaves: S.medicalLeaves||{}
+    };
+    db.ref('appData').set(toSave).catch(e=>console.error('Save error',e));
+    // Save selfies separately (keyed by log id)
+    S.logs.forEach(l=>{
+      if(l.selfie&&l.selfie.startsWith('data:')){
+        db.ref('selfies/'+l.id).set(l.selfie).catch(()=>{});
+      }
+    });
+  }, 800);
+}
+
+function showLoadingScreen(msg){
+  let el = $('fbLoadingScreen');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'fbLoadingScreen';
+    el.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Inter,sans-serif;';
+    el.innerHTML = '<div style="width:48px;height:48px;border:4px solid #dbeafe;border-top-color:#0d6efd;border-radius:50%;animation:spin 1s linear infinite;"></div><div style="font-size:15px;color:#6c757d;" id="fbLoadingMsg">Loading...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+    document.body.appendChild(el);
+  }
+  $('fbLoadingMsg').textContent = msg||'Loading...';
+}
+function hideLoadingScreen(){ const el=$('fbLoadingScreen'); if(el) el.remove(); }
+
 // ===== INIT =====
 function init(){
   lucide.createIcons();
-  renderDash();
+  showLoadingScreen('Connecting to Fotovision...');
+  db.ref('appData').once('value').then(snap=>{
+    const data = snap.val();
+    if(data){
+      // Merge Firebase data into S
+      if(data.staff) S.staff = data.staff;
+      if(data.logs) S.logs = data.logs;
+      if(data.nId) S.nId = data.nId;
+      if(data.roles) S.roles = data.roles;
+      if(data.workTypes) S.workTypes = data.workTypes;
+      if(data.standardHours) S.standardHours = data.standardHours;
+      if(data.admin) S.admin = data.admin;
+      if(data.groverRates) S.groverRates = data.groverRates;
+      if(data.paidLeavesPerYear) S.paidLeavesPerYear = data.paidLeavesPerYear;
+      if(data.leaves) S.leaves = data.leaves;
+      if(data.medicalLeaves) S.medicalLeaves = data.medicalLeaves;
+      // Reload selfies for today's logs
+      const td = today();
+      const todayLogs = S.logs.filter(l=>l.date===td&&l.selfie==='[photo]');
+      const selfiePromises = todayLogs.map(l=>
+        db.ref('selfies/'+l.id).once('value').then(s=>{
+          if(s.val()) l.selfie = s.val();
+        }).catch(()=>{})
+      );
+      return Promise.all(selfiePromises);
+    }
+  }).then(()=>{
+    hideLoadingScreen();
+    renderDash();
+    // Listen for real-time updates from other devices
+    db.ref('appData').on('value', snap=>{
+      const data = snap.val();
+      if(!data) return;
+      // Only update if not currently in a modal (to avoid disrupting active forms)
+      const anyModalOpen = document.querySelector('.modal-bg.open');
+      if(anyModalOpen) return;
+      if(data.staff) S.staff = data.staff;
+      if(data.logs) S.logs = data.logs;
+      if(data.nId) S.nId = data.nId;
+      if(data.leaves) S.leaves = data.leaves;
+      if(data.medicalLeaves) S.medicalLeaves = data.medicalLeaves;
+      // Re-render current view silently
+      const activeView = document.querySelector('.view.active');
+      if(activeView){
+        const vid = activeView.id.replace('view-','');
+        if(vid==='dashboard') renderDash();
+        else if(vid==='staff') renderStaff();
+        else if(vid==='logs') renderLogs();
+        else if(vid==='reports') renderReports();
+      }
+    });
+  }).catch(e=>{
+    hideLoadingScreen();
+    toast('Could not connect to database. Working offline.','err');
+    renderDash();
+  });
 }
 init();
 </script>
