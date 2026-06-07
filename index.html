@@ -2496,7 +2496,7 @@ function saveCeremony(){
   if(!d||!name){toast('Date and event name required','err');return;}
   const stillStaff=[...document.querySelectorAll('input[name="stillStaff"]:checked')].map(c=>c.value);
   const videoStaff=[...document.querySelectorAll('input[name="videoStaff"]:checked')].map(c=>c.value);
-  const {gId,cId}=_editEventData;
+  const {gId,cId}=_editCeremonyData;
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
   if(!g.events) g.events=[];
   // Build per-person data arrays preserving existing statuses
