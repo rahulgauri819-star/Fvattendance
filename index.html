@@ -425,7 +425,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           <label class="form-label">Phone Number <span class="req" style="color:var(--danger)">*</span></label>
           <div style="position:relative;">
             <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <input class="form-input" id="loginPhone" type="tel" placeholder="e.g. 101" style="padding-left:36px;" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+            <input class="form-input" id="loginPhone" type="tel" placeholder="Phone number or first name" style="padding-left:36px;" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
           </div>
         </div>
         <div class="form-group">
@@ -435,6 +435,10 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
             <input class="form-input" id="loginPassword" type="password" placeholder="Default: 123" style="padding-left:36px;" onkeydown="if(event.key==='Enter')submitLogin()">
           </div>
           <div class="form-hint">Default password: <strong>123</strong></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:4px;">
+          <input type="checkbox" id="rememberMe" style="width:16px;height:16px;cursor:pointer;">
+          <label for="rememberMe" style="font-size:13px;color:var(--text-muted);cursor:pointer;">Remember me on this device</label>
         </div>
         <div id="loginError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-weight:500;"></div>
         <button class="btn btn-primary btn-lg w-full" type="button" onclick="submitLogin()" style="justify-content:center;">
@@ -1379,25 +1383,66 @@ function submitAdminPanel(){
 }
 
 // ===== STAFF LOGIN =====
+// Helper: get login ID for staff (first name + number if duplicate)
+function showSwitchAccountLink(){
+  // Add "Not you? Switch account" link to staff portal
+  const portal=document.querySelector('.staff-portal-header');
+  if(!portal) return;
+  if($('switchAccountLink')) return;
+  const link=document.createElement('div');
+  link.id='switchAccountLink';
+  link.style.cssText='text-align:center;padding:6px;font-size:12px;color:var(--text-muted);cursor:pointer;';
+  link.innerHTML='<span onclick="switchAccount()" style="text-decoration:underline;">Not you? Switch account</span>';
+  portal.appendChild(link);
+}
+function switchAccount(){
+  localStorage.removeItem('fv_remember');
+  logout();
+}
+function getStaffLoginId(sf){
+  const firstName=sf.name.split(' ')[0].toLowerCase();
+  const allWithSameName=S.staff.filter(s=>s.status==='active'&&s.name.split(' ')[0].toLowerCase()===firstName);
+  if(allWithSameName.length<=1) return firstName;
+  const idx=allWithSameName.findIndex(s=>s.id===sf.id);
+  return idx===0?firstName:firstName+(idx+1);
+}
 window.submitLogin = function(){
   const e=$('loginError'); e.style.display='none';
-  const phone=normalizePhone($('loginPhone').value||'');
-  const pw=($('loginPassword').value||'').trim();
-  if(!phone){e.textContent='Please enter your phone number.';e.style.display='block';return;}
+  const rawInput=($('loginPhone').value||'').trim();
+  const pw=($('loginPassword').value||'').trim().toLowerCase();
+  if(!rawInput){e.textContent='Please enter your phone number or name.';e.style.display='block';return;}
   if(!pw){e.textContent='Please enter your password.';e.style.display='block';return;}
+  const phone=normalizePhone(rawInput);
+  const inputLower=rawInput.toLowerCase();
   // Check manager
   const mgr=S.manager;
-  if(mgr&&normalizePhone(mgr.phone)===phone&&mgr.password===pw){
+  if(mgr&&(normalizePhone(mgr.phone)===phone)&&mgr.password.toLowerCase()===pw){
     S.currentUser={type:'manager',name:mgr.name,phone:mgr.phone};
     $('loginScreen').style.display='none';
     document.body.classList.remove('staff-mode');
-    // Show manager portal
     renderManagerPortal();
     lucide.createIcons();
     return;
   }
-  const sf=(S.staff||[]).find(s=>normalizePhone(s.phone)===phone&&(s.password||'123')===pw&&s.status==='active');
+  // Try phone match (case insensitive password)
+  let sf=(S.staff||[]).find(s=>normalizePhone(s.phone)===phone&&(s.password||'123').toLowerCase()===pw&&s.status==='active');
+  // Try first name match if no phone match
+  if(!sf){
+    const activeStaff=S.staff.filter(s=>s.status==='active');
+    // Find all staff whose loginId matches input
+    const matches=activeStaff.filter(s=>getStaffLoginId(s)===inputLower);
+    if(matches.length===1){
+      sf=(matches[0].password||'123').toLowerCase()===pw?matches[0]:null;
+      if(!sf){e.textContent='Incorrect password.';e.style.display='block';return;}
+    } else if(matches.length>1){
+      e.textContent='Multiple staff found. Please use phone number.';e.style.display='block';return;
+    }
+  }
   if(!sf){e.textContent='Phone number or password is incorrect.';e.style.display='block';return;}
+  // Remember me
+  if($('rememberMe')&&$('rememberMe').checked){
+    localStorage.setItem('fv_remember',JSON.stringify({phone:sf.phone,pw:sf.password||'123'}));
+  }
   S.currentUser={role:'staff',name:sf.name,staffId:sf.id};
   $('loginScreen').style.display='none';
   $('logoutBtn').style.display='inline-flex';
@@ -1415,6 +1460,7 @@ window.submitLogin = function(){
 
 window.logout = function(){
   S.currentUser=null;
+  localStorage.removeItem('fv_remember');
   $('loginScreen').style.display='flex';
   $('logoutBtn').style.display='none';
 
@@ -1980,7 +2026,7 @@ function renderStaff(){
   if(mobileList)mobileList.innerHTML=filtered.map(sf=>{
     const total=S.logs.filter(l=>l.staffId===sf.id).length;
     const taken=(S.leaves[sf.id]||[]).filter(l=>l.year===yr).length;
-    return `<div class="mobile-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div class="av" style="background:${sf.color};">${ini(sf.name)}</div><div style="flex:1;"><div style="font-weight:700;font-size:14px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div><span class="badge ${sf.status==='active'?'badge-green':'badge-gray'}">${sf.status==='active'?'Active':'Inactive'}</span></div><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">📞 ${sf.phone} &nbsp;·&nbsp; Check-ins: ${total} &nbsp;·&nbsp; Leaves: ${taken}/${S.paidLeavesPerYear}</div><div style="display:flex;gap:8px;"><button onclick="editStaff(${sf.id})" class="btn btn-outline btn-sm" style="flex:1;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button><button onclick="openLeaveModal(${sf.id})" class="btn btn-outline btn-sm" style="flex:1;">🌿 Leaves</button><button onclick="deleteStaff(${sf.id})" class="btn btn-danger btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div></div>`;}).join('');
+    return `<div class="mobile-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div class="av" style="background:${sf.color};">${ini(sf.name)}</div><div style="flex:1;"><div style="font-weight:700;font-size:14px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div><span class="badge ${sf.status==='active'?'badge-green':'badge-gray'}">${sf.status==='active'?'Active':'Inactive'}</span></div><div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">📞 ${sf.phone} &nbsp;·&nbsp; Login: <strong>${getStaffLoginId(sf)}</strong></div><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Check-ins: ${total} &nbsp;·&nbsp; Leaves: ${taken}/${S.paidLeavesPerYear}</div><div style="display:flex;gap:8px;"><button onclick="editStaff(${sf.id})" class="btn btn-outline btn-sm" style="flex:1;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button><button onclick="openLeaveModal(${sf.id})" class="btn btn-outline btn-sm" style="flex:1;">🌿 Leaves</button><button onclick="deleteStaff(${sf.id})" class="btn btn-danger btn-sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></div></div>`;}).join('');
   if(tbody)tbody.innerHTML=filtered.map(sf=>{
     const total=S.logs.filter(l=>l.staffId===sf.id).length;
     const isIn=S.logs.some(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&!l.checkOut);
@@ -2952,9 +2998,7 @@ function renderGroupInline(g){
         <button class="btn btn-ghost btn-sm" onclick="editWeddingGroup(${g.id})" title="Edit group">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="btn btn-danger btn-sm" onclick="deleteWeddingGroup(${g.id})">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        </button>
+${(!S.currentUser||S.currentUser.type!=='manager')?`<button class="btn btn-danger btn-sm" onclick="deleteWeddingGroup(${g.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
       </div>
     </div>
     <!-- Events -->
@@ -3014,7 +3058,7 @@ function renderEventInline(c,gId,editMode){
         ${editBtn}
         <button class="btn btn-ghost btn-sm" onclick="duplicateEvent(${gId},${c.id})" title="Duplicate"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         <button class="btn btn-ghost btn-sm" onclick="editEventInline(${gId},${c.id})" title="Edit event"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-        <button class="btn btn-danger btn-sm" onclick="deleteEventInline(${gId},${c.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+${(!S.currentUser||S.currentUser.type!=='manager')?`<button class="btn btn-danger btn-sm" onclick="deleteEventInline(${gId},${c.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
       </div>
     </div>
     <div class="wg-table-wrap">
@@ -4529,6 +4573,32 @@ function init(){
     toast('Could not connect to database. Working offline.','err');
     renderDash();
   });
+  // Auto-login check
+  try{
+    const saved=localStorage.getItem('fv_remember');
+    if(saved){
+      const {phone,pw}=JSON.parse(saved);
+      // Wait for data to load then auto-login
+      setTimeout(()=>{
+        if(S.currentUser) return; // already logged in
+        const sf=(S.staff||[]).find(s=>s.phone===phone&&(s.password||'123')===pw&&s.status==='active');
+        if(sf){
+          S.currentUser={role:'staff',name:sf.name,staffId:sf.id};
+          const ls=$('loginScreen');
+          if(ls) ls.style.display='none';
+          const lb=$('logoutBtn');
+          if(lb) lb.style.display='inline-flex';
+          document.body.classList.add('staff-mode');
+          const tt=$('topbarTitle');
+          if(tt) tt.textContent='Hi '+sf.name.split(' ')[0];
+          renderStaffPortal();
+          lucide.createIcons();
+          // Show switch account link
+          showSwitchAccountLink();
+        }
+      }, 1500);
+    }
+  } catch(e){}
   // Auto-refresh dashboard every 30 seconds
   setInterval(()=>{
     if(S.currentUser&&S.currentUser.role==='admin'){
