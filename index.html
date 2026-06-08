@@ -791,6 +791,32 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           </div>
         </div>
         <div class="card">
+          <div class="card-header"><span class="card-title">Hard Disks</span><span class="badge badge-gray" id="hdCount">0</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-hint">Manage your hard disk names. Assign disks to wedding groups from the Data Management page.</div>
+            <div id="hardDisksList" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <input class="form-input" id="newHardDiskInput" placeholder="e.g. HD-01, WD-Blue-2TB" style="flex:1;">
+              <button class="btn btn-primary" onclick="addHardDiskFromSettings()">+ Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Attendance Period</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="form-hint">Sets which day of the month attendance tracking starts. Default is 1st. Days before this are not counted as Leave.</div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <label class="form-label" style="margin:0;">Default Start Day:</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input class="form-input" type="number" id="attStartDayInput" min="1" max="31" value="1" style="width:80px;">
+                <span style="font-size:13px;color:var(--text-muted);">of each month</span>
+              </div>
+              <button class="btn btn-primary" onclick="saveAttendanceStartDay()">Save</button>
+              <span id="attStartSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-header"><span class="card-title">Freelancers</span><span class="badge badge-gray" id="flCount">0</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
             <div class="form-hint">Saved freelancers appear as options when assigning staff to wedding events.</div>
@@ -1203,6 +1229,14 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     <div class="form-grid form-grid-2">
       <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" id="sfPhone" placeholder="101"></div>
       <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="sfEmail" placeholder="email@example.com"></div>
+    <div class="form-group">
+      <label class="form-label">Attendance Start Date</label>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="startDateType" value="default" id="sdDefault" checked onchange="toggleStartDate(this)"> Use global default (1st of month)</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="startDateType" value="custom" id="sdCustom" onchange="toggleStartDate(this)"> Custom date</label>
+      </div>
+      <input class="form-input" type="date" id="sfStartDate" style="display:none;margin-top:8px;font-size:16px;">
+    </div>
       <div class="form-group"><label class="form-label">Login Password <span style="color:var(--danger)">*</span></label><input class="form-input" type="text" id="sfPassword" placeholder="Set staff password"></div>
     </div>
     <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="sfStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
@@ -1267,7 +1301,10 @@ const S = {
   manager: {name:'Manager', phone:'999', password:'manager123'},
   wgIdCounter: 1,
   freelancers: [],
-  freelancerIdCounter: 1
+  freelancerIdCounter: 1,
+  hardDisks: [],
+  hardDiskIdCounter: 1,
+  attendanceStartDay: 1
 };
 
 // ===== HELPERS =====
@@ -1955,7 +1992,9 @@ function editStaff(id){
 function submitStaff(){
   const name=$('sfName').value.trim();
   if(!name){toast('Name is required','err');return;}
-  const d={name,role:$('sfRole').value,phone:$('sfPhone').value.trim(),email:$('sfEmail').value.trim(),status:$('sfStatus').value};
+  const sdType=document.querySelector('input[name="startDateType"]:checked');
+  const startDate=sdType&&sdType.value==='custom'?($('sfStartDate').value||null):null;
+  const d={name,role:$('sfRole').value,phone:$('sfPhone').value.trim(),email:$('sfEmail').value.trim(),status:$('sfStatus').value,startDate};
   const pw=$('sfPassword').value.trim(); if(pw) d.password=pw;
   if(S.editSfId){Object.assign(getSf(S.editSfId),d);toast('Staff updated');}
   else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];d.password=d.password||'123';S.staff.push(d);toast(name+' added');}
@@ -2109,9 +2148,12 @@ function renderStaffWiseReport(){
     const weddingC=allLogs.filter(l=>l.company==='wedding').length;
     const officeC=allLogs.filter(l=>l.company==='office').length;
     let leaveDays=0;
+    // Get effective start date for this staff
+    const sfStartDate=sf.startDate||(y+'-'+String(m).padStart(2,'0')+'-'+String(S.attendanceStartDay||1).padStart(2,'0'));
     for(let d=1;d<=lastDay;d++){
       const ds=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
       if(ds>todayStr) break;
+      if(ds<sfStartDate) continue; // before start date — skip
       const hasLog=allLogs.some(l=>l.date===ds);
       const isPL=(S.leaves[sf.id]||[]).some(l=>l.year===y&&l.date===ds);
       if(!hasLog&&!isPL) leaveDays++;
@@ -2206,6 +2248,8 @@ function renderSettings(){
   if($('mgrNameInput')) $('mgrNameInput').value=S.manager.name||'';
   if($('mgrPhoneInput')) $('mgrPhoneInput').value=S.manager.phone||'';
   renderFreelancersList();
+  renderHardDisksList();
+  if($('attStartDayInput')) $('attStartDayInput').value=S.attendanceStartDay||1;
   ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
   $('pwError').style.display='none';
   lucide.createIcons();
@@ -2368,6 +2412,118 @@ function logoutManager(){
   $('loginPhone').value='';$('loginPassword').value='';
   lucide.createIcons();
 }
+// ===== HARD DISKS =====
+function renderHardDisksList(){
+  const hd=S.hardDisks||[];
+  if($('hdCount')) $('hdCount').textContent=hd.length;
+  const el=$('hardDisksList'); if(!el) return;
+  el.innerHTML=hd.length?hd.map(d=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);">
+      <span style="font-size:13px;flex:1;">💾 ${d.name}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteHardDisk(${d.id})">Delete</button>
+    </div>`).join(''):'<div style="font-size:13px;color:var(--text-muted);">No hard disks added yet.</div>';
+}
+function addHardDiskFromSettings(){
+  const inp=$('newHardDiskInput'); if(!inp) return;
+  const name=inp.value.trim();
+  if(!name){toast('Enter disk name','err');return;}
+  if(!S.hardDisks) S.hardDisks=[];
+  if(S.hardDisks.some(d=>d.name.toLowerCase()===name.toLowerCase())){toast('Already exists','err');return;}
+  S.hardDisks.push({id:S.hardDiskIdCounter++,name});
+  inp.value='';
+  saveData();
+  renderHardDisksList();
+  toast('"'+name+'" added');
+}
+function deleteHardDisk(id){
+  if(!confirm('Remove this hard disk?')) return;
+  S.hardDisks=(S.hardDisks||[]).filter(d=>d.id!==id);
+  saveData();
+  renderHardDisksList();
+  toast('Hard disk removed');
+}
+function openHardDiskSelector(gId,event){
+  event.stopPropagation();
+  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
+  if(!g.hardDisks) g.hardDisks=[];
+  const hd=S.hardDisks||[];
+  $('gpsModalBody').innerHTML=`
+    <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted);">Select hard disks for <strong>${g.name}</strong></div>
+    <div class="staff-selector-wrap" style="margin-bottom:12px;">
+      <input class="staff-search-input" id="hdSearchInp" placeholder="Search or add disk..." autocomplete="off"
+        oninput="filterHdDropdown(${gId})" onfocus="filterHdDropdown(${gId})" onblur="setTimeout(()=>$('hdDropdown').classList.remove('open'),200)">
+      <div class="staff-dropdown" id="hdDropdown"></div>
+    </div>
+    <div id="hdSelectedTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;min-height:20px;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-outline" onclick="closeM('gpsModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHardDisks(${gId})">Save</button>
+    </div>`;
+  $('gpsModal').querySelector('.modal-title').textContent='Assign Hard Disks';
+  window._hdSelected=[...g.hardDisks];
+  renderHdTags();
+  openM('gpsModal');
+}
+function filterHdDropdown(gId){
+  const q=($('hdSearchInp')||{}).value||'';
+  const hd=S.hardDisks||[];
+  const filtered=hd.filter(d=>!window._hdSelected.includes(d.name)&&(q===''||d.name.toLowerCase().includes(q.toLowerCase())));
+  let html=filtered.map(d=>`<div class="staff-dropdown-item" onmousedown="selectHd('${d.name.replace(/'/g,"\'")}')">${d.name}</div>`).join('');
+  if(q&&!hd.some(d=>d.name.toLowerCase()===q.toLowerCase())&&!window._hdSelected.includes(q)){
+    html+=`<div class="staff-dropdown-add" onmousedown="addAndSelectHd('${q.replace(/'/g,"\'")}')">+ Add "${q}" as new disk</div>`;
+  }
+  if(!html) html='<div style="padding:10px 14px;font-size:13px;color:var(--text-faint);">'+(q?'No results':'No disks saved yet')+'</div>';
+  $('hdDropdown').innerHTML=html;
+  $('hdDropdown').classList.add('open');
+}
+function selectHd(name){
+  if(!window._hdSelected.includes(name)) window._hdSelected.push(name);
+  if($('hdSearchInp')) $('hdSearchInp').value='';
+  $('hdDropdown').classList.remove('open');
+  renderHdTags();
+}
+function removeHdTag(name){
+  window._hdSelected=window._hdSelected.filter(n=>n!==name);
+  renderHdTags();
+}
+function renderHdTags(){
+  const el=$('hdSelectedTags'); if(!el) return;
+  el.innerHTML=window._hdSelected.map(n=>`<div class="staff-tag">💾 ${n}<button onmousedown="removeHdTag('${n.replace(/'/g,"\'")}')" type="button">×</button></div>`).join('');
+}
+function addAndSelectHd(name){
+  if(!S.hardDisks) S.hardDisks=[];
+  if(!S.hardDisks.some(d=>d.name.toLowerCase()===name.toLowerCase())){
+    S.hardDisks.push({id:S.hardDiskIdCounter++,name});
+    saveData();
+    toast('"'+name+'" saved as hard disk');
+  }
+  selectHd(name);
+}
+function saveHardDisks(gId){
+  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
+  g.hardDisks=window._hdSelected||[];
+  saveData();
+  closeM('gpsModal');
+  renderDataManagement();
+  toast('Hard disks saved');
+}
+
+// ===== ATTENDANCE START DAY =====
+function saveAttendanceStartDay(){
+  const v=parseInt($('attStartDayInput').value,10);
+  if(!v||v<1||v>31){toast('Enter 1–31','err');return;}
+  S.attendanceStartDay=v;
+  saveData();
+  const m=$('attStartSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
+  toast('Attendance start day saved');
+}
+function toggleStartDate(radio){
+  const sd=$('sfStartDate');
+  if(!sd) return;
+  sd.style.display=radio.value==='custom'?'block':'none';
+  if(radio.value==='custom'&&!sd.value) sd.value=new Date().toISOString().slice(0,10);
+}
+
 function renderFreelancersList(){
   const fl=S.freelancers||[];
   if($('flCount')) $('flCount').textContent=fl.length;
@@ -2454,6 +2610,11 @@ function renderGroupInline(g){
       <div>
         <div style="font-size:16px;font-weight:800;">💒 ${g.name}</div>
         <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${total} event${total!==1?'s':''} · ${done}/${total} fully copied</div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:var(--text-muted);">💾</span>
+          ${(g.hardDisks||[]).length?g.hardDisks.map(d=>`<span style="font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:2px 8px;">${d}</span>`).join(''):'<span style="font-size:12px;color:var(--text-faint);">No disk assigned</span>'}
+          <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px;" onclick="openHardDiskSelector(${g.id},event)">+ Disk</button>
+        </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="exportGroupCSV(${g.id})">
@@ -3798,7 +3959,10 @@ function saveData(){
       manager: S.manager,
       wgIdCounter: S.wgIdCounter||1,
       freelancers: S.freelancers||[],
-      freelancerIdCounter: S.freelancerIdCounter||1
+      freelancerIdCounter: S.freelancerIdCounter||1,
+      hardDisks: S.hardDisks||[],
+      hardDiskIdCounter: S.hardDiskIdCounter||1,
+      attendanceStartDay: S.attendanceStartDay||1
     };
     db.ref('appData').set(toSave).catch(e=>console.error('Save error',e));
     // Save selfies to Firebase Storage with 30-day auto-delete
@@ -3865,6 +4029,9 @@ function init(){
       if(data.wgIdCounter) S.wgIdCounter = data.wgIdCounter;
       if(data.freelancers) S.freelancers = data.freelancers;
       if(data.freelancerIdCounter) S.freelancerIdCounter = data.freelancerIdCounter;
+      if(data.hardDisks) S.hardDisks = data.hardDisks;
+      if(data.hardDiskIdCounter) S.hardDiskIdCounter = data.hardDiskIdCounter;
+      if(data.attendanceStartDay) S.attendanceStartDay = data.attendanceStartDay;
       // Reload selfies for today's logs
       const td = today();
       const todayLogs = S.logs.filter(l=>l.date===td&&l.selfie==='[photo]');
@@ -3895,6 +4062,9 @@ function init(){
       if(data.wgIdCounter) S.wgIdCounter = data.wgIdCounter;
       if(data.freelancers) S.freelancers = data.freelancers;
       if(data.freelancerIdCounter) S.freelancerIdCounter = data.freelancerIdCounter;
+      if(data.hardDisks) S.hardDisks = data.hardDisks;
+      if(data.hardDiskIdCounter) S.hardDiskIdCounter = data.hardDiskIdCounter;
+      if(data.attendanceStartDay) S.attendanceStartDay = data.attendanceStartDay;
       // Re-render current view silently
       const activeView = document.querySelector('.view.active');
       if(activeView){
