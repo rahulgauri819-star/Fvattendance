@@ -37,6 +37,7 @@ html{-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;}
   --wedding-color:#e91e8c;--wedding-light:#2b0d1a;
   --purple:#8b5cf6;--purple-light:#1e1040;
 }
+* { touch-action: manipulation; }
 body{font-family:var(--font);font-size:15px;color:var(--text);background:var(--bg);display:flex;min-height:100dvh;}
 button{cursor:pointer;border:none;background:none;font:inherit;color:inherit;}
 input,select,textarea{font:inherit;color:inherit;-webkit-appearance:none;border-radius:0;}
@@ -311,7 +312,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 .evt-status-cell.pending{background:#fecaca;}
 .evt-status-cell:hover{opacity:.8;transform:scale(.97);}
 .wg-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius);border:1px solid var(--border);}
-.evt-merged-cell{padding:20px 24px;cursor:pointer;text-align:center;transition:.15s;width:180px;min-width:180px;border:1px solid var(--border);white-space:nowrap;}
+.evt-merged-cell{padding:40px 24px;cursor:pointer;text-align:center;transition:.15s;width:180px;min-width:180px;border:1px solid var(--border);white-space:nowrap;min-height:80px;}
 .evt-merged-cell.copied{background:#bbf7d0;color:#065f46;}
 .evt-merged-cell.pending{background:#fecaca;color:#991b1b;}
 .evt-merged-cell:hover{opacity:.85;transform:scale(.97);}
@@ -346,6 +347,8 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 
 /* MOBILE CARDS (staff/log tables) */
 .mobile-card{display:none;border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;background:var(--surface);}
+.log-mobile-card{border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;background:var(--surface);display:none;}
+@media(max-width:768px){.log-mobile-card{display:block;}.log-table-wrap{display:none;}}
 @media(max-width:768px){
   .hide-mobile{display:none!important;}
   .mobile-card{display:block;}
@@ -592,7 +595,8 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <select class="form-select" style="width:auto;" id="logCompF" onchange="renderLogs()"><option value="">All</option><option value="grover">Grover A/V</option><option value="wedding">Wedding</option><option value="office">Office</option></select>
         <input type="date" class="form-input" id="logDateF" onchange="renderLogs()" style="max-width:150px;">
       </div>
-      <div class="card"><div class="table-wrap">
+      <div id="logsMobileList"></div>
+      <div class="card"><div class="table-wrap log-table-wrap">
         <table class="data-table"><thead><tr><th>Staff</th><th>Duty</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Work Done</th><th>Selfie</th><th>GPS</th></tr></thead>
         <tbody id="logTbody"></tbody></table>
       </div></div>
@@ -1304,7 +1308,8 @@ const S = {
   freelancerIdCounter: 1,
   hardDisks: [],
   hardDiskIdCounter: 1,
-  attendanceStartDay: 1
+  attendanceStartDay: 1,
+  uninformedLeaves: {}
 };
 
 // ===== HELPERS =====
@@ -1466,22 +1471,17 @@ function renderStaffHistory(){
     const dt=new Date(year,month,d);
     const dayLabel=dt.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
     if(dayLogs&&dayLogs.length){
-      dayLogs.forEach(l=>{
-        const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
-        rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <div style="font-weight:600;font-size:13px;">${dayLabel}</div>
-            <div>${compBadge(l.company)}</div>
-          </div>
-          <div style="font-size:13px;color:var(--text-muted);">${l.venue}</div>
-          ${l.clientName?`<div style="font-size:12px;color:var(--text-muted);">Client: ${l.clientName}</div>`:''}
-          ${l.company!=='office'?`<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Work: ${wt}</div>`:''}
-        </div>`;
-      });
+      // Simplified - show only Present + At Event/Office
+      const isOffice=dayLogs.some(l=>l.company==='office');
+      const location=isOffice?'At Office':'At Event';
+      rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:600;">${dayLabel}</div>
+        <span style="background:#d1fae5;color:#065f46;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;">✅ Present — ${location}</span>
+      </div>`;
     } else {
-      rows+=`<div style="padding:12px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-size:13px;color:var(--text-muted);">${dayLabel}</div>
-        <span style="background:var(--danger-light);color:var(--danger);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;border:1.5px solid var(--danger);">Leave</span>
+      rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:600;">${dayLabel}</div>
+        <span style="background:var(--danger-light);color:var(--danger);font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;">❌ Absent</span>
       </div>`;
     }
   }
@@ -1746,6 +1746,12 @@ function venueChanged(){
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
       S.ciGps={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      // Reverse geocode to get area name
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+        .then(r=>r.json()).then(data=>{
+          const a=data.address||{};
+          S.ciGpsArea=[a.neighbourhood||a.suburb||a.village,a.city||a.town||a.county,a.state].filter(Boolean).join(', ');
+        }).catch(()=>{S.ciGpsArea='';});
       $('gpsBadge').className='gps-badge';
       $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> GPS Captured ✓';
       $('gpsCoords').textContent='Lat: '+pos.coords.latitude.toFixed(5)+' | Lng: '+pos.coords.longitude.toFixed(5);
@@ -1802,6 +1808,7 @@ function submitCheckin(){
     date:today(),checkIn:checkInTime,checkOut:'',
     selfie:S.ciSelfieData,
     gpsLat:S.ciGps?S.ciGps.lat:null,gpsLng:S.ciGps?S.ciGps.lng:null,
+    gpsArea:S.ciGpsArea||'',
     gpsAddr:$('gpsCoords').textContent||'',
     ciNotes:notes,coNotes:'',copyName:'',copyPhone:'',
     workTypes:[],prints:0,printSize:''
@@ -2025,6 +2032,27 @@ function renderLogs(){
   }).sort((a,b)=>b.date.localeCompare(a.date)||b.checkIn.localeCompare(a.checkIn));
   const tbody=$('logTbody');
   if(!filtered.length){tbody.innerHTML='<tr><td colspan="10"><div class="empty"><p>No records found</p></div></td></tr>';return;}
+  // Mobile cards
+  if(mobileLogsList) mobileLogsList.innerHTML=filtered.map(l=>{
+    const sf=getSf(l.staffId); if(!sf) return '';
+    const d=dur(l.checkIn,l.checkOut);
+    return `<div class="log-mobile-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div class="av" style="background:${sf.color};width:36px;height:36px;font-size:12px;">${ini(sf.name)}</div>
+        <div style="flex:1;"><div style="font-weight:700;font-size:14px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
+        ${compBadge(l.company)}
+      </div>
+      <div style="font-size:13px;margin-bottom:4px;">📅 ${fmtDate(l.date)}</div>
+      <div style="font-size:13px;margin-bottom:4px;">📍 ${l.venue||'—'}</div>
+      ${l.checkIn?`<div style="font-size:13px;margin-bottom:4px;">⏰ In: <strong>${l.checkIn}</strong>${l.checkOut?' · Out: <strong>'+l.checkOut+'</strong>':' · Active'}</div>`:''}
+      ${d?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Duration: ${fmtDur(d)}</div>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        ${l.gpsLat?`<button class="btn btn-outline btn-sm" onclick="openGpsModal(${l.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> GPS</button>`:''}
+        ${l.selfie&&l.selfie!=='[photo]'?`<button class="btn btn-outline btn-sm" onclick="viewSelfie(${l.id})">📷 Selfie</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="deleteLog(${l.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+      </div>
+    </div>`;
+  }).join('');
   tbody.innerHTML=filtered.map(l=>{
     const sf=getSf(l.staffId); if(!sf) return '';
     const d=dur(l.checkIn,l.checkOut);
@@ -2159,6 +2187,7 @@ function renderStaffWiseReport(){
       if(!hasLog&&!isPL) leaveDays++;
     }
     const plDays=(S.leaves[sf.id]||[]).filter(l=>l.year===y&&l.date.startsWith(ym)).length;
+    const ulDays=(S.uninformedLeaves[sf.id]||[]).filter(l=>l.date.startsWith(ym)).length;
     // day rows
     let dayRows='';
     for(let d=lastDay;d>=1;d--){
@@ -2185,10 +2214,20 @@ function renderStaffWiseReport(){
             <span style="font-size:12px;font-weight:700;color:var(--success);">🟢 Paid Leave</span>
           </div>`;
         } else {
-          dayRows+=`<div style="padding:8px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:10px;">
-            <div style="width:80px;font-size:12px;font-weight:600;color:var(--text-muted);">${dlabel}</div>
-            <span style="background:var(--danger-light);color:var(--danger);font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;">Leave</span>
-          </div>`;
+          const isUL=(S.uninformedLeaves[sf.id]||[]).some(l=>l.date===ds);
+          if(isUL){
+            dayRows+=`<div style="padding:8px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:10px;background:#fff3cd;">
+              <div style="width:80px;font-size:12px;font-weight:600;color:var(--text-muted);">${dlabel}</div>
+              <span style="font-size:12px;font-weight:700;color:#856404;">🟠 Uninformed Leave</span>
+              <button class="btn btn-ghost btn-sm" style="margin-left:auto;padding:2px 8px;font-size:11px;" onclick="removeUninformedLeave(${sf.id},'${ds}')">Remove</button>
+            </div>`;
+          } else {
+            dayRows+=`<div style="padding:8px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:10px;">
+              <div style="width:80px;font-size:12px;font-weight:600;color:var(--text-muted);">${dlabel}</div>
+              <span style="background:var(--danger-light);color:var(--danger);font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;">Leave</span>
+              <button class="btn btn-ghost btn-sm" style="margin-left:auto;padding:2px 8px;font-size:11px;" onclick="markUninformedLeave(${sf.id},'${ds}')">Mark UL</button>
+            </div>`;
+          }
         }
       }
     }
@@ -2524,6 +2563,92 @@ function toggleStartDate(radio){
   if(radio.value==='custom'&&!sd.value) sd.value=new Date().toISOString().slice(0,10);
 }
 
+function removePersonInline(gId,cId,type,idx){
+  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
+  const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
+  const arr=type==='still'?c.stillData:c.videoData;
+  if(!arr) return;
+  arr.splice(idx,1);
+  if(type==='still') c.stillStaff=(c.stillData||[]).map(p=>p.name);
+  else c.videoStaff=(c.videoData||[]).map(p=>p.name);
+  saveData();
+  renderDataManagement();
+  toast('Removed');
+}
+function showInlineAddPerson(gId,cId,type,cell){
+  const allStaff=S.staff.filter(s=>s.status==='active').map(s=>s.name);
+  const allFL=(S.freelancers||[]).map(f=>f.name);
+  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
+  const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
+  const existing=type==='still'?(c.stillData||[]).map(p=>p.name):(c.videoData||[]).map(p=>p.name);
+  const available=[...allStaff,...allFL].filter(n=>!existing.includes(n));
+  cell.innerHTML=`<div style="position:relative;">
+    <input id="inlinePersonInput_${gId}_${cId}_${type}" class="form-input" placeholder="Type name..." style="font-size:13px;padding:4px 8px;width:140px;" autocomplete="off"
+      oninput="filterInlinePersonDropdown('${gId}','${cId}','${type}')" onblur="setTimeout(()=>hideInlineDropdown('${gId}','${cId}','${type}'),200)">
+    <div id="inlinePersonDrop_${gId}_${cId}_${type}" style="position:absolute;top:100%;left:0;width:180px;background:var(--surface);border:1.5px solid var(--primary);border-radius:var(--radius-sm);box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:300;max-height:200px;overflow-y:auto;display:none;"></div>
+  </div>`;
+  cell.querySelector('input').focus();
+  filterInlinePersonDropdown(gId,cId,type);
+}
+function filterInlinePersonDropdown(gId,cId,type){
+  const inp=document.getElementById('inlinePersonInput_'+gId+'_'+cId+'_'+type);
+  const drop=document.getElementById('inlinePersonDrop_'+gId+'_'+cId+'_'+type);
+  if(!inp||!drop) return;
+  const q=inp.value.toLowerCase().trim();
+  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
+  const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
+  const existing=type==='still'?(c.stillData||[]).map(p=>p.name):(c.videoData||[]).map(p=>p.name);
+  const allStaff=S.staff.filter(s=>s.status==='active').map(s=>({name:s.name,isFL:false}));
+  const allFL=(S.freelancers||[]).map(f=>({name:f.name,isFL:true}));
+  const all=[...allStaff,...allFL].filter(p=>!existing.includes(p.name)&&(q===''||p.name.toLowerCase().includes(q)));
+  let html=all.map(p=>`<div style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--divider);" onmousedown="addPersonInline('${String(gId)}','${String(cId)}','${type}','${p.name.replace(/'/g,"\'")}')">${p.name}</div>`).join('');
+  if(q&&!all.some(p=>p.name.toLowerCase()===q)){
+    html+=`<div style="padding:9px 12px;cursor:pointer;font-size:13px;color:var(--primary);font-weight:700;" onmousedown="addNewFreelancerInline('${String(gId)}','${String(cId)}','${type}','${q.replace(/'/g,"\'")}')">+ Add "${q}" as freelancer</div>`;
+  }
+  drop.innerHTML=html||'<div style="padding:9px 12px;font-size:13px;color:var(--text-faint);">No results</div>';
+  drop.style.display='block';
+}
+function hideInlineDropdown(gId,cId,type){
+  const drop=document.getElementById('inlinePersonDrop_'+gId+'_'+cId+'_'+type);
+  if(drop) drop.style.display='none';
+}
+function addPersonInline(gId,cId,type,name){
+  const g=(S.weddingGroups||[]).find(w=>w.id===parseInt(gId)||w.id===gId); if(!g) return;
+  const c=(g.ceremonies||[]).find(c=>c.id===parseInt(cId)||c.id===cId); if(!c) return;
+  const isFL=(S.freelancers||[]).some(f=>f.name===name);
+  const entry={name,type:isFL?'freelancer':'staff',status:'pending'};
+  if(type==='still'){if(!c.stillData)c.stillData=[];c.stillData.push(entry);c.stillStaff=c.stillData.map(p=>p.name);}
+  else{if(!c.videoData)c.videoData=[];c.videoData.push(entry);c.videoStaff=c.videoData.map(p=>p.name);}
+  saveData();
+  renderDataManagement();
+  toast(name+' added');
+}
+function addNewFreelancerInline(gId,cId,type,name){
+  if(!S.freelancers) S.freelancers=[];
+  if(!S.freelancers.some(f=>f.name.toLowerCase()===name.toLowerCase())){
+    S.freelancers.push({id:S.freelancerIdCounter++,name});
+    saveData();
+    toast('"'+name+'" saved as freelancer');
+  }
+  addPersonInline(gId,cId,type,name);
+}
+function markUninformedLeave(sfId,date){
+  if(!S.uninformedLeaves) S.uninformedLeaves={};
+  if(!S.uninformedLeaves[sfId]) S.uninformedLeaves[sfId]=[];
+  if(S.uninformedLeaves[sfId].some(l=>l.date===date)){toast('Already marked','err');return;}
+  S.uninformedLeaves[sfId].push({date,markedAt:new Date().toISOString()});
+  saveData();
+  renderStaffWiseReport();
+  toast('Uninformed leave marked for '+fmtDate(date));
+}
+function removeUninformedLeave(sfId,date){
+  if(!confirm('Remove uninformed leave for '+fmtDate(date)+'?')) return;
+  S.uninformedLeaves[sfId]=(S.uninformedLeaves[sfId]||[]).filter(l=>l.date!==date);
+  saveData();
+  renderStaffWiseReport();
+  toast('Uninformed leave removed');
+}
+
 function renderFreelancersList(){
   const fl=S.freelancers||[];
   if($('flCount')) $('flCount').textContent=fl.length;
@@ -2608,12 +2733,13 @@ function renderGroupInline(g){
     <!-- Group header -->
     <div style="background:var(--surface2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div>
-        <div style="font-size:16px;font-weight:800;">💒 ${g.name}</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div style="font-size:16px;font-weight:800;">💒 ${g.name}</div>
+          ${(g.hardDisks||[]).length?`<div style="font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;">💾 ${g.hardDisks.join(', ')}</div>`:''}
+        </div>
         <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${total} event${total!==1?'s':''} · ${done}/${total} fully copied</div>
-        <div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span style="font-size:12px;color:var(--text-muted);">💾</span>
-          ${(g.hardDisks||[]).length?g.hardDisks.map(d=>`<span style="font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:2px 8px;">${d}</span>`).join(''):'<span style="font-size:12px;color:var(--text-faint);">No disk assigned</span>'}
-          <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px;" onclick="openHardDiskSelector(${g.id},event)">+ Disk</button>
+        <div style="margin-top:4px;display:flex;align-items:center;gap:6px;">
+          <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px;" onclick="openHardDiskSelector(${g.id},event)">💾 + Disk</button>
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -2648,12 +2774,17 @@ function renderEventInline(c,gId){
   const anyPending=all.some(p=>p.status==='pending');
   const headingColor=allCopied?'var(--success)':anyPending?'var(--danger)':'var(--primary)';
   const makeRow=(data,type,icon,label)=>{
-    if(!data.length) return `<tr><td class="evt-row-label">${icon} ${label}</td><td style="padding:10px 14px;font-size:12px;color:var(--text-faint);font-style:italic;">No staff</td></tr>`;
+    const cells=data.map((p,i)=>`<td class="evt-merged-cell ${p.status}" onclick="confirmTogglePerson(${gId},${c.id},'${type}',${i},'${p.name.replace(/'/g,'')}')">
+      <div style="font-weight:600;font-size:12px;white-space:nowrap;">${p.name}</div>
+      <div onclick="event.stopPropagation();removePersonInline(${gId},${c.id},'${type}',${i})" style="font-size:10px;opacity:.5;margin-top:4px;cursor:pointer;">✕ remove</div>
+    </td>`).join('');
+    const addCell=`<td style="padding:10px 14px;min-width:120px;border:1px dashed var(--border);cursor:pointer;text-align:center;vertical-align:middle;" onclick="showInlineAddPerson(${gId},${c.id},'${type}',this)">
+      <div style="font-size:12px;color:var(--primary);font-weight:600;">+ Add</div>
+    </td>`;
     return `<tr>
       <td class="evt-row-label">${icon} ${label}</td>
-      ${data.map((p,i)=>`<td class="evt-merged-cell ${p.status}" onclick="confirmTogglePerson(${gId},${c.id},'${type}',${i},'${p.name.replace(/'/g,'')}')">
-        <div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
-      </td>`).join('')}
+      ${cells}
+      ${addCell}
     </tr>`;
   };
   return `<div style="margin-bottom:18px;">
@@ -2672,12 +2803,7 @@ function renderEventInline(c,gId){
         </tbody>
       </table>
     </div>
-    <div style="display:flex;gap:10px;margin-top:6px;font-size:11px;color:var(--text-muted);align-items:center;flex-wrap:wrap;">
-      <span>📷 ${c.stillData.filter(p=>p.status==='copied').length}/${c.stillData.length} copied</span>
-      <span>🎬 ${c.videoData.filter(p=>p.status==='copied').length}/${c.videoData.length} copied</span>
-      <span style="display:flex;align-items:center;gap:3px;"><span style="width:10px;height:10px;background:#bbf7d0;border-radius:2px;display:inline-block;"></span>Copied</span>
-      <span style="display:flex;align-items:center;gap:3px;"><span style="width:10px;height:10px;background:#fecaca;border-radius:2px;display:inline-block;"></span>Pending</span>
-    </div>
+
   </div>`;
 }
 
@@ -3586,6 +3712,7 @@ function exportBillingPDF(){
   --wedding-color:#e91e8c;--wedding-light:#2b0d1a;
   --purple:#8b5cf6;--purple-light:#1e1040;
 }
+* { touch-action: manipulation; }
 body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;margin:0;padding:24px;}
     h1{font-size:20px;margin:0 0 4px;}
     h2{font-size:14px;font-weight:700;margin:16px 0 8px;}
@@ -3962,7 +4089,8 @@ function saveData(){
       freelancerIdCounter: S.freelancerIdCounter||1,
       hardDisks: S.hardDisks||[],
       hardDiskIdCounter: S.hardDiskIdCounter||1,
-      attendanceStartDay: S.attendanceStartDay||1
+      attendanceStartDay: S.attendanceStartDay||1,
+      uninformedLeaves: S.uninformedLeaves||{}
     };
     db.ref('appData').set(toSave).catch(e=>console.error('Save error',e));
     // Save selfies to Firebase Storage with 30-day auto-delete
@@ -4032,6 +4160,7 @@ function init(){
       if(data.hardDisks) S.hardDisks = data.hardDisks;
       if(data.hardDiskIdCounter) S.hardDiskIdCounter = data.hardDiskIdCounter;
       if(data.attendanceStartDay) S.attendanceStartDay = data.attendanceStartDay;
+      if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
       // Reload selfies for today's logs
       const td = today();
       const todayLogs = S.logs.filter(l=>l.date===td&&l.selfie==='[photo]');
@@ -4065,6 +4194,7 @@ function init(){
       if(data.hardDisks) S.hardDisks = data.hardDisks;
       if(data.hardDiskIdCounter) S.hardDiskIdCounter = data.hardDiskIdCounter;
       if(data.attendanceStartDay) S.attendanceStartDay = data.attendanceStartDay;
+      if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
       // Re-render current view silently
       const activeView = document.querySelector('.view.active');
       if(activeView){
