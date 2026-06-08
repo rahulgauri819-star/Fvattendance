@@ -318,6 +318,11 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 .evt-merged-cell.copied{background:#bbf7d0;color:#065f46;}
 .evt-merged-cell.pending{background:#fecaca;color:#991b1b;}
 .evt-merged-cell:hover{opacity:.85;transform:scale(.97);}
+.drag-handle{cursor:grab;padding:8px 6px;color:var(--text-faint);display:flex;align-items:center;flex-shrink:0;touch-action:none;user-select:none;}
+.drag-handle:hover,.drag-handle:active{color:var(--primary);cursor:grabbing;}
+.drag-handle svg{pointer-events:none;}
+.evt-dragging{opacity:.7;transform:scale(1.01);box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:100;position:relative;}
+.evt-drag-over{border-top:3px solid var(--primary)!important;}
 .data-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;}
 .data-popup{background:var(--surface);border-radius:var(--radius-lg);padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);}
 
@@ -2584,6 +2589,81 @@ function toggleStartDate(radio){
   if(radio.value==='custom'&&!sd.value) sd.value=new Date().toISOString().slice(0,10);
 }
 
+// ===== DRAG & DROP FOR EVENTS =====
+let _dragSrcGId=null, _dragSrcCId=null, _dragEl=null;
+let _touchDragGId=null, _touchDragCId=null, _touchClone=null, _touchStartY=0;
+
+function evtDragStart(e,gId,cId){
+  _dragSrcGId=gId; _dragSrcCId=cId;
+  _dragEl=e.currentTarget;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',cId);
+  setTimeout(()=>{ if(_dragEl) _dragEl.classList.add('evt-dragging'); },0);
+}
+function evtDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  const el=e.currentTarget;
+  if(el!==_dragEl) el.classList.add('evt-drag-over');
+}
+function evtDragLeave(e){
+  e.currentTarget.classList.remove('evt-drag-over');
+}
+function evtDrop(e,gId,toCId){
+  e.preventDefault();
+  e.currentTarget.classList.remove('evt-drag-over');
+  if(!_dragSrcCId||_dragSrcCId===toCId) return;
+  reorderEvent(_dragSrcGId,_dragSrcCId,toCId);
+}
+function evtDragEnd(e){
+  if(_dragEl) _dragEl.classList.remove('evt-dragging');
+  document.querySelectorAll('.evt-drag-over').forEach(el=>el.classList.remove('evt-drag-over'));
+  _dragEl=null; _dragSrcGId=null; _dragSrcCId=null;
+}
+function reorderEvent(gId,fromCId,toCId){
+  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
+  const fromIdx=g.ceremonies.findIndex(c=>c.id===fromCId);
+  const toIdx=g.ceremonies.findIndex(c=>c.id===toCId);
+  if(fromIdx<0||toIdx<0) return;
+  const [moved]=g.ceremonies.splice(fromIdx,1);
+  g.ceremonies.splice(toIdx,0,moved);
+  saveData();
+  renderDataManagement();
+  renderWeddingGroups('mgrWeddingGroupsList');
+}
+
+// Touch drag support
+function evtTouchStart(e,gId,cId){
+  _touchDragGId=gId; _touchDragCId=cId;
+  _touchStartY=e.touches[0].clientY;
+  const el=e.currentTarget.closest('[id^="event_"]');
+  if(el){
+    _dragEl=el;
+    setTimeout(()=>el.classList.add('evt-dragging'),0);
+  }
+}
+function evtTouchMove(e){
+  if(!_dragEl) return;
+  e.preventDefault();
+  const y=e.touches[0].clientY;
+  const els=document.elementsFromPoint(e.touches[0].clientX,y);
+  document.querySelectorAll('.evt-drag-over').forEach(el=>el.classList.remove('evt-drag-over'));
+  const target=els.find(el=>el.id&&el.id.startsWith('event_')&&el!==_dragEl);
+  if(target) target.classList.add('evt-drag-over');
+}
+function evtTouchEnd(e,gId){
+  if(!_dragEl) return;
+  _dragEl.classList.remove('evt-dragging');
+  const target=document.querySelector('.evt-drag-over');
+  if(target&&target.id){
+    const parts=target.id.split('_');
+    const toCId=parseInt(parts[parts.length-1]);
+    reorderEvent(gId,_touchDragCId,toCId);
+  }
+  document.querySelectorAll('.evt-drag-over').forEach(el=>el.classList.remove('evt-drag-over'));
+  _dragEl=null; _touchDragGId=null; _touchDragCId=null;
+}
+
 function toggleEventEditMode(gId,cId,editMode){
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
   const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
@@ -2851,13 +2931,13 @@ function renderGroupInline(g){
   const eventsHtml=evts.map(c=>renderEventInline(c,g.id)).join('');
   return `<div style="border:1.5px solid var(--border);border-radius:var(--radius-lg);margin-bottom:20px;overflow:hidden;">
     <!-- Group header -->
-    <div style="background:#fef9c3;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div style="background:#2d2d2d;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
-          <div style="font-size:16px;font-weight:800;">💒 ${g.name}</div>
+          <div style="font-size:16px;font-weight:800;color:#fff;">💒 ${g.name}</div>
           ${(g.hardDisks||[]).length?`<div style="font-size:13px;font-weight:800;color:var(--danger);white-space:nowrap;margin-left:auto;padding-left:12px;">💾 ${g.hardDisks.join(', ')}</div>`:''}
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${total} event${total!==1?'s':''} · ${done}/${total} fully copied</div>
+        <div style="font-size:12px;color:#ccc;margin-top:2px;">${total} event${total!==1?'s':''} · ${done}/${total} fully copied</div>
         <div style="margin-top:4px;display:flex;align-items:center;gap:6px;">
           <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:11px;" onclick="openHardDiskSelector(${g.id},event)">💾 + Disk</button>
         </div>
@@ -2924,10 +3004,13 @@ function renderEventInline(c,gId,editMode){
     ?`<button class="btn btn-success btn-sm" onclick="toggleEventEditMode(${gId},${c.id},false)">✓ Done</button>`
     :`<button class="btn btn-ghost btn-sm" onclick="toggleEventEditMode(${gId},${c.id},true)" title="Edit table"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`;
 
-  return `<div style="margin-bottom:18px;" id="event_${gId}_${c.id}">
+  return `<div style="margin-bottom:18px;" id="event_${gId}_${c.id}" draggable="true" ondragstart="evtDragStart(event,${gId},${c.id})" ondragover="evtDragOver(event)" ondragleave="evtDragLeave(event)" ondrop="evtDrop(event,${gId},${c.id})" ondragend="evtDragEnd(event)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
-      <div style="font-size:14px;font-weight:700;color:${headingColor};border-left:3px solid ${headingColor};padding-left:8px;">${niceDateStr} — ${c.name}</div>
-      <div style="display:flex;gap:6px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+        <div class="drag-handle" title="Drag to reorder" ontouchstart="evtTouchStart(event,${gId},${c.id})" ontouchmove="evtTouchMove(event)" ontouchend="evtTouchEnd(event,${gId})"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg></div>
+        <div style="font-size:14px;font-weight:700;color:${headingColor};border-left:3px solid ${headingColor};padding-left:8px;">${niceDateStr} — ${c.name}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
         ${editBtn}
         <button class="btn btn-ghost btn-sm" onclick="duplicateEvent(${gId},${c.id})" title="Duplicate"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         <button class="btn btn-ghost btn-sm" onclick="editEventInline(${gId},${c.id})" title="Edit event"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -3136,7 +3219,7 @@ function renderWeddingGroups(containerId){
     return `<div class="wg-card ${pending===0&&total>0?'copied':'pending'}" onclick="openWeddingGroup(${g.id})" style="cursor:pointer;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
         <div>
-          <div style="font-size:16px;font-weight:800;">💒 ${g.name}</div>
+          <div style="font-size:16px;font-weight:800;color:#fff;">💒 ${g.name}</div>
           <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${total} ceremoni${total===1?'y':'es'}${g.dateRange?' · '+g.dateRange:''}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
