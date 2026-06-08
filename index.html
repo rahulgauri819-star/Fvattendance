@@ -2851,7 +2851,7 @@ function renderGroupInline(g){
   const eventsHtml=evts.map(c=>renderEventInline(c,g.id)).join('');
   return `<div style="border:1.5px solid var(--border);border-radius:var(--radius-lg);margin-bottom:20px;overflow:hidden;">
     <!-- Group header -->
-    <div style="background:var(--surface2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div style="background:#fef9c3;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
           <div style="font-size:16px;font-weight:800;">💒 ${g.name}</div>
@@ -2936,6 +2936,7 @@ function renderEventInline(c,gId,editMode){
     </div>
     <div class="wg-table-wrap">
       ${makeFlexRow(c.stillData,'still','📷','Still')}
+      <div style="height:2px;background:#000;"></div>
       ${makeFlexRow(c.videoData,'video','🎬','Video')}
     </div>
   </div>`;
