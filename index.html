@@ -11,7 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 :root{
   --bg:#f8f9fa;--surface:#fff;--surface2:#f1f3f5;--border:#dee2e6;--divider:#e9ecef;
@@ -314,7 +314,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 .evt-status-cell.pending{background:#fecaca;}
 .evt-status-cell:hover{opacity:.8;transform:scale(.97);}
 .wg-table-wrap{border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;}
-.evt-merged-cell{padding:40px 20px;cursor:pointer;text-align:center;transition:.15s;border:1px solid var(--border);font-weight:600;font-size:12px;}
+.evt-merged-cell{padding:30px 20px;cursor:pointer;text-align:center;transition:.15s;border:1px solid var(--border);font-weight:600;font-size:12px;}
 .evt-merged-cell.copied{background:#bbf7d0;color:#065f46;}
 .evt-merged-cell.pending{background:#fecaca;color:#991b1b;}
 .evt-merged-cell:hover{opacity:.85;transform:scale(.97);}
@@ -2594,20 +2594,62 @@ function toggleEventEditMode(gId,cId,editMode){
 function duplicateEvent(gId,cId){
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
   const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
+  $('gpsModalBody').innerHTML=`
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Copying: <strong>${c.name}</strong><br><span style="font-size:12px;">Staff will be copied. All statuses reset to Pending.</span></div>
+    <div class="form-group"><label class="form-label">New Event Name <span style="color:var(--danger)">*</span></label>
+      <input class="form-input" id="dupEventName" value="${c.name}" style="font-size:16px;"></div>
+    <div class="form-group"><label class="form-label">New Date <span style="color:var(--danger)">*</span></label>
+      <input class="form-input" type="date" id="dupEventDate" style="font-size:16px;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
+      <button class="btn btn-outline" onclick="closeM('gpsModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmDuplicateEvent(${gId},${cId})">Duplicate</button>
+    </div>`;
+  $('gpsModal').querySelector('.modal-title').textContent='Duplicate Event';
+  openM('gpsModal');
+}
+function confirmDuplicateEvent(gId,cId){
+  const name=$('dupEventName').value.trim();
+  const date=$('dupEventDate').value;
+  if(!name){toast('Enter event name','err');return;}
+  if(!date){toast('Enter a date','err');return;}
+  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
+  const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
   const newC={
     ...JSON.parse(JSON.stringify(c)),
     id:Date.now(),
-    date:'',
-    stillData:(c.stillData||[]).map(p=>({...p,status:'pending'})),
-    videoData:(c.videoData||[]).map(p=>({...p,status:'pending'})),
+    date,
+    name,
+    stillData:(c.stillData||[]).map(p=>({...p,status:'pending',dataSize:p.dataSize||''})),
+    videoData:(c.videoData||[]).map(p=>({...p,status:'pending',dataSize:p.dataSize||''})),
     stillStatus:'pending',
     videoStatus:'pending'
   };
   if(!g.ceremonies) g.ceremonies=[];
   g.ceremonies.push(newC);
   saveData();
+  closeM('gpsModal');
   renderDataManagement();
-  toast('Event duplicated — set the date');
+  renderWeddingGroups('mgrWeddingGroupsList');
+  toast('Event duplicated');
+}
+function openDataSizeInput(sizeId,gId,cId,type,idx){
+  const disp=document.getElementById(sizeId+'_display');
+  const inp=document.getElementById(sizeId+'_input');
+  if(disp) disp.style.display='none';
+  if(inp){ inp.style.display='block'; inp.querySelector('input').focus(); }
+}
+function saveDataSize(sizeId,gId,cId,type,idx,val){
+  const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
+  const c=(g.ceremonies||[]).find(c=>c.id===cId); if(!c) return;
+  const arr=type==='still'?c.stillData:c.videoData;
+  if(!arr||arr[idx]===undefined) return;
+  arr[idx].dataSize=val.trim();
+  saveData();
+  // Update display without full re-render
+  const disp=document.getElementById(sizeId+'_display');
+  const inp=document.getElementById(sizeId+'_input');
+  if(disp){ disp.innerHTML=val.trim()||'<span style="opacity:.5;">+ size</span>'; disp.style.display='block'; }
+  if(inp) inp.style.display='none';
 }
 function removePersonInline(gId,cId,type,idx){
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
@@ -2854,8 +2896,15 @@ function renderEventInline(c,gId,editMode){
 
   const makeFlexRow=(data,type,icon,label)=>{
     const cells=data.map((p,i)=>{
+      const sizeId=`ds_${gId}_${c.id}_${type}_${i}`;
       const cell=`<div class="evt-merged-cell ${p.status}" onclick="confirmTogglePerson(${gId},${c.id},'${type}',${i},'${p.name.replace(/'/g,'')}')" style="position:relative;flex-shrink:0;flex-grow:1;flex-basis:140px;max-width:220px;">
-        ${p.name}
+        <div style="font-weight:600;font-size:12px;">${p.name}</div>
+        <div onclick="event.stopPropagation();openDataSizeInput('${sizeId}',${gId},${c.id},'${type}',${i})" style="font-size:10px;margin-top:4px;color:${p.status==='copied'?'#065f46':'#991b1b'};opacity:.8;cursor:pointer;" id="${sizeId}_display">${p.dataSize||'<span style="opacity:.5;">+ size</span>'}</div>
+        <div id="${sizeId}_input" style="display:none;margin-top:4px;" onclick="event.stopPropagation()">
+          <input type="text" placeholder="e.g. 120 GB" value="${p.dataSize||''}" style="width:90px;font-size:11px;padding:2px 4px;border:1px solid rgba(0,0,0,.2);border-radius:4px;background:rgba(255,255,255,.7);"
+            onblur="saveDataSize('${sizeId}',${gId},${c.id},'${type}',${i},this.value)"
+            onkeydown="if(event.key==='Enter')this.blur()">
+        </div>
         ${editMode?`<button onclick="event.stopPropagation();removePersonInline(${gId},${c.id},'${type}',${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.25);border:none;color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;">×</button>`:''}
       </div>`;
       return cell;
@@ -2940,47 +2989,98 @@ function exportByMonthExcel(){
 }
 
 function buildAndDownloadExcel(groups,filename){
-  if(typeof XLSX==='undefined'){toast('Excel library not loaded','err');return;}
-  const wb=XLSX.utils.book_new();
-  // Build worksheet data
-  const wsData=[];
+  if(typeof ExcelJS==='undefined'){toast('Excel library loading... try again','err');return;}
+  const wb=new ExcelJS.Workbook();
+  wb.creator='FrameSync';
+  wb.created=new Date();
+  const ws=wb.addWorksheet('Data Management');
+  // Set default column width
+  for(let i=1;i<=20;i++) ws.getColumn(i).width=22;
+  ws.getColumn(1).width=12;
+  let row=1;
+  const addRow=(cells)=>{
+    cells.forEach((cell,ci)=>{
+      const wsCell=ws.getCell(row,ci+1);
+      wsCell.value=cell.v||'';
+      if(cell.bold) wsCell.font={bold:true,color:{argb:cell.fontColor||'FF000000'},size:cell.fontSize||11};
+      else wsCell.font={color:{argb:cell.fontColor||'FF000000'},size:cell.fontSize||11};
+      if(cell.bg) wsCell.fill={type:'pattern',pattern:'solid',fgColor:{argb:cell.bg}};
+      wsCell.alignment={vertical:'middle',horizontal:'center',wrapText:false};
+      wsCell.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+    });
+    row++;
+  };
   groups.forEach(g=>{
     const evts=(g.ceremonies||[]).sort((a,b)=>a.date.localeCompare(b.date));
-    // Group header row
     const diskStr=(g.hardDisks&&g.hardDisks.length)?'  💾 '+g.hardDisks.join(', '):'';
-    wsData.push([{v:g.name+diskStr,s:{font:{bold:true,color:{rgb:'FF0000'}},fill:{fgColor:{rgb:'1E3A8A'}},alignment:{horizontal:'left'}}}]);
+    // Group header
+    const grpCell=ws.getCell(row,1);
+    grpCell.value=g.name+diskStr;
+    grpCell.font={bold:true,color:{argb:'FFFF0000'},size:12};
+    grpCell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E3A8A'}};
+    grpCell.alignment={vertical:'middle',horizontal:'left'};
+    row++;
     evts.forEach(c=>{
       if(!c.stillData) c.stillData=(c.stillStaff||[]).map(n=>({name:n,type:'staff',status:c.stillStatus||'pending'}));
       if(!c.videoData) c.videoData=(c.videoStaff||[]).map(n=>({name:n,type:'staff',status:c.videoStatus||'pending'}));
       const dt=new Date(c.date+'T00:00:00');
       const dateStr=dt.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
-      // Event heading row
-      wsData.push([{v:dateStr+' — '+c.name,s:{font:{bold:true,color:{rgb:'065F46'}},fill:{fgColor:{rgb:'DBEAFE'}},alignment:{horizontal:'left'}}}]);
+      // Event heading
+      const evtCell=ws.getCell(row,1);
+      evtCell.value=dateStr+' — '+c.name;
+      evtCell.font={bold:true,color:{argb:'FF065F46'},size:11};
+      evtCell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDBEAFE'}};
+      evtCell.alignment={vertical:'middle',horizontal:'left'};
+      // Merge event heading across columns
+      const maxCols=Math.max(c.stillData.length,c.videoData.length)+2;
+      if(maxCols>1) ws.mergeCells(row,1,row,maxCols);
+      row++;
       // Still row
-      const stillCells=[{v:'📷 Still',s:{font:{bold:true,color:{rgb:'374151'}},fill:{fgColor:{rgb:'F1F3F5'}}}}];
-      c.stillData.forEach(p=>{
-        const isCopied=p.status==='copied';
-        stillCells.push({v:p.name,s:{font:{bold:false,color:{rgb:'000000'}},fill:{fgColor:{rgb:isCopied?'BBF7D0':'FECACA'}}}});
+      const stillLabel=ws.getCell(row,1);
+      stillLabel.value='📷 Still';
+      stillLabel.font={bold:true,color:{argb:'FF374151'},size:10};
+      stillLabel.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF1F3F5'}};
+      stillLabel.alignment={vertical:'middle',horizontal:'center'};
+      c.stillData.forEach((p,i)=>{
+        const cell=ws.getCell(row,i+2);
+        cell.value=p.name+(p.dataSize?' | '+p.dataSize:'');
+        cell.font={color:{argb:'FF000000'},size:10};
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:p.status==='copied'?'FFBBF7D0':'FFFECACA'}};
+        cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};
+        cell.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
       });
-      wsData.push(stillCells);
+      ws.getRow(row).height=p=>{return 30;};
+      row++;
       // Video row
-      const videoCells=[{v:'🎬 Video',s:{font:{bold:true,color:{rgb:'374151'}},fill:{fgColor:{rgb:'F1F3F5'}}}}];
-      c.videoData.forEach(p=>{
-        const isCopied=p.status==='copied';
-        videoCells.push({v:p.name,s:{font:{bold:false,color:{rgb:'000000'}},fill:{fgColor:{rgb:isCopied?'BBF7D0':'FECACA'}}}});
+      const videoLabel=ws.getCell(row,1);
+      videoLabel.value='🎬 Video';
+      videoLabel.font={bold:true,color:{argb:'FF374151'},size:10};
+      videoLabel.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF1F3F5'}};
+      videoLabel.alignment={vertical:'middle',horizontal:'center'};
+      c.videoData.forEach((p,i)=>{
+        const cell=ws.getCell(row,i+2);
+        cell.value=p.name+(p.dataSize?' | '+p.dataSize:'');
+        cell.font={color:{argb:'FF000000'},size:10};
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:p.status==='copied'?'FFBBF7D0':'FFFECACA'}};
+        cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};
+        cell.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
       });
-      wsData.push(videoCells);
-      wsData.push([]); // blank row between events
+      row++;
+      row++; // blank row between events
     });
-    wsData.push([]); // blank row between groups
+    row++; // blank row between groups
   });
-  const ws=XLSX.utils.aoa_to_sheet(wsData);
-  // Set column widths
-  ws['!cols']=[{wch:25},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22}];
-  XLSX.utils.book_append_sheet(wb,ws,'Data Management');
-  XLSX.writeFile(wb,filename);
-  toast('Excel exported');
+  // Download
+  wb.xlsx.writeBuffer().then(buf=>{
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=filename;
+    a.click();
+    toast('Excel exported with colors');
+  }).catch(e=>{console.error(e);toast('Export failed','err');});
 }
+
 
 function exportGroupCSV(gId){
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
