@@ -458,7 +458,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
   <!-- Hidden admin access -->
   <div style="position:fixed;bottom:16px;right:20px;">
-    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v25 · All rights reserved</span>
+    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v26 · All rights reserved</span>
   </div>
   <div id="adminLoginPanel" style="position:fixed;bottom:40px;right:20px;width:270px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:18px;display:none;z-index:1001;animation:slideUp .2s ease;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -1546,12 +1546,19 @@ function renderStaffPortal(){
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
       Check In
     </button>`;
-    if(doneToday>0) html+=`<button class="portal-btn portal-btn-done" style="font-size:14px;">✓ ${doneToday} shift${doneToday>1?'s':''} completed today</button>`;
   }
   // Always make sure action area is visible and success screen is hidden
   $('portalActionArea').style.display='flex';
   $('portalActionArea').innerHTML=html;
   $('checkinSuccess').classList.remove('show');
+  // Start live timer if checked in for office
+  const _td2=today();
+  const _activeLog=S.logs.find(l=>l.staffId===sf.id&&l.date===_td2&&l.checkIn&&!l.checkOut);
+  if(_activeLog&&_activeLog.checkIn&&_activeLog.company==='office'){
+    setTimeout(()=>startLiveTimer(_activeLog.checkIn), 200);
+  } else {
+    if(_timerInterval){clearInterval(_timerInterval);_timerInterval=null;}
+  }
 }
 
 // Live timer
@@ -1592,12 +1599,23 @@ function renderStaffHistory(){
     const dt=new Date(year,month,d);
     const dayLabel=dt.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
     if(dayLogs&&dayLogs.length){
-      // Simplified - show only Present + At Event/Office
+      // Show Present + location + check-in/out times
       const isOffice=dayLogs.some(l=>l.company==='office');
       const location=isOffice?'At Office':'At Event';
-      rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-size:13px;font-weight:600;">${dayLabel}</div>
-        <span style="background:#d1fae5;color:#065f46;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;">✅ Present — ${location}</span>
+      const ciTime=dayLogs[0]&&dayLogs[0].checkIn?dayLogs[0].checkIn:'';
+      const coTime=dayLogs[dayLogs.length-1]&&dayLogs[dayLogs.length-1].checkOut?dayLogs[dayLogs.length-1].checkOut:'';
+      const durMins=ciTime&&coTime?dur(ciTime,coTime):null;
+      const durStr=durMins?fmtDur(durMins):'';
+      rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:13px;font-weight:600;">${dayLabel}</div>
+          <span style="background:#d1fae5;color:#065f46;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;">✅ Present — ${location}</span>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--text-muted);">
+          <span>⏰ In: <strong style="color:var(--text);">${ciTime||'—'}</strong></span>
+          <span>⏰ Out: <strong style="color:var(--text);">${coTime||'—'}</strong></span>
+          ${durStr?`<span>⏱ ${durStr}</span>`:''}
+        </div>
       </div>`;
     } else {
       rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;">
@@ -1694,19 +1712,25 @@ function renderDash(){
       ?`<span style="background:var(--surface2);color:var(--text-muted);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✅ Done</span>`
       :`<span style="background:var(--surface2);color:var(--text-faint);font-size:11px;padding:3px 10px;border-radius:20px;white-space:nowrap;">Not Checked In</span>`;
     const log=activeLog||lastLog;
-    const rowBg=isOn?'background:#d1fae5;':!sfLogs.length?'background:#fca5a5;':'';
+    const rowBg=isOn?'background:#d1fae5;':!sfLogs.length?'background:#fee2e2;':'';
     const nameColor=isOn?'#065f46':!sfLogs.length?'#991b1b':'var(--text)';
-    const inStr=log&&log.checkIn?('<strong>'+log.checkIn+'</strong>'):'';
-    const outStr=log&&log.checkOut?(' &nbsp; Out: <strong>'+log.checkOut+'</strong>'):(log&&log.checkIn?' &nbsp; Out: <span style="opacity:.5;">—</span>':'');
-    const venueStr=log?(compBadge(log.company)+' <span style="font-size:12px;">'+( log.venue||'')+'</span>'):'';
-    const timeStr=log&&log.checkIn?('<span style="font-size:12px;margin-left:6px;">In: '+inStr+outStr+'</span>'):'';
+    const inStr=log&&log.checkIn?log.checkIn:'';
+    const outStr=log&&log.checkOut?log.checkOut:'—';
+    const companyBadgeStr=log?compBadge(log.company):'';
+    const timesHtml=log&&log.checkIn
+      ?'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'
+        +'<span style="font-size:13px;font-weight:700;">In: '+inStr+'</span>'
+        +'<span style="font-size:13px;font-weight:700;color:'+(log.checkOut?'var(--text)':'#aaa')+';">Out: '+outStr+'</span>'
+        +companyBadgeStr
+        +statusBadge
+        +'</div>'
+      :'<div style="flex-shrink:0;">'+statusBadge+'</div>';
     return '<div onclick="openStaffLogs('+sf.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);cursor:pointer;'+rowBg+'">'
       +'<div class="av" style="background:'+sf.color+';width:36px;height:36px;font-size:13px;flex-shrink:0;">'+ini(sf.name)+'</div>'
       +'<div style="flex:1;min-width:0;">'
       +'<div style="font-weight:700;font-size:14px;color:'+nameColor+';">'+sf.name+'</div>'
-      +(log?'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:3px;">'+venueStr+timeStr+'</div>':'')
       +'</div>'
-      +'<div style="flex-shrink:0;">'+statusBadge+'</div>'
+      +timesHtml
       +'</div>';
   }).join('');
   if(false&&false){
@@ -1783,11 +1807,14 @@ function renderGroverSales(){
 
   if($('groverSalesKpi')){
     // Build per-work-type KPI cards
-    const wtCards=Object.entries(byWt).map(([wt,v])=>{
+    // Show ALL work types (not just ones with data)
+    const allWts=S.workTypes.filter(w=>w.toLowerCase()!=='assistant');
+    const wtCards=allWts.map(wt=>{
+      const v=byWt[wt]||{count:0,doubles:0,rev:0};
       const isPhotobooth=wt.toLowerCase()==='photobooth';
       const valStr=isPhotobooth?'Manual':'₹'+v.rev.toLocaleString('en-IN');
       const subStr=v.count+' shift'+(v.count!==1?'s':'')+(v.doubles>0?' · '+v.doubles+' dinner':'');
-      return `<div class="kpi" style="padding:12px 14px;"><div class="kpi-label" style="font-size:10px;">${wt.toUpperCase()}</div><div class="kpi-val" style="color:var(--success);font-size:18px;">${valStr}</div><div class="kpi-sub">${subStr}</div></div>`;
+      return `<div class="kpi" style="padding:12px 14px;"><div class="kpi-label" style="font-size:10px;">${wt.toUpperCase()}</div><div class="kpi-val" style="color:${v.rev>0?'var(--success)':'var(--text-faint)'};font-size:18px;">${valStr}</div><div class="kpi-sub">${subStr}</div></div>`;
     }).join('');
     $('groverSalesKpi').innerHTML=`
       <div class="kpi" style="padding:12px 14px;border:2px solid var(--success);"><div class="kpi-label">TOTAL REVENUE</div><div class="kpi-val" style="color:var(--success);font-size:22px;">₹${totalRev.toLocaleString('en-IN')}</div><div class="kpi-sub">${pending.length?'+ '+pending.length+' pending':'this month'}</div></div>
@@ -1896,6 +1923,20 @@ function selectCompany(c){
   $('ciStep2Office').style.display=c==='office'?'block':'none';
   $('ciTime').value=nowTime();
   $('ciOfficeTime').value=nowTime();
+  // Show work type for Grover and Wedding
+  const wtSec=$('ciWorkTypeSection');
+  if(wtSec){
+    wtSec.style.display=(c==='grover'||c==='wedding')?'block':'none';
+    const isGrover=c==='grover';
+    const req=$('ciWtRequired');
+    if(req) req.style.display=isGrover?'inline':'none';
+    const opts=$('ciWorkTypeOptions');
+    if(opts) opts.innerHTML=S.workTypes.map(w=>`
+      <label style="display:flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;background:var(--surface);" id="ciWt_${w.replace(/\s/g,'_')}">
+        <input type="radio" name="ciWorkType" value="${w}" onchange="toggleCiWorkType(this)" style="width:14px;height:14px;">
+        ${w}
+      </label>`).join('');
+  }
 }
 
 function toggleCiWorkType(radio){
@@ -2043,12 +2084,11 @@ function openCheckoutModal(staffId){
       $('coOfficeWarning').style.display='block';
     }
   } else {
-    $('coWorkTypesSection').style.display='block';
+    $('coWorkTypesSection').style.display='none';
     $('coPhotboothSection').style.display='none';
     $('coPrints').value=''; $('coPrintSize').value='';
     if(log.company==='grover'){
-      // GROVER: single radio select
-      $('coWorkTypesGrover').style.display='flex';
+      $('coWorkTypesGrover').style.display='none';
       $('coWorkTypes').style.display='none';
       const groverWts=S.workTypes.filter(w=>w.toLowerCase()!=='assistant');
       $('coWorkTypesGrover').innerHTML=groverWts.map(wt=>`
