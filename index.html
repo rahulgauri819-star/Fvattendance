@@ -450,7 +450,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
   <!-- Hidden admin access -->
   <div style="position:fixed;bottom:16px;right:20px;">
-    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v2.1 · All rights reserved</span>
+    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v24 · All rights reserved</span>
   </div>
   <div id="adminLoginPanel" style="position:fixed;bottom:40px;right:20px;width:270px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:18px;display:none;z-index:1001;animation:slideUp .2s ease;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -1668,8 +1668,28 @@ function renderDash(){
     const sfLogs=tLogs.filter(l=>l.staffId===sf.id&&l.checkIn).sort((a,b)=>a.checkIn.localeCompare(b.checkIn));
     const isOn=sfLogs.some(l=>!l.checkOut);
     const isDone=sfLogs.length>0&&sfLogs.every(l=>l.checkOut);
-    if(!sfLogs.length){
-      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);opacity:.6;">
+    const activeLog=sfLogs.find(l=>!l.checkOut);
+    const lastLog=sfLogs[sfLogs.length-1];
+    // Status badge
+    const statusBadge=isOn
+      ?`<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">🟢 On Duty</span>`
+      :isDone
+      ?`<span style="background:var(--surface2);color:var(--text-muted);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✅ Done</span>`
+      :`<span style="background:var(--surface2);color:var(--text-faint);font-size:11px;padding:3px 10px;border-radius:20px;white-space:nowrap;">Not Checked In</span>`;
+    const log=activeLog||lastLog;
+    const detailLine=log?`<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${compBadge(log.company)} ${log.venue||''} · In: ${log.checkIn}${log.checkOut?' · Out: '+log.checkOut:''}</div>`:'';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);">
+      <div class="av" style="background:${sf.color};width:36px;height:36px;font-size:13px;flex-shrink:0;">${ini(sf.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:14px;">${sf.name}</div>
+        <div style="font-size:12px;color:var(--text-muted);">${sf.role}</div>
+        ${detailLine}
+      </div>
+      ${statusBadge}
+    </div>`;
+  }).join('');
+  if(false&&false){
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);opacity:.6;">
         <div class="av" style="background:${sf.color};width:34px;height:34px;font-size:12px;">${ini(sf.name)}</div>
         <div style="flex:1;"><div style="font-weight:600;font-size:13px;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${sf.role}</div></div>
         <span class="badge badge-gray">Not Checked In</span>
@@ -1691,7 +1711,6 @@ function renderDash(){
         ${!l.checkOut?'<span class="badge badge-green">On Duty</span>':l===sfLogs[sfLogs.length-1]?'<span class="badge badge-gray">Done</span>':''}
       </div>`;
     }).join('');
-  }).join('')||'<div class="empty"><p>No staff yet</p></div>';
 
   renderGroverSales();
   lucide.createIcons();
@@ -1728,7 +1747,8 @@ function renderGroverSales(){
     if(wt.toLowerCase()==='assistant') return;
     staffSet.add(l.staffId);
     const rate=S.groverRates[wt]||0;
-    const double=l.checkOut&&isDoubleShift(l.checkIn,l.checkOut);
+    const isPhotobooth=wt.toLowerCase()==='photobooth';
+    const double=!isPhotobooth&&l.checkOut&&isDoubleShift(l.checkIn,l.checkOut);
     const amt=double?rate*2:rate;
     totalRev+=amt; totalShifts++;
     if(double) totalDoubles++;
@@ -1740,11 +1760,19 @@ function renderGroverSales(){
   // Also count check-ins without checkout (TBD)
   const pending=logs.filter(l=>!l.checkOut);
 
-  if($('groverSalesKpi')) $('groverSalesKpi').innerHTML=`
-    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Revenue</div><div class="kpi-val" style="color:var(--success);font-size:20px;">₹${totalRev.toLocaleString('en-IN')}</div><div class="kpi-sub">${pending.length?' + '+pending.length+' pending':''}</div></div>
-    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Shifts</div><div class="kpi-val" style="font-size:20px;">${totalShifts}</div><div class="kpi-sub">confirmed</div></div>
-    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Dinner Shifts</div><div class="kpi-val" style="color:var(--warning);font-size:20px;">${totalDoubles}</div><div class="kpi-sub">billed twice</div></div>
-    <div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${staffSet.size}</div><div class="kpi-sub">deployed</div></div>`;
+  if($('groverSalesKpi')){
+    // Build per-work-type KPI cards
+    const wtCards=Object.entries(byWt).map(([wt,v])=>{
+      const isPhotobooth=wt.toLowerCase()==='photobooth';
+      const valStr=isPhotobooth?'Manual':'₹'+v.rev.toLocaleString('en-IN');
+      const subStr=v.count+' shift'+(v.count!==1?'s':'')+(v.doubles>0?' · '+v.doubles+' dinner':'');
+      return `<div class="kpi" style="padding:12px 14px;"><div class="kpi-label" style="font-size:10px;">${wt.toUpperCase()}</div><div class="kpi-val" style="color:var(--success);font-size:18px;">${valStr}</div><div class="kpi-sub">${subStr}</div></div>`;
+    }).join('');
+    $('groverSalesKpi').innerHTML=`
+      <div class="kpi" style="padding:12px 14px;border:2px solid var(--success);"><div class="kpi-label">TOTAL REVENUE</div><div class="kpi-val" style="color:var(--success);font-size:22px;">₹${totalRev.toLocaleString('en-IN')}</div><div class="kpi-sub">${pending.length?'+ '+pending.length+' pending':'this month'}</div></div>
+      ${wtCards}`;
+  }
+  if(false&&$('groverSalesKpiOLD')) $('groverSalesKpiOLD').innerHTML=`<div class="kpi" style="padding:12px 14px;"><div class="kpi-label">Staff Deployed</div>><div class="kpi-val" style="font-size:20px;">${staffSet.size}</div><div class="kpi-sub">deployed</div></div>`;
 
   // Bar chart
   const maxRev=Math.max(...Object.values(byWt).map(v=>v.rev),1);
@@ -4550,7 +4578,7 @@ function renderDivDaily(div,company,date,sq,sfF){
   const totalH=logs.reduce((a,l)=>a+(dur(l.checkIn,l.checkOut)||0),0);
   const html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
     <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Shifts</div><div class="kpi-val" style="font-size:20px;">${logs.length}</div></div>
-    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${new Set(logs.map(l=>l.staffId)).size}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff Deployed</div>><div class="kpi-val" style="font-size:20px;">${new Set(logs.map(l=>l.staffId)).size}</div></div>
     <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Hours</div><div class="kpi-val" style="font-size:20px;">${fmtDur(totalH)||'—'}</div></div>
   </div>
   ${logs.length?logs.map(l=>makeDivCard(l,company)).join(''):`<div class="empty"><p>No ${company} duties on ${fmtDate(date)}</p></div>`}`;
@@ -4565,7 +4593,7 @@ function renderDivWeekly(div,company,weekStart,sq,sfF){
   const totalH=allLogs.reduce((a,l)=>a+(dur(l.checkIn,l.checkOut)||0),0);
   const html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
     <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Shifts</div><div class="kpi-val" style="font-size:20px;">${allLogs.length}</div></div>
-    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${new Set(allLogs.map(l=>l.staffId)).size}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff Deployed</div>><div class="kpi-val" style="font-size:20px;">${new Set(allLogs.map(l=>l.staffId)).size}</div></div>
     <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Hours</div><div class="kpi-val" style="font-size:20px;">${fmtDur(totalH)||'—'}</div></div>
   </div>
   ${days.map(date=>{
@@ -4591,7 +4619,7 @@ function renderDivMonthly(div,company,month,sq,sfF){
   const sorted=Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0]));
   const html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
     <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Total Shifts</div><div class="kpi-val" style="font-size:20px;">${logs.length}</div></div>
-    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff</div><div class="kpi-val" style="font-size:20px;">${new Set(logs.map(l=>l.staffId)).size}</div></div>
+    <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Staff Deployed</div>><div class="kpi-val" style="font-size:20px;">${new Set(logs.map(l=>l.staffId)).size}</div></div>
     <div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Total Hours</div><div class="kpi-val" style="font-size:20px;">${fmtDur(totalH)||'—'}</div></div>
     ${company==='grover'?`<div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Double Shifts</div><div class="kpi-val" style="font-size:20px;color:var(--warning);">${logs.filter(l=>l.checkOut&&isDoubleShift(l.checkIn,l.checkOut)).length}</div></div>`:''}
     ${company==='wedding'?`<div class="kpi" style="padding:10px 14px;"><div class="kpi-label">Clients</div><div class="kpi-val" style="font-size:20px;">${new Set(logs.map(l=>l.clientName).filter(Boolean)).size}</div></div>`:''}
