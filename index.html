@@ -38,6 +38,14 @@ html{-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;}
   --wedding-color:#e91e8c;--wedding-light:#2b0d1a;
   --purple:#8b5cf6;--purple-light:#1e1040;
 }
+[data-theme="dark"] .badge-green{background:#bbf7d0!important;color:#065f46!important;}
+[data-theme="dark"] .badge-gray{background:#e5e7eb!important;color:#374151!important;}
+[data-theme="dark"] .badge-blue{background:#bfdbfe!important;color:#1e40af!important;}
+[data-theme="dark"] .badge-orange{background:#fed7aa!important;color:#92400e!important;}
+[data-theme="dark"] .badge-red{background:#fecaca!important;color:#991b1b!important;}
+[data-theme="dark"] .badge-pink{background:#fbcfe8!important;color:#9d174d!important;}
+[data-theme="dark"] .badge-purple{background:#e9d5ff!important;color:#6b21a8!important;}
+[data-theme="dark"] .badge{color:#000;}
 * { touch-action: manipulation; }
 html,body{overflow-x:hidden;max-width:100%;}
 body{font-family:var(--font);font-size:15px;color:var(--text);background:var(--bg);display:flex;min-height:100dvh;}
@@ -450,7 +458,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
   <!-- Hidden admin access -->
   <div style="position:fixed;bottom:16px;right:20px;">
-    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v24 · All rights reserved</span>
+    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v25 · All rights reserved</span>
   </div>
   <div id="adminLoginPanel" style="position:fixed;bottom:40px;right:20px;width:270px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:18px;display:none;z-index:1001;animation:slideUp .2s ease;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -1644,6 +1652,15 @@ function toast(msg,type='ok'){
 }
 
 // ===== DASHBOARD =====
+function openStaffLogs(sfId){
+  const sf=getSf(sfId); if(!sf) return;
+  const navEl=document.querySelector('.nav-item[onclick*="logs"]');
+  go('logs', navEl);
+  setTimeout(()=>{
+    const inp=$('logSearch');
+    if(inp){inp.value=sf.name;renderLogs();}
+  },100);
+}
 function renderDash(){
   const td=today();
   $('dashDate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -1677,16 +1694,20 @@ function renderDash(){
       ?`<span style="background:var(--surface2);color:var(--text-muted);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✅ Done</span>`
       :`<span style="background:var(--surface2);color:var(--text-faint);font-size:11px;padding:3px 10px;border-radius:20px;white-space:nowrap;">Not Checked In</span>`;
     const log=activeLog||lastLog;
-    const detailLine=log?`<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${compBadge(log.company)} ${log.venue||''} · In: ${log.checkIn}${log.checkOut?' · Out: '+log.checkOut:''}</div>`:'';
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);">
-      <div class="av" style="background:${sf.color};width:36px;height:36px;font-size:13px;flex-shrink:0;">${ini(sf.name)}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:14px;">${sf.name}</div>
-        <div style="font-size:12px;color:var(--text-muted);">${sf.role}</div>
-        ${detailLine}
-      </div>
-      ${statusBadge}
-    </div>`;
+    const rowBg=isOn?'background:#d1fae5;':!sfLogs.length?'background:#fca5a5;':'';
+    const nameColor=isOn?'#065f46':!sfLogs.length?'#991b1b':'var(--text)';
+    const inStr=log&&log.checkIn?('<strong>'+log.checkIn+'</strong>'):'';
+    const outStr=log&&log.checkOut?(' &nbsp; Out: <strong>'+log.checkOut+'</strong>'):(log&&log.checkIn?' &nbsp; Out: <span style="opacity:.5;">—</span>':'');
+    const venueStr=log?(compBadge(log.company)+' <span style="font-size:12px;">'+( log.venue||'')+'</span>'):'';
+    const timeStr=log&&log.checkIn?('<span style="font-size:12px;margin-left:6px;">In: '+inStr+outStr+'</span>'):'';
+    return '<div onclick="openStaffLogs('+sf.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);cursor:pointer;'+rowBg+'">'
+      +'<div class="av" style="background:'+sf.color+';width:36px;height:36px;font-size:13px;flex-shrink:0;">'+ini(sf.name)+'</div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-weight:700;font-size:14px;color:'+nameColor+';">'+sf.name+'</div>'
+      +(log?'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:3px;">'+venueStr+timeStr+'</div>':'')
+      +'</div>'
+      +'<div style="flex-shrink:0;">'+statusBadge+'</div>'
+      +'</div>';
   }).join('');
   if(false&&false){
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider);opacity:.6;">
@@ -4308,6 +4329,14 @@ function exportBillingPDF(){
   --wedding-color:#e91e8c;--wedding-light:#2b0d1a;
   --purple:#8b5cf6;--purple-light:#1e1040;
 }
+[data-theme="dark"] .badge-green{background:#bbf7d0!important;color:#065f46!important;}
+[data-theme="dark"] .badge-gray{background:#e5e7eb!important;color:#374151!important;}
+[data-theme="dark"] .badge-blue{background:#bfdbfe!important;color:#1e40af!important;}
+[data-theme="dark"] .badge-orange{background:#fed7aa!important;color:#92400e!important;}
+[data-theme="dark"] .badge-red{background:#fecaca!important;color:#991b1b!important;}
+[data-theme="dark"] .badge-pink{background:#fbcfe8!important;color:#9d174d!important;}
+[data-theme="dark"] .badge-purple{background:#e9d5ff!important;color:#6b21a8!important;}
+[data-theme="dark"] .badge{color:#000;}
 * { touch-action: manipulation; }
 html,body{overflow-x:hidden;max-width:100%;}
 body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a1a;margin:0;padding:24px;}
