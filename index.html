@@ -817,6 +817,18 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           </div>
         </div>
         <div class="card">
+          <div class="card-header"><span class="card-title">Office Duty Settings</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="form-hint">Standard check-in time for office duty. Staff checking in more than 1 hour late will be asked for a reason.</div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <label class="form-label" style="margin:0;">Standard Check-in Time:</label>
+              <input class="form-input" type="time" id="officeStdTimeInput" style="width:130px;">
+              <button class="btn btn-primary" onclick="saveOfficeStandardTime()">Save</button>
+              <span id="officeTimeSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-header"><span class="card-title">Attendance Period</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
             <div class="form-hint">Sets which day of the month attendance tracking starts. Default is 1st. Days before this are not counted as Leave.</div>
@@ -1343,7 +1355,8 @@ const S = {
   hardDisks: [],
   hardDiskIdCounter: 1,
   attendanceStartDay: 1,
-  uninformedLeaves: {}
+  uninformedLeaves: {},
+  officeStandardTime: '11:00'
 };
 
 // ===== HELPERS =====
@@ -1511,10 +1524,10 @@ function renderStaffPortal(){
         <div><div style="font-weight:700;color:var(--success);">Checked In</div><div style="font-size:13px;color:var(--text-muted);">${compLabel(activeLog.company)} · ${activeLog.venue}</div></div>
       </div>
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">⏰ Checked in at <strong>${activeLog.checkIn}</strong></div>
-      <div style="text-align:center;padding:10px;background:rgba(0,0,0,.04);border-radius:var(--radius);">
+      ${activeLog.company==='office'?`<div style="text-align:center;padding:10px;background:rgba(0,0,0,.04);border-radius:var(--radius);">
         <div id="liveTimer" style="font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:2px;color:var(--success);">00:00:00</div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Time on duty</div>
-      </div>
+      </div>`:''}
     </div>
     <button class="portal-btn portal-btn-out" onclick="openCheckoutModal(${sf.id})">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -1904,6 +1917,19 @@ function submitCheckin(){
     venue='Office';
     notes=$('ciOfficeNotes').value.trim();
     checkInTime=$('ciOfficeTime').value;
+    // Check if late
+    const sfForLate=getSf(staffId);
+    const stdTime=sfForLate&&sfForLate.officeStartTime?sfForLate.officeStartTime:(S.officeStandardTime||'11:00');
+    const [stdH,stdM]=stdTime.split(':').map(Number);
+    const [ciH,ciM]=checkInTime.split(':').map(Number);
+    const stdMins=stdH*60+stdM;
+    const ciMins=ciH*60+ciM;
+    if(ciMins-stdMins>60){
+      // Show late reason modal
+      S._pendingCiData={venue,notes,checkInTime,staffId};
+      showLateReasonModal(stdTime,checkInTime);
+      return;
+    }
   } else {
     venue=$('ciVenue').value.trim();
     notes=$('ciNotes').value.trim();
@@ -1926,7 +1952,7 @@ function submitCheckin(){
     gpsArea:S.ciGpsArea||'',
     gpsAddr:$('gpsCoords').textContent||'',
     ciNotes:notes,coNotes:'',copyName:'',copyPhone:'',
-    workTypes:(()=>{const sel=document.querySelector('input[name="ciWorkType"]:checked');return sel?[sel.value]:[];})(),prints:0,printSize:''
+    workTypes:(()=>{const sel=document.querySelector('input[name="ciWorkType"]:checked');return sel?[sel.value]:[];})(),prints:0,printSize:'',lateReason:''
   };
   S.logs.push(log);
   saveData();
@@ -1957,8 +1983,10 @@ function openCheckoutModal(staffId){
   $('coCopyName').value=''; $('coCopyPhone').value='';
   $('coOfficeWarning').style.display='none';
   // Office: check hours
-  // Work type already captured at check-in — hide from checkout
+  // Work type captured at check-in — always hide from checkout
   $('coWorkTypesSection').style.display='none';
+  $('coWorkTypesGrover').style.display='none';
+  if($('coWorkTypes')) $('coWorkTypes').style.display='none';
   if(log.company==='office'){
     $('groverCopySection').style.display='none';
     const mins=dur(log.checkIn,nowTime());
@@ -2117,7 +2145,9 @@ function submitStaff(){
   if(!name){toast('Name is required','err');return;}
   const sdType=document.querySelector('input[name="startDateType"]:checked');
   const startDate=sdType&&sdType.value==='custom'?($('sfStartDate').value||null):null;
-  const d={name,role:$('sfRole').value,phone:$('sfPhone').value.trim(),email:$('sfEmail').value.trim(),status:$('sfStatus').value,startDate};
+  const otType=document.querySelector('input[name="officeTimeType"]:checked');
+  const officeStartTime=otType&&otType.value==='custom'?($('sfOfficeTime').value||null):null;
+  const d={name,role:$('sfRole').value,phone:$('sfPhone').value.trim(),email:$('sfEmail').value.trim(),status:$('sfStatus').value,startDate,officeStartTime};
   const pw=$('sfPassword').value.trim(); if(pw) d.password=pw;
   if(S.editSfId){Object.assign(getSf(S.editSfId),d);toast('Staff updated');}
   else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];d.password=d.password||'123';S.staff.push(d);toast(name+' added');}
@@ -2405,6 +2435,7 @@ function renderSettings(){
   renderFreelancersList();
   renderHardDisksList();
   if($('attStartDayInput')) $('attStartDayInput').value=S.attendanceStartDay||1;
+  if($('officeStdTimeInput')) $('officeStdTimeInput').value=S.officeStandardTime||'11:00';
   ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
   $('pwError').style.display='none';
   lucide.createIcons();
@@ -2664,6 +2695,18 @@ function saveHardDisks(gId){
 }
 
 // ===== ATTENDANCE START DAY =====
+function saveOfficeStandardTime(){
+  const v=$('officeStdTimeInput').value;
+  if(!v){toast('Enter a time','err');return;}
+  S.officeStandardTime=v;
+  saveData();
+  const m=$('officeTimeSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
+  toast('Office standard time saved: '+v);
+}
+function toggleOfficeTime(radio){
+  const ot=$('sfOfficeTime'); if(!ot) return;
+  ot.style.display=radio.value==='custom'?'block':'none';
+}
 function saveAttendanceStartDay(){
   const v=parseInt($('attStartDayInput').value,10);
   if(!v||v<1||v>31){toast('Enter 1–31','err');return;}
@@ -2801,6 +2844,74 @@ function confirmDuplicateEvent(gId,cId){
   renderDataManagement();
   renderWeddingGroups('mgrWeddingGroupsList');
   toast('Event duplicated');
+}
+function showLateReasonModal(stdTime,ciTime){
+  const stdFmt=new Date('2000-01-01T'+stdTime).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const ciFmt=new Date('2000-01-01T'+ciTime).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const [stdH,stdM]=stdTime.split(':').map(Number);
+  const [ciH,ciM]=ciTime.split(':').map(Number);
+  const late=((ciH*60+ciM)-(stdH*60+stdM));
+  const lateStr=Math.floor(late/60)+'h '+(late%60)+'m';
+  $('gpsModalBody').innerHTML=`
+    <div style="background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;">
+      <div style="font-weight:700;color:var(--warning);margin-bottom:4px;">⚠️ Late Check-in</div>
+      <div style="font-size:13px;">Standard: <strong>${stdFmt}</strong> · Your time: <strong>${ciFmt}</strong> · <strong>${lateStr} late</strong></div>
+    </div>
+    <div style="font-weight:600;font-size:14px;margin-bottom:12px;">Please select a reason:</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${['Got free from event late','I informed in advance for Half Day','I will be going late today'].map((r,i)=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:14px;" id="lrOpt_${i}">
+          <input type="radio" name="lateReason" value="${r}" onchange="toggleLateReason(${i})" style="width:16px;height:16px;">
+          ${r}
+        </label>`).join('')}
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-outline" onclick="closeM('gpsModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmLateCheckin()">Continue Check-in</button>
+    </div>`;
+  $('gpsModal').querySelector('.modal-title').textContent='Late Check-in Reason';
+  openM('gpsModal');
+}
+function toggleLateReason(idx){
+  [0,1,2].forEach(i=>{
+    const el=document.getElementById('lrOpt_'+i);
+    if(el){el.style.borderColor=i===idx?'var(--primary)':'var(--border)';el.style.background=i===idx?'var(--primary-light)':'var(--surface)';}
+  });
+}
+function confirmLateCheckin(){
+  const sel=document.querySelector('input[name="lateReason"]:checked');
+  if(!sel){toast('Please select a reason','err');return;}
+  closeM('gpsModal');
+  const {venue,notes,checkInTime,staffId}=S._pendingCiData||{};
+  S._pendingLateReason=sel.value;
+  // Resume check-in
+  finishOfficeCheckin(staffId,venue,notes,checkInTime,sel.value);
+}
+function finishOfficeCheckin(staffId,venue,notes,checkInTime,lateReason){
+  const isStaff=isStaffUser();
+  const log={
+    id:S.nId.log++,staffId,company:'office',venue,clientName:'',
+    date:today(),checkIn:checkInTime,checkOut:'',
+    selfie:S.ciSelfieData,
+    gpsLat:S.ciGps?S.ciGps.lat:null,gpsLng:S.ciGps?S.ciGps.lng:null,
+    gpsArea:S.ciGpsArea||'',gpsAddr:$('gpsCoords')?$('gpsCoords').textContent||'':'',
+    ciNotes:notes,coNotes:'',copyName:'',copyPhone:'',
+    workTypes:[],prints:0,printSize:'',
+    lateReason:lateReason||''
+  };
+  S.logs.push(log);
+  saveData();
+  closeM('ciModal');
+  if(isStaff){
+    $('portalActionArea').style.display='none';
+    $('checkinSuccess').classList.add('show');
+    $('successMsg').textContent='Checked in at Office — '+checkInTime+(lateReason?' ('+lateReason+')':'');
+    renderStaffPortal();
+  } else {
+    const sf=getSf(staffId);
+    toast((sf?sf.name:'Staff')+' checked in — '+checkInTime);
+    renderStatusBoard();
+  }
 }
 function openDataSizeInput(sizeId,gId,cId,type,idx){
   const disp=document.getElementById(sizeId+'_display');
@@ -4548,7 +4659,8 @@ function saveData(){
       hardDisks: S.hardDisks||[],
       hardDiskIdCounter: S.hardDiskIdCounter||1,
       attendanceStartDay: S.attendanceStartDay||1,
-      uninformedLeaves: S.uninformedLeaves||{}
+      uninformedLeaves: S.uninformedLeaves||{},
+      officeStandardTime: S.officeStandardTime||'11:00'
     };
     db.ref('appData').set(toSave).catch(e=>console.error('Save error',e));
     // Save selfies to Firebase Storage with 30-day auto-delete
@@ -4619,6 +4731,7 @@ function init(){
       if(data.hardDiskIdCounter) S.hardDiskIdCounter = data.hardDiskIdCounter;
       if(data.attendanceStartDay) S.attendanceStartDay = data.attendanceStartDay;
       if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
+      if(data.officeStandardTime) S.officeStandardTime = data.officeStandardTime;
       // Reload selfies for today's logs
       const td = today();
       const todayLogs = S.logs.filter(l=>l.date===td&&l.selfie==='[photo]');
@@ -4653,6 +4766,7 @@ function init(){
       if(data.hardDiskIdCounter) S.hardDiskIdCounter = data.hardDiskIdCounter;
       if(data.attendanceStartDay) S.attendanceStartDay = data.attendanceStartDay;
       if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
+      if(data.officeStandardTime) S.officeStandardTime = data.officeStandardTime;
       // Re-render current view silently
       const activeView = document.querySelector('.view.active');
       if(activeView){
