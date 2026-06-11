@@ -701,7 +701,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <input type="date" class="form-input" id="logDateF" onchange="renderLogs()" style="max-width:150px;">
       </div>
       <div id="logsMobileList"></div>
-      <div class="card"><div class="table-wrap log-table-wrap">
+      <div class="card"><div class="table-wrap log-table-wrap" id="logTableWrap">
         <table class="data-table"><thead><tr><th>Staff</th><th>Duty</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Work Done</th><th>Selfie</th><th>GPS</th><th>Actions</th></tr></thead>
         <tbody id="logTbody"></tbody></table>
       </div></div>
@@ -1053,7 +1053,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <!-- Month selector -->
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
         <button class="btn btn-outline btn-sm" onclick="billingPrevMonth()"><i data-lucide="chevron-left"></i></button>
-        <span style="font-size:16px;font-weight:700;min-width:140px;text-align:center;" id="billingMonthLabel"></span>
+        <span style="font-size:16px;font-weight:700;min-width:140px;text-align:center;" id="billingMonthLabel2"></span>
         <button class="btn btn-outline btn-sm" onclick="billingNextMonth()"><i data-lucide="chevron-right"></i></button>
       </div>
 
@@ -1070,15 +1070,15 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       </div>
 
       <!-- Pending warning -->
-      <div id="billingPendingWarn" style="display:none;background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:#7c4a00;margin-bottom:16px;"></div>
+      <div id="billingPendingWarn2" style="display:none;background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:#7c4a00;margin-bottom:16px;"></div>
 
       <!-- Main billing table -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount">0 entries</span></div>
+        <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount2">0 entries</span></div>
         <div class="table-wrap">
           <table class="data-table">
             <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead>
-            <tbody id="billingTbody"></tbody>
+            <tbody id="billingTbody2"></tbody>
           </table>
         </div>
       </div>
@@ -1086,11 +1086,11 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <!-- Staff subtotals -->
       <div class="card" style="margin-bottom:16px;">
         <div class="card-header"><span class="card-title">Staff-wise Subtotals</span></div>
-        <div id="billingSubtotals"></div>
+        <div id="billingSubtotals2"></div>
       </div>
 
       <!-- Grand total -->
-      <div id="billingGrandTotal" style="background:#1a1a2e;color:#fff;border-radius:var(--radius-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div id="billingGrandTotal2" style="background:#1a1a2e;color:#fff;border-radius:var(--radius-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       </div>
     </div>
 
@@ -2282,14 +2282,14 @@ function toggleWtChip(i,wt){
   const pbSelected=S.workTypes.some((w,idx)=>w.toLowerCase()==='photobooth'&&$('wt_'+idx)?.classList.contains('selected'));
   $('coPhotboothSection').style.display=pbSelected?'block':'none';
   // Hide data copy if photobooth selected (Grover)
-  const log=S.logs.find(l=>l.id===S.coLogId);
+  const log=S.logs.find(l=>l.id==S.coLogId);
   if(log&&log.company==='grover'){
     $('groverCopySection').style.display=pbSelected?'none':'block';
   }
 }
 
 function submitCheckout(){
-  const log=S.logs.find(l=>l.id===S.coLogId);
+  const log=S.logs.find(l=>l.id==S.coLogId);
   if(!log){toast('Log not found','err');return;}
   if(log.company!=='office'){
     if(log.company==='grover'){
@@ -2414,8 +2414,8 @@ function renderLogs(){
   const q=($('logSearch').value||'').toLowerCase();
   const cf=$('logCompF').value;
   const df=$('logDateF').value;
-  const dfrom=($('logDateFrom')||{}).value||'';
-  const dto=($('logDateTo')||{}).value||'';
+  const dfrom='';
+  const dto='';
   const filtered=S.logs.filter(l=>{
     const sf=getSf(l.staffId); if(!sf) return false;
     if(q&&!sf.name.toLowerCase().includes(q)&&!(l.venue||'').toLowerCase().includes(q)) return false;
@@ -2481,7 +2481,8 @@ function renderLogs(){
   lucide.createIcons();
 }
 function viewGps(logId){
-  const l=S.logs.find(x=>x.id===logId); if(!l||!l.gpsLat) return;
+  logId=parseInt(logId);
+  const l=S.logs.find(x=>x.id==logId); if(!l||!l.gpsLat) return;
   const sf=getSf(l.staffId);
   $('gpsModalBody').innerHTML=`<div style="display:flex;flex-direction:column;gap:12px;">
     <div style="display:flex;align-items:center;gap:10px;"><div class="av" style="background:${sf.color};">${ini(sf.name)}</div><div><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)}</div></div></div>
@@ -2491,6 +2492,7 @@ function viewGps(logId){
   openM('gpsModal');
 }
 function viewSelfie(logId){
+  logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId); if(!l||!l.selfie) return;
   const sf=getSf(l.staffId);
   $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${l.selfie}" style="width:180px;height:180px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;"><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue}</div></div>`;
@@ -2500,9 +2502,10 @@ function viewSelfie(logId){
 
 // ===== EXPORT CSV =====
 function deleteLog(id){
+  id=parseInt(id);
   if(!confirm('Delete this attendance record?')) return;
-  const idx=S.logs.findIndex(l=>l.id===id);
-  if(idx===-1) return;
+  const idx=S.logs.findIndex(l=>l.id==id);
+  if(idx===-1){toast('Log not found','err');return;}
   S.logs.splice(idx,1);
   saveData();
   renderLogs();
@@ -3188,7 +3191,7 @@ function finishOfficeCheckin(staffId,venue,notes,checkInTime,lateReason){
   }
 }
 function openStaffEditModal(logId){
-  const log=S.logs.find(l=>l.id===logId); if(!log) return;
+  const log=S.logs.find(l=>l.id==logId); if(!log) return;
   $('gpsModalBody').innerHTML=`
     <div class="form-group"><label class="form-label">Duty Type</label>
       <select class="form-select" id="seCompany" style="font-size:16px;">
@@ -3215,7 +3218,7 @@ function openStaffEditModal(logId){
   openM('gpsModal');
 }
 function submitStaffEdit(logId){
-  const log=S.logs.find(l=>l.id===logId); if(!log) return;
+  const log=S.logs.find(l=>l.id==logId); if(!log) return;
   log.company=$('seCompany').value;
   log.venue=$('seVenue').value.trim()||'—';
   const cl=$('seClient'); if(cl) log.clientName=cl.value.trim();
@@ -4284,7 +4287,8 @@ function openAddLogModal(){
   openM('gpsModal');
 }
 function openEditLogModal(logId){
-  const log=S.logs.find(l=>l.id===logId); if(!log) return;
+  logId=parseInt(logId);
+  const log=S.logs.find(l=>l.id==logId); if(!log){toast('Log not found','err');return;}
   const sf=getSf(log.staffId);
   const staffOpts=S.staff.filter(s=>s.status==='active').map(s=>`<option value="${s.id}"${s.id===log.staffId?' selected':''}>${s.name}</option>`).join('');
   const isOffice=log.company==='office';
@@ -4322,7 +4326,8 @@ function openEditLogModal(logId){
   openM('gpsModal');
 }
 function submitEditLog(logId){
-  const log=S.logs.find(l=>l.id===logId); if(!log) return;
+  logId=parseInt(logId);
+  const log=S.logs.find(l=>l.id==logId); if(!log) return;
   log.company=$('elCompany').value;
   log.venue=$('elVenue').value.trim()||'—';
   log.checkIn=$('elCheckIn').value;
@@ -4347,7 +4352,7 @@ function submitAddLog(){
   if(!sfId||!date||!company){toast('Fill required fields','err');return;}
   const wt=$('alWorkType').value;
   const log={
-    id:S.nId.logs++,
+    id:S.nId.log++,
     staffId:sfId,
     date,
     company,
@@ -4468,23 +4473,28 @@ function renderBillingRatesCard(){
   }
 }
 
+// Helper: set innerHTML/textContent on both billing views (primary + standalone)
+function $b(id){ return { 
+  set innerHTML(v){ if($(id)) $(id).innerHTML=v; if($(id+'2')) $(id+'2').innerHTML=v; },
+  set textContent(v){ if($(id)) $(id).textContent=v; if($(id+'2')) $(id+'2').textContent=v; },
+  get parentElement(){ return $(id)?$(id).parentElement:null; },
+  get style(){ return $(id)?$(id).style:{display:''}; }
+}; }
+
 function renderBilling(){
   const [y,m]=S.billingMonth.split('-').map(Number);
   const monthLabel=new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
-  $('billingMonthLabel').textContent=monthLabel;
+  // Update both billing views
+  [$('billingMonthLabel'),$('billingMonthLabel2')].forEach(el=>{if(el)el.textContent=monthLabel;});
   renderBillingRatesCard();
 
   // Pending logs warning
   const pendingLogs=S.logs.filter(l=>l.company==='grover'&&l.date.startsWith(S.billingMonth)&&!l.checkOut);
-  if(pendingLogs.length){
-    $('billingPendingWarn').style.display='block';
-    $('billingPendingWarn').innerHTML=`⚠️ ${pendingLogs.length} Grover log${pendingLogs.length>1?'s are':' is'} still checked in (no checkout) — excluded from billing until checkout is complete.`;
-  } else {
-    $('billingPendingWarn').style.display='none';
-  }
+  const warnHTML=pendingLogs.length?`⚠️ ${pendingLogs.length} Grover log${pendingLogs.length>1?'s are':' is'} still checked in (no checkout) — excluded from billing until checkout is complete.`:'';
+  ['billingPendingWarn','billingPendingWarn2'].forEach(id=>{const el=$(id);if(el){el.style.display=pendingLogs.length?'block':'none';el.innerHTML=warnHTML;}});
 
   const entries=buildBillingEntries(S.billingMonth);
-  $('billingEntryCount').textContent=entries.length+' entr'+(entries.length===1?'y':'ies');
+  ['billingEntryCount','billingEntryCount2'].forEach(id=>{const el=$(id);if(el)el.textContent=entries.length+' entr'+(entries.length===1?'y':'ies');});
 
   // Add Manual Entry button in card header
   const beh=$('billingEntryCount').parentElement;
@@ -4497,9 +4507,9 @@ function renderBilling(){
 
   // Main table
   if(!entries.length){
-    $('billingTbody').innerHTML=`<tr><td colspan="11"><div class="empty"><p>No billable entries in ${monthLabel}. Use "+ Add Entry" to add manual items.</p></div></td></tr>`;
+    ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=`<tr><td colspan="11"><div class="empty"><p>No billable entries in ${monthLabel}. Use "+ Add Entry" to add manual items.</p></div></td></tr>`;});
   } else {
-    $('billingTbody').innerHTML=entries.map((e,idx)=>{
+    const billingHTML=entries.map((e,idx)=>{
       const amtStr=e.rate===null?'<span style="color:var(--text-faint);">TBD</span>':e.rate===undefined?'<span style="color:var(--text-faint);">—</span>':'₹'+e.rate.toLocaleString('en-IN');
       if(e.isManual){
         const me=e.manualEntry;
@@ -4530,6 +4540,7 @@ function renderBilling(){
         <td>${(S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null)?`<button class="btn btn-ghost btn-sm" style="font-size:10px;" onclick="resetBillingRate('${e.overrideKey}')" title="Reset to default">↩</button>`:''}</td>
       </tr>`;
     }).join('');
+    ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=billingHTML;});
   }
 
   // Staff subtotals (exclude manual entries from staff grouping)
@@ -4562,14 +4573,14 @@ function renderBilling(){
     </div>`;
   }).join('');
   if(manualTotal>0) subtotalHTML+=`<div class="billing-subtotal-card"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;color:var(--primary);">Manual Entries</span><span style="font-size:18px;font-weight:800;color:var(--primary);">₹${manualTotal.toLocaleString('en-IN')}</span></div></div>`;
-  $('billingSubtotals').innerHTML=subtotalHTML||'<div class="empty"><p>No billable entries</p></div>';
+  ['billingSubtotals','billingSubtotals2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=subtotalHTML||'<div class="empty"><p>No billable entries</p></div>';});
 
   // Grand total
   const grandTotal=entries.reduce((acc,e)=>acc+(e.rate||0),0);
   const hasTBD=entries.some(e=>!e.isManual&&e.rate===null);
   const dinnerCount=entries.filter(e=>e.isDinner).length;
   const pbEntries=entries.filter(e=>!e.isManual&&e.wt==='Photobooth');
-  $('billingGrandTotal').innerHTML=`
+  const grandTotalHTML=`
     <div style="display:flex;gap:24px;flex-wrap:wrap;">
       <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Total Entries</div><div style="font-size:22px;font-weight:800;">${entries.length}</div></div>
       <div><div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.05em;">Dinner Shifts</div><div style="font-size:22px;font-weight:800;color:#ffd700;">${dinnerCount}</div></div>
@@ -4580,6 +4591,7 @@ function renderBilling(){
       <div style="font-size:32px;font-weight:900;color:#fff;">₹${grandTotal.toLocaleString('en-IN')}</div>
       ${hasTBD?'<div style="font-size:11px;opacity:.6;">Some TBD rates not included above</div>':''}
     </div>`;
+  ['billingGrandTotal','billingGrandTotal2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=grandTotalHTML;});
 
   lucide.createIcons();
 }
@@ -4596,13 +4608,13 @@ function editBillingRate(overrideKey, currentRate){
     if(isNaN(n)||n<0){toast('Invalid amount','err');return;}
     S.groverPriceOverrides[overrideKey]=n;
   }
-  saveState(); renderBilling(); toast('Rate updated');
+  saveData(); renderBilling(); toast('Rate updated');
 }
 
 function resetBillingRate(overrideKey){
   if(!S.groverPriceOverrides) return;
   delete S.groverPriceOverrides[overrideKey];
-  saveState(); renderBilling(); toast('Rate reset to default');
+  saveData(); renderBilling(); toast('Rate reset to default');
 }
 
 // ── Manual Billing Entries ────────────────────────────────
@@ -4642,7 +4654,7 @@ function saveManualBillingEntry(month){
     const newId='m'+Date.now();
     S.groverManualEntries[month].push({id:newId,date,description:desc,amount,notes});
   }
-  saveState(); closeModal(); renderBilling(); toast('Entry saved ✓');
+  saveData(); closeModal(); renderBilling(); toast('Entry saved ✓');
 }
 
 function editManualBillingEntry(month,id){ showAddManualEntryModal(month,id); }
@@ -4652,7 +4664,7 @@ function deleteManualBillingEntry(month,id){
   if(S.groverManualEntries&&S.groverManualEntries[month]){
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
   }
-  saveState(); renderBilling(); toast('Entry deleted');
+  saveData(); renderBilling(); toast('Entry deleted');
 }
 
 // ── Billing Export Column Selector ───────────────────────
@@ -4896,6 +4908,7 @@ function countLeavesTaken(staffId, month){
 
 // ── Edit Attendance Log ───────────────────────────────────
 function showEditLogModal(logId){
+  logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId);
   if(!l){toast('Log not found','err');return;}
   const sf=getSf(l.staffId)||{};
@@ -4942,6 +4955,7 @@ function toggleLogFields(company){
 function toggleEditWorkType(company){ toggleLogFields(company); }
 
 function saveEditLog(logId){
+  logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId);
   if(!l) return;
   l.staffId=parseInt($('elStaff').value);
@@ -4959,7 +4973,7 @@ function saveEditLog(logId){
   }
   l.ciNotes=$('elCINotes').value.trim();
   l.coNotes=$('elCONotes').value.trim();
-  saveState(); closeModal(); renderLogs(); toast('Log updated ✓');
+  saveData(); closeModal(); renderLogs(); toast('Log updated ✓');
 }
 
 
