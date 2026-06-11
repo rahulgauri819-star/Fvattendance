@@ -522,7 +522,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           <label class="form-label">Password <span class="req" style="color:var(--danger)">*</span></label>
           <div style="position:relative;">
             <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input class="form-input" id="loginPassword" type="password" placeholder="Default: 123" style="padding-left:36px;" onkeydown="if(event.key==='Enter')submitLogin()">
+            <input class="form-input" id="loginPassword" type="text" placeholder="Default: 123" style="padding-left:36px;" onkeydown="if(event.key==='Enter')submitLogin()">
           </div>
           <div class="form-hint">Default password: <strong>123</strong></div>
         </div>
@@ -1583,17 +1583,29 @@ window.submitLogin = function(){
 
 window.logout = function(){
   S.currentUser=null;
-  localStorage.removeItem('fv_remember');
   $('loginScreen').style.display='flex';
   $('logoutBtn').style.display='none';
-
-  $('loginPassword').value='';
-  const ph=$('loginPhone'); if(ph) ph.value='';
   $('loginError').style.display='none';
   document.body.classList.remove('staff-mode');
   $('topbarTitle').textContent='Dashboard';
   $('hamburgerBtn').style.display='';
   document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='');
+  // Re-fill Remember Me fields if saved
+  try{
+    const saved=localStorage.getItem('fv_remember');
+    if(saved){
+      const parsed=JSON.parse(saved);
+      if(parsed.loginId&&$('loginPhone')) $('loginPhone').value=parsed.loginId;
+      if(parsed.pw&&$('loginPassword')) $('loginPassword').value=parsed.pw;
+      if($('rememberMe')) $('rememberMe').checked=true;
+    } else {
+      if($('loginPassword')) $('loginPassword').value='';
+      if($('loginPhone')) $('loginPhone').value='';
+    }
+  } catch(e){
+    if($('loginPassword')) $('loginPassword').value='';
+    if($('loginPhone')) $('loginPhone').value='';
+  }
 };
 
 window.addEventListener('keydown',function(e){
@@ -2194,7 +2206,8 @@ function submitCheckin(){
   if(S.ciCompany==='office'){
     venue='Office';
     notes=$('ciOfficeNotes').value.trim();
-    checkInTime=$('ciOfficeTime').value;
+    checkInTime=nowTime(); // Use current time at moment of confirm
+    if($('ciOfficeTime')) $('ciOfficeTime').value=checkInTime;
     // Check if late
     const sfForLate=getSf(staffId);
     const stdTime=sfForLate&&sfForLate.officeStartTime?sfForLate.officeStartTime:(S.officeStandardTime||'11:00');
@@ -2203,7 +2216,6 @@ function submitCheckin(){
     const stdMins=stdH*60+stdM;
     const ciMins=ciH*60+ciM;
     if(ciMins-stdMins>60){
-      // Show late reason modal
       S._pendingCiData={venue,notes,checkInTime,staffId};
       showLateReasonModal(stdTime,checkInTime);
       return;
@@ -2211,7 +2223,8 @@ function submitCheckin(){
   } else {
     venue=$('ciVenue').value.trim();
     notes=$('ciNotes').value.trim();
-    checkInTime=$('ciTime').value;
+    checkInTime=nowTime(); // Use current time at moment of confirm
+    if($('ciTime')) $('ciTime').value=checkInTime;
     if(!venue){toast('Please enter a venue','err');return;}
     if(S.ciCompany==='grover'){
       const selWt=document.querySelector('input[name="ciWorkType"]:checked');
@@ -2427,7 +2440,27 @@ function submitStaff(){
   const officeStartTime=otType&&otType.value==='custom'?($('sfOfficeTime').value||null):null;
   const d={name,role:$('sfRole').value,phone:$('sfPhone').value.trim(),email:$('sfEmail').value.trim(),status:$('sfStatus').value,startDate,officeStartTime};
   const pw=$('sfPassword').value.trim(); if(pw) d.password=pw;
-  if(S.editSfId){Object.assign(getSf(S.editSfId),d);toast('Staff updated');}
+  if(S.editSfId){
+    const existing=getSf(S.editSfId);
+    const oldName=existing.name;
+    Object.assign(existing,d);
+    // If name changed, clear stale fv_remember so login ID updates
+    if(oldName!==d.name){
+      try{
+        const saved=localStorage.getItem('fv_remember');
+        if(saved){
+          const parsed=JSON.parse(saved);
+          // Check if this staff member's remember me uses old name as loginId
+          if(parsed.loginId&&parsed.loginId.toLowerCase()===oldName.split(' ')[0].toLowerCase()){
+            // Update loginId to new first name
+            parsed.loginId=d.name.split(' ')[0];
+            localStorage.setItem('fv_remember',JSON.stringify(parsed));
+          }
+        }
+      } catch(e){}
+    }
+    toast('Staff updated');
+  }
   else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];d.password=d.password||'123';S.staff.push(d);toast(name+' added');}
   closeM('sfModal');renderStaff();
 }
@@ -2504,6 +2537,7 @@ function renderLogs(){
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit">✏️</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteLog(${l.id})" title="Delete">🗑️</button>
+        ${(()=>{const isUL=(S.uninformedLeaves[sf.id]||[]).some(u=>u.date===l.date); return isUL?`<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">🚫UL</span>`:''})()}
       </td>
     </tr>`;
   }).join('');
@@ -4373,6 +4407,7 @@ function openEditLogModal(logId){
     </div>`;
   $('gpsModal').querySelector('.modal-title').textContent='Edit Log Entry';
   openM('gpsModal');
+  setTimeout(()=>toggleLogFields(log.company), 50);
 }
 function submitEditLog(logId){
   logId=parseInt(logId);
@@ -4725,7 +4760,7 @@ function renderBilling(){
 
   // Pending logs warning
   const pendingLogs=S.logs.filter(l=>l.company==='grover'&&l.date.startsWith(S.billingMonth)&&!l.checkOut);
-  const warnHTML=pendingLogs.length?`⚠️ ${pendingLogs.length} Grover log${pendingLogs.length>1?'s are':' is'} still checked in (no checkout) — excluded from billing until checkout is complete.`:'';
+  const warnHTML=pendingLogs.length?`⚠️ ${pendingLogs.length} Grover log${pendingLogs.length>1?'s are':' is'} still checked in (no checkout) — excluded from billing. ${pendingLogs.map(l=>{const sf=getSf(l.staffId);return (sf?sf.name:'Unknown')+' ('+fmtDate(l.date)+')'}).join(', ')}`:'';
   ['billingPendingWarn','billingPendingWarn2'].forEach(id=>{const el=$(id);if(el){el.style.display=pendingLogs.length?'block':'none';el.innerHTML=warnHTML;}});
 
   const entries=buildBillingEntries(S.billingMonth);
@@ -4910,9 +4945,11 @@ let _billingExportFormat='csv';
 function showBillingExportModal(format){
   _billingExportFormat=format;
   const checks=BILLING_COLS.map((col,i)=>`
-    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
-      <input type="checkbox" id="bcol_${i}" ${_billingExportCols.includes(i)?'checked':''} onchange="updateBillingColSelection()">
-      <span>${col}</span>
+    <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:${_billingExportCols.includes(i)?'var(--primary-light)':'var(--surface)'};margin-bottom:6px;" id="bcolLabel_${i}" onclick="toggleBillingCol(${i})">
+      <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${_billingExportCols.includes(i)?'var(--primary)':'var(--border)'};background:${_billingExportCols.includes(i)?'var(--primary)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        ${_billingExportCols.includes(i)?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}
+      </div>
+      <span style="font-size:13px;font-weight:${_billingExportCols.includes(i)?'600':'400'};">${col}</span>
     </label>`).join('');
   openModal(`
     <div class="modal-header"><span class="modal-title">Customise ${format.toUpperCase()} Columns</span><button class="modal-close" onclick="closeModal()">✕</button></div>
@@ -4921,9 +4958,19 @@ function showBillingExportModal(format){
         <button class="btn btn-outline btn-sm" onclick="selectAllBillingCols(true)">Select All</button>
         <button class="btn btn-outline btn-sm" onclick="selectAllBillingCols(false)">Deselect All</button>
       </div>
-      <div style="columns:2;gap:16px;">${checks}</div>
+      <div style="columns:2;gap:12px;">${checks}</div>
       <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="doExportBilling()">Download ${format.toUpperCase()}</button>
     </div>`);
+}
+
+function toggleBillingCol(i){
+  if(_billingExportCols.includes(i)){
+    _billingExportCols=_billingExportCols.filter(c=>c!==i);
+  } else {
+    _billingExportCols=[..._billingExportCols,i].sort((a,b)=>a-b);
+  }
+  // Re-render modal to reflect change
+  showBillingExportModal(_billingExportFormat);
 }
 
 function updateBillingColSelection(){
@@ -4931,8 +4978,8 @@ function updateBillingColSelection(){
 }
 
 function selectAllBillingCols(val){
-  BILLING_COLS.forEach((_,i)=>{const el=$('bcol_'+i);if(el)el.checked=val;});
-  updateBillingColSelection();
+  _billingExportCols=val?BILLING_COLS.map((_,i)=>i):[];
+  showBillingExportModal(_billingExportFormat);
 }
 
 function doExportBilling(){
@@ -5181,6 +5228,7 @@ function showEditLogModal(logId){
       <div class="form-group"><label class="form-label">Notes (Check-Out)</label><input class="form-input" id="elCONotes" value="${escHtml(l.coNotes||'')}"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="saveEditLog(${logId})">Save Changes</button>
     </div>`);
+  setTimeout(()=>toggleLogFields(l.company), 50);
 }
 
 function toggleLogFields(company){
@@ -5621,6 +5669,16 @@ function init(){
       if(data.standardHours) S.standardHours = data.standardHours;
       if(data.admin) S.admin = data.admin;
       if(data.groverRates) S.groverRates = data.groverRates;
+      // Cleanup: remove ghost grover logs with no checkout from past dates
+      if(data.logs){
+        const todayD=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+        data.logs=data.logs.filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
+      }
+      // One-time cleanup: remove ghost logs (grover logs with no checkout older than today)
+      if(data.logs){
+        const todayD=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+        data.logs=data.logs.filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
+      }
       if(data.groverManualEntries) S.groverManualEntries = data.groverManualEntries;
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
       if(data.paidLeavesPerYear) S.paidLeavesPerYear = data.paidLeavesPerYear;
