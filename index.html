@@ -702,7 +702,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       </div>
       <div id="logsMobileList"></div>
       <div class="card"><div class="table-wrap log-table-wrap">
-        <table class="data-table"><thead><tr><th>Staff</th><th>Duty</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Work Done</th><th>Selfie</th><th>GPS</th></tr></thead>
+        <table class="data-table"><thead><tr><th>Staff</th><th>Duty</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Work Done</th><th>Selfie</th><th>GPS</th><th>Actions</th></tr></thead>
         <tbody id="logTbody"></tbody></table>
       </div></div>
     <div id="logMobileList" style="display:none;"></div>
@@ -2434,17 +2434,24 @@ function renderLogs(){
     const d=dur(l.checkIn,l.checkOut);
     return `<div class="log-mobile-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-        <div class="av" style="background:${sf.color};width:34px;height:34px;font-size:12px;flex-shrink:0;">${ini(sf.name)}</div>
-        <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sf.name}</div></div>
+        <div style="position:relative;flex-shrink:0;">
+          ${l.selfie&&l.selfie.startsWith('data:')?
+            `<img src="${l.selfie}" onclick="viewSelfie(${l.id})" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;">`:
+            `<div class="av" style="background:${sf.color};width:40px;height:40px;font-size:13px;flex-shrink:0;">${ini(sf.name)}</div>`}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sf.name}</div>
+          ${(l.workTypes&&l.workTypes.length)?`<div style="font-size:11px;color:var(--text-muted);">${l.workTypes.join(', ')}</div>`:''}
+        </div>
         ${compBadge(l.company)}
       </div>
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">📅 ${fmtDate(l.date)} &nbsp;·&nbsp; 📍 ${l.venue||'—'}</div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:${(l.ciNotes||l.coNotes)?'4px':'8px'};">
         ${l.checkIn?`⏰ <strong>${l.checkIn}</strong> → <strong>${l.checkOut||'Active'}</strong>${d?' · '+fmtDur(d):''}` : '—'}
       </div>
+      ${(l.ciNotes||l.coNotes)?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-style:italic;">📝 ${l.ciNotes||l.coNotes}</div>`:''}
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" onclick="openEditLogModal(${l.id})">✏️ Edit</button>
-        ${l.selfie&&l.selfie!=='[photo]'&&l.selfie.startsWith('data:')?`<button class="btn btn-outline btn-sm" onclick="viewSelfie(${l.id})">📷</button>`:''}
         ${l.gpsLat?`<button class="btn btn-outline btn-sm" onclick="openGpsModal(${l.id})">📍 ${l.gpsArea||l.gpsAddr||'GPS'}</button>`:''}
         <button class="btn btn-danger btn-sm" onclick="deleteLog(${l.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
       </div>
@@ -2455,17 +2462,20 @@ function renderLogs(){
     const d=dur(l.checkIn,l.checkOut);
     const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
     return `<tr>
-      <td><div class="staff-cell"><div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;">${ini(sf.name)}</div><span style="font-weight:600;">${sf.name}</span></div></td>
+      <td><div class="staff-cell"><div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;">${ini(sf.name)}</div><span style="font-weight:600;">${sf.name}</span>${(l.ciNotes||l.coNotes)?`<span title="${escHtml(l.ciNotes||l.coNotes||'')}" style="margin-left:4px;cursor:help;font-size:11px;">📝</span>`:''}</div></td>
       <td>${compBadge(l.company)}</td>
-      <td style="font-size:13px;max-width:130px;" class="truncate">${l.venue}</td>
+      <td style="font-size:13px;max-width:130px;" class="truncate">${l.venue||'—'}</td>
       <td style="font-size:12px;white-space:nowrap;">${fmtDate(l.date)}</td>
       <td><span class="badge badge-green">${l.checkIn||'—'}</span></td>
       <td>${l.checkOut?'<span class="badge badge-gray">'+l.checkOut+'</span>':'<span class="badge badge-orange">Active</span>'}</td>
       <td style="font-size:12px;">${fmtDur(d)}</td>
       <td style="font-size:12px;max-width:120px;" class="truncate">${wt}</td>
       <td>${l.selfie?`<img src="${l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
-      <td>${l.gpsLat?`<button class="badge badge-green" style="cursor:pointer;border:none;" onclick="viewGps(${l.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>View</button>`:'<span class="text-muted text-xs">—</span>'}</td>
-      <td><button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit Log">✏️</button></td>
+      <td>${l.gpsLat?`<button class="badge badge-green" style="cursor:pointer;border:none;" onclick="viewGps(${l.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.gpsArea||'View'}</button>`:'<span class="text-muted text-xs">—</span>'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit">✏️</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteLog(${l.id})" title="Delete">🗑️</button>
+      </td>
     </tr>`;
   }).join('');
   lucide.createIcons();
@@ -4246,20 +4256,20 @@ function openAddLogModal(){
         <input class="form-input" type="date" id="alDate" value="${today()}" style="font-size:16px;"></div>
     </div>
     <div class="form-group"><label class="form-label">Duty Type <span style="color:var(--danger)">*</span></label>
-      <select class="form-select" id="alCompany" style="font-size:16px;">
+      <select class="form-select" id="alCompany" style="font-size:16px;" onchange="toggleLogFields(this.value)">
         <option value="grover">🎬 Grover A/V</option>
         <option value="wedding">💍 Wedding</option>
         <option value="office">🏢 Office</option>
       </select></div>
-    <div class="form-group"><label class="form-label">Venue</label>
-      <input class="form-input" id="alVenue" placeholder="Venue name" style="font-size:16px;"></div>
+    <div class="form-group" id="alVenueGroup"><label class="form-label">Venue</label>
+      <input class="form-input" id="alVenue" placeholder="Venue name" autocomplete="off" style="font-size:16px;"></div>
     <div class="form-grid form-grid-2">
       <div class="form-group"><label class="form-label">Check-in Time</label>
         <input class="form-input" type="time" id="alCheckIn" style="font-size:16px;"></div>
       <div class="form-group"><label class="form-label">Check-out Time</label>
         <input class="form-input" type="time" id="alCheckOut" style="font-size:16px;"></div>
     </div>
-    <div class="form-group"><label class="form-label">Work Type</label>
+    <div class="form-group" id="alWorkTypeGroup"><label class="form-label">Work Type</label>
       <select class="form-select" id="alWorkType" style="font-size:16px;">
         <option value="">— None —</option>
         ${S.workTypes.map(w=>`<option value="${w}">${w}</option>`).join('')}
@@ -4289,8 +4299,8 @@ function openEditLogModal(logId){
         <option value="wedding"${log.company==='wedding'?' selected':''}>💍 Wedding</option>
         <option value="office"${log.company==='office'?' selected':''}>🏢 Office</option>
       </select></div>
-    <div class="form-group"><label class="form-label">Venue</label>
-      <input class="form-input" id="elVenue" value="${log.venue||''}" style="font-size:16px;"></div>
+    <div class="form-group" id="elVenueGroup" style="display:${isOffice?'none':'block'}"><label class="form-label">Venue</label>
+      <input class="form-input" id="elVenue" value="${log.venue||''}" autocomplete="off" style="font-size:16px;"></div>
     <div class="form-grid form-grid-2">
       <div class="form-group"><label class="form-label">Check-in Time</label>
         <input class="form-input" type="time" id="elCheckIn" value="${log.checkIn||''}" style="font-size:16px;"></div>
@@ -4908,7 +4918,7 @@ function showEditLogModal(logId){
         <div class="form-group" style="flex:1;"><label class="form-label">Check-In</label><input class="form-input" type="time" id="elCI" value="${l.checkIn||''}"></div>
         <div class="form-group" style="flex:1;"><label class="form-label">Check-Out</label><input class="form-input" type="time" id="elCO" value="${l.checkOut||''}"></div>
       </div>
-      <div class="form-group"><label class="form-label">Venue</label><input class="form-input" id="elVenue" value="${escHtml(l.venue||'')}"></div>
+      <div class="form-group" id="elVenueGroup" style="display:${isOffice?'none':'block'}"><label class="form-label">Venue</label><input class="form-input" id="elVenue" autocomplete="off" value="${escHtml(l.venue||'')}"></div>
       <div class="form-group" id="elWorkTypeGroup" style="display:${isOffice?'none':'block'}"><label class="form-label">Work Type</label><select class="form-select" id="elWT">${wtOpts}</select></div>
       <div class="form-group"><label class="form-label">Notes (Check-In)</label><input class="form-input" id="elCINotes" value="${escHtml(l.ciNotes||'')}"></div>
       <div class="form-group"><label class="form-label">Notes (Check-Out)</label><input class="form-input" id="elCONotes" value="${escHtml(l.coNotes||'')}"></div>
@@ -4917,10 +4927,20 @@ function showEditLogModal(logId){
 }
 }
 
-function toggleEditWorkType(company){
-  const grp=$('elWorkTypeGroup');
-  if(grp) grp.style.display=(company==='office')?'none':'block';
+function toggleLogFields(company){
+  const isOffice = company === 'office';
+  // Add Log modal fields
+  const alVg = $('alVenueGroup');
+  const alWtg = $('alWorkTypeGroup');
+  if(alVg) alVg.style.display = isOffice ? 'none' : 'block';
+  if(alWtg) alWtg.style.display = isOffice ? 'none' : 'block';
+  // Edit Log modal fields (staff + admin share same IDs)
+  const elVg = $('elVenueGroup');
+  const elWtg = $('elWorkTypeGroup');
+  if(elVg) elVg.style.display = isOffice ? 'none' : 'block';
+  if(elWtg) elWtg.style.display = isOffice ? 'none' : 'block';
 }
+function toggleEditWorkType(company){ toggleLogFields(company); }
 
 function saveEditLog(logId){
   const l=S.logs.find(x=>x.id==logId);
