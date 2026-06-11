@@ -692,6 +692,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <div class="page-header">
         <div><h1 class="page-title">Attendance Log</h1><p class="page-sub">Full check-in/out history</p></div>
         <button class="btn btn-outline btn-sm" onclick="openAddLogModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Log</button>
+        <button class="btn btn-primary btn-sm" onclick="openBulkAddModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Bulk Add</button>
         <button class="btn btn-outline" onclick="exportCSV()"><i data-lucide="download"></i> Export CSV</button>
         <button class="btn btn-outline" onclick="showAttendanceExportModal()"><i data-lucide="calendar"></i> Export by Date Range</button>
       </div>
@@ -4369,6 +4370,174 @@ function submitAddLog(){
   closeM('gpsModal');
   renderLogs();
   toast('Log entry added');
+}
+
+// ===== BULK ADD LOGS =====
+let _bulkRows=[];
+
+function openBulkAddModal(){
+  _bulkRows=[{date:'',ci:'',co:''},{date:'',ci:'',co:''},{date:'',ci:'',co:''}];
+  _renderBulkModal();
+}
+
+function _renderBulkModal(){
+  const staffOpts=S.staff.filter(s=>s.status==='active')
+    .map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  const wtOpts=S.workTypes.map(w=>`<option value="${w}">${w}</option>`).join('');
+  const rowsHTML=_bulkRows.map((r,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 100px 100px 32px;gap:6px;align-items:center;margin-bottom:6px;">
+      <input class="form-input" type="date" id="bDate${i}" value="${r.date}" style="font-size:13px;" onchange="_bulkSave(${i})">
+      <input class="form-input" type="time" id="bCI${i}" value="${r.ci}" style="font-size:13px;" onchange="_bulkSave(${i})">
+      <input class="form-input" type="time" id="bCO${i}" value="${r.co}" style="font-size:13px;" onchange="_bulkSave(${i})">
+      <button onclick="_bulkRemoveRow(${i})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:4px;line-height:1;">🗑️</button>
+    </div>`).join('');
+  openModal(`
+    <div class="modal-header">
+      <span class="modal-title">📋 Bulk Add Logs</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Staff *</label>
+          <select class="form-select" id="blkStaff" onchange="_bulkCheckDupes()">
+            <option value="">— Select —</option>
+            ${staffOpts}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Duty Type *</label>
+          <select class="form-select" id="blkCompany" onchange="toggleBulkFields(this.value)">
+            <option value="grover">🎬 Grover A/V</option>
+            <option value="wedding">💍 Wedding</option>
+            <option value="office">🏢 Office</option>
+          </select>
+        </div>
+      </div>
+      <div id="blkVenueGroup" class="form-group" style="margin-bottom:10px;">
+        <label class="form-label">Venue <span style="font-size:11px;color:var(--text-muted);">(applied to all)</span></label>
+        <input class="form-input" id="blkVenue" placeholder="Venue name" autocomplete="off">
+      </div>
+      <div id="blkWtGroup" class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Work Type <span style="font-size:11px;color:var(--text-muted);">(applied to all)</span></label>
+        <select class="form-select" id="blkWorkType">
+          <option value="">— None —</option>
+          ${wtOpts}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 100px 100px 32px;gap:6px;margin-bottom:6px;padding:0 2px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">Date</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">Check-In</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">Check-Out</div>
+        <div></div>
+      </div>
+      <div id="blkRowsContainer">${rowsHTML}</div>
+      <div id="blkDupeWarn" style="display:none;font-size:12px;margin:6px 0;padding:8px 10px;background:#fff8e1;border:1px solid #f59e0b;border-radius:6px;color:#7c4a00;"></div>
+      <button onclick="_bulkAddRow()" class="btn btn-outline btn-sm" style="width:100%;margin-top:6px;margin-bottom:16px;">+ Add Another Day</button>
+      <button onclick="submitBulkLogs()" class="btn btn-primary" style="width:100%;font-size:15px;padding:12px;">💾 Save All Logs</button>
+    </div>`);
+}
+
+function toggleBulkFields(company){
+  const isOffice=company==='office';
+  const vg=$('blkVenueGroup'); const wg=$('blkWtGroup');
+  if(vg) vg.style.display=isOffice?'none':'block';
+  if(wg) wg.style.display=isOffice?'none':'block';
+}
+
+function _bulkSave(i){
+  if(!_bulkRows[i]) return;
+  _bulkRows[i].date=($('bDate'+i)||{}).value||'';
+  _bulkRows[i].ci=($('bCI'+i)||{}).value||'';
+  _bulkRows[i].co=($('bCO'+i)||{}).value||'';
+  _bulkCheckDupes();
+}
+
+function _bulkAddRow(){
+  _bulkRows.forEach((_,i)=>_bulkSave(i));
+  const last=_bulkRows[_bulkRows.length-1]||{};
+  const blkStaff=($('blkStaff')||{}).value||'';
+  const blkCompany=($('blkCompany')||{}).value||'grover';
+  const blkVenue=($('blkVenue')||{}).value||'';
+  const blkWt=($('blkWorkType')||{}).value||'';
+  _bulkRows.push({date:'',ci:last.ci||'',co:last.co||''});
+  _renderBulkModal();
+  // Restore header field values after re-render
+  setTimeout(()=>{
+    if($('blkStaff')) $('blkStaff').value=blkStaff;
+    if($('blkCompany')){$('blkCompany').value=blkCompany;toggleBulkFields(blkCompany);}
+    if($('blkVenue')) $('blkVenue').value=blkVenue;
+    if($('blkWorkType')) $('blkWorkType').value=blkWt;
+    const c=$('blkRowsContainer'); if(c) c.lastElementChild&&c.lastElementChild.scrollIntoView({behavior:'smooth'});
+  },30);
+}
+
+function _bulkRemoveRow(i){
+  _bulkRows.forEach((_,j)=>_bulkSave(j));
+  const blkStaff=($('blkStaff')||{}).value||'';
+  const blkCompany=($('blkCompany')||{}).value||'grover';
+  const blkVenue=($('blkVenue')||{}).value||'';
+  const blkWt=($('blkWorkType')||{}).value||'';
+  _bulkRows.splice(i,1);
+  if(!_bulkRows.length) _bulkRows.push({date:'',ci:'',co:''});
+  _renderBulkModal();
+  setTimeout(()=>{
+    if($('blkStaff')) $('blkStaff').value=blkStaff;
+    if($('blkCompany')){$('blkCompany').value=blkCompany;toggleBulkFields(blkCompany);}
+    if($('blkVenue')) $('blkVenue').value=blkVenue;
+    if($('blkWorkType')) $('blkWorkType').value=blkWt;
+  },30);
+}
+
+function _bulkCheckDupes(){
+  const sfId=parseInt(($('blkStaff')||{}).value||0);
+  const w=$('blkDupeWarn'); if(!w) return;
+  if(!sfId){w.style.display='none';return;}
+  const entered=_bulkRows.map((_,i)=>($('bDate'+i)||{}).value||'').filter(Boolean);
+  const seen=new Set(); const formDupes=[];
+  entered.forEach(d=>{if(seen.has(d))formDupes.push(d);seen.add(d);});
+  const existing=S.logs.filter(l=>l.staffId==sfId).map(l=>l.date);
+  const existingDupes=entered.filter(d=>existing.includes(d));
+  const all=[...new Set([...formDupes,...existingDupes])];
+  if(all.length){
+    w.style.display='block';
+    w.innerHTML='⚠️ Duplicate date'+(all.length>1?'s':'')+' detected: '+all.map(d=>fmtDate(d)).join(', ')+' — will still save but may create duplicate entries.';
+  } else {
+    w.style.display='none';
+  }
+}
+
+function submitBulkLogs(){
+  _bulkRows.forEach((_,i)=>_bulkSave(i));
+  const sfId=parseInt(($('blkStaff')||{}).value||0);
+  const company=($('blkCompany')||{}).value||'grover';
+  const isOffice=company==='office';
+  const venue=isOffice?'Office':($('blkVenue')||{}).value.trim()||'—';
+  const wt=(!isOffice&&$('blkWorkType'))?$('blkWorkType').value:'';
+  if(!sfId){toast('Please select a staff member','err');return;}
+  const validRows=_bulkRows.filter(r=>r.date);
+  if(!validRows.length){toast('Please enter at least one date','err');return;}
+  let added=0;
+  validRows.forEach(r=>{
+    S.logs.push({
+      id:S.nId.log++,
+      staffId:sfId,
+      date:r.date,
+      company,
+      venue,
+      checkIn:r.ci||'',
+      checkOut:r.co||'',
+      workTypes:wt?[wt]:[],
+      ciNotes:'',
+      addedByAdmin:true,
+      gpsLat:null,gpsLng:null,selfie:null
+    });
+    added++;
+  });
+  saveData();
+  closeModal();
+  renderLogs();
+  toast(`${added} log entr${added===1?'y':'ies'} added ✓`);
 }
 
 // ===== GROVER BILLING =====
