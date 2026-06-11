@@ -541,7 +541,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
   <!-- Hidden admin access -->
   <div style="position:fixed;bottom:16px;right:20px;">
-    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v31 · All rights reserved</span>
+    <span onclick="revealAdminLogin()" style="font-size:10px;color:#ccc;cursor:default;user-select:none;">© Fotovision v37 · All rights reserved</span>
   </div>
   <div id="adminLoginPanel" style="position:fixed;bottom:40px;right:20px;width:270px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:18px;display:none;z-index:1001;animation:slideUp .2s ease;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -1711,10 +1711,10 @@ function renderStaffHistory(){
   const logsByDate={};
   myLogs.forEach(l=>{ if(!logsByDate[l.date]) logsByDate[l.date]=[]; logsByDate[l.date].push(l); });
   const uniqueDays=Object.keys(logsByDate).length;
-  // Build list of all days in month up to today
-  const todayDate=new Date(); todayDate.setHours(0,0,0,0);
   const daysInMonth=new Date(year,month+1,0).getDate();
   const lastDay=Math.min(daysInMonth, now.getDate());
+  const todayStr=today();
+  const nowMs=Date.now();
   let rows='';
   for(let d=lastDay;d>=1;d--){
     const dateStr=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
@@ -1722,25 +1722,34 @@ function renderStaffHistory(){
     const dt=new Date(year,month,d);
     const dayLabel=dt.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
     if(dayLogs&&dayLogs.length){
-      // Show each check-in separately
       dayLogs.forEach((l,li)=>{
         const isOffice=l.company==='office';
         const location=isOffice?'At Office':'At Event';
         const ciTime=l.checkIn||'';
         const coTime=l.checkOut||'';
         const durMins=ciTime&&coTime?dur(ciTime,coTime):null;
-        const durStr=durMins?fmtDur(durMins):'';
+        const showDur=isOffice&&durMins!==null&&durMins<480;
+        const durStr=showDur?fmtDur(durMins):'';
+        const canDelete=l.createdAt&&(nowMs-l.createdAt)<30*60*1000;
         const prefix=li===0?`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">${dayLabel}</div>`:'';
         rows+=`<div class="history-present-row" style="padding:${li===0?'14px 16px 8px':'4px 16px 8px'};border-bottom:${li===dayLogs.length-1?'1px solid var(--divider)':'none'};background:#f0fff4;">
           ${prefix}
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#333;">
-              ${ciTime?`<span>⏰ <strong>${ciTime}</strong></span><span>→</span><span>⏰ <strong>${coTime||'—'}</strong></span>${durStr?`<span style="opacity:.6;">· ${durStr}</span>`:''}`:''}
+              ${ciTime?`<span>⏰ <strong>${ciTime}</strong></span><span>→</span><span>⏰ <strong>${coTime||'—'}</strong></span>${showDur?`<span style="opacity:.6;color:var(--danger);">· ${durStr}</span>`:''}`:''}
             </div>
-            <span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✅ ${location}</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              ${canDelete?`<button onclick="staffDeleteOwnLog(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
+              <span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✅ ${location}</span>
+            </div>
           </div>
         </div>`;
       });
+    } else if(dateStr===todayStr){
+      rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${dayLabel}</div>
+        <span style="font-size:18px;color:var(--text-muted);">—</span>
+      </div>`;
     } else {
       rows+=`<div style="padding:14px 16px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);">${dayLabel}</div>
@@ -1755,6 +1764,24 @@ function renderStaffHistory(){
     </div>
     ${rows||'<div class="empty" style="padding:32px;"><p>No data yet</p></div>'}`;
   lucide.createIcons();
+}
+
+function staffDeleteOwnLog(logId){
+  logId=parseInt(logId);
+  const l=S.logs.find(x=>x.id==logId);
+  if(!l){toast('Log not found','err');return;}
+  // Double-check 30 min window
+  if(!l.createdAt||(Date.now()-l.createdAt)>=30*60*1000){
+    toast('Delete window expired (30 min)','err');
+    renderStaffHistory();
+    return;
+  }
+  if(!confirm('Delete this check-in? This cannot be undone.')) return;
+  const idx=S.logs.findIndex(x=>x.id==logId);
+  if(idx>=0) S.logs.splice(idx,1);
+  saveData();
+  renderStaffHistory();
+  toast('Check-in deleted');
 }
 
 function hideCheckinSuccess(){
@@ -2198,6 +2225,7 @@ function submitCheckin(){
   const log={
     id:S.nId.log++,staffId,company:S.ciCompany,venue,clientName,
     date:today(),checkIn:checkInTime,checkOut:'',
+    createdAt:Date.now(),
     selfie:S.ciSelfieData||'',  // compressed base64
     gpsLat:S.ciGps?S.ciGps.lat:null,gpsLng:S.ciGps?S.ciGps.lng:null,
     gpsArea:S.ciGpsArea||'',
@@ -4278,6 +4306,16 @@ function openAddLogModal(){
         <option value="">— None —</option>
         ${S.workTypes.map(w=>`<option value="${w}">${w}</option>`).join('')}
       </select></div>
+    <div class="form-group" id="alClientGroup" style="display:none;"><label class="form-label">Client Name</label>
+      <input class="form-input" id="alClientName" placeholder="Client / couple name" autocomplete="off" style="font-size:16px;"></div>
+    <div id="alCopyGroup" style="display:none;">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Data Copied By</label>
+          <input class="form-input" id="alCopyName" placeholder="Name" autocomplete="off" style="font-size:16px;"></div>
+        <div class="form-group"><label class="form-label">Copy Phone</label>
+          <input class="form-input" id="alCopyPhone" placeholder="Phone number" autocomplete="off" style="font-size:16px;"></div>
+      </div>
+    </div>
     <div class="form-group"><label class="form-label">Notes</label>
       <textarea class="form-textarea" id="alNotes" placeholder="Any notes..."></textarea></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
@@ -4317,6 +4355,16 @@ function openEditLogModal(logId){
         <option value="">— None —</option>
         ${S.workTypes.map(w=>`<option value="${w}"${(log.workTypes||[]).includes(w)?' selected':''}>${w}</option>`).join('')}
       </select></div>
+    <div class="form-group" id="elClientGroup" style="display:${log.company==='wedding'?'block':'none'}"><label class="form-label">Client Name</label>
+      <input class="form-input" id="elClientName" autocomplete="off" value="${escHtml(log.clientName||'')}" style="font-size:16px;"></div>
+    <div id="elCopyGroup" style="display:${log.company==='grover'?'block':'none'}">
+      <div class="form-grid form-grid-2">
+        <div class="form-group"><label class="form-label">Data Copied By</label>
+          <input class="form-input" id="elCopyName" autocomplete="off" value="${escHtml(log.copyName||'')}" style="font-size:16px;"></div>
+        <div class="form-group"><label class="form-label">Copy Phone</label>
+          <input class="form-input" id="elCopyPhone" autocomplete="off" value="${escHtml(log.copyPhone||'')}" style="font-size:16px;"></div>
+      </div>
+    </div>
     <div class="form-group"><label class="form-label">Notes</label>
       <textarea class="form-textarea" id="elNotes">${log.ciNotes||''}</textarea></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
@@ -4330,17 +4378,15 @@ function submitEditLog(logId){
   logId=parseInt(logId);
   const log=S.logs.find(l=>l.id==logId); if(!log) return;
   log.company=$('elCompany').value;
-  log.venue=$('elVenue').value.trim()||'—';
+  const isOff=log.company==='office'; const isWed=log.company==='wedding'; const isGro=log.company==='grover';
+  log.venue=isOff?'Office':($('elVenue')?$('elVenue').value.trim()||'—':'—');
   log.checkIn=$('elCheckIn').value;
   log.checkOut=$('elCheckOut').value;
-  // Only save work type if not office duty
-  if(log.company==='office'){
-    log.workTypes=[];
-  } else {
-    const wt=$('elWorkType')?$('elWorkType').value:'';
-    log.workTypes=wt?[wt]:[];
-  }
-  log.ciNotes=$('elNotes').value.trim();
+  if(isOff){ log.workTypes=[]; } else { const wt=$('elWorkType')?$('elWorkType').value:''; log.workTypes=wt?[wt]:[]; }
+  log.clientName=isWed?($('elClientName')?$('elClientName').value.trim():''):'';
+  log.copyName=isGro?($('elCopyName')?$('elCopyName').value.trim():''):'';
+  log.copyPhone=isGro?($('elCopyPhone')?$('elCopyPhone').value.trim():''):'';
+  log.ciNotes=$('elNotes')?$('elNotes').value.trim():'';
   saveData();
   closeM('gpsModal');
   renderLogs();
@@ -4351,18 +4397,25 @@ function submitAddLog(){
   const date=$('alDate').value;
   const company=$('alCompany').value;
   if(!sfId||!date||!company){toast('Fill required fields','err');return;}
-  const wt=$('alWorkType').value;
+  const isOffice=company==='office';
+  const isWedding=company==='wedding';
+  const isGrover=company==='grover';
+  const wt=(!isOffice&&$('alWorkType'))?$('alWorkType').value:'';
   const log={
     id:S.nId.log++,
     staffId:sfId,
     date,
     company,
-    venue:$('alVenue').value.trim()||'—',
+    venue:isOffice?'Office':($('alVenue').value.trim()||'—'),
+    clientName:isWedding?($('alClientName')?$('alClientName').value.trim():''):'',
     checkIn:$('alCheckIn').value||'',
     checkOut:$('alCheckOut').value||'',
-    workTypes:wt?[wt]:[],
+    workTypes:(!isOffice&&wt)?[wt]:[],
+    copyName:isGrover?($('alCopyName')?$('alCopyName').value.trim():''):'',
+    copyPhone:isGrover?($('alCopyPhone')?$('alCopyPhone').value.trim():''):'',
     ciNotes:$('alNotes').value.trim(),
     addedByAdmin:true,
+    createdAt:Date.now(),
     gpsLat:null,gpsLng:null,selfie:null
   };
   S.logs.push(log);
@@ -4376,28 +4429,50 @@ function submitAddLog(){
 let _bulkRows=[];
 
 function openBulkAddModal(){
-  _bulkRows=[{date:'',ci:'',co:''},{date:'',ci:'',co:''},{date:'',ci:'',co:''}];
+  _bulkRows=[{date:'',ci:'',co:'',venue:'',wt:'',client:'',copyName:'',copyPhone:''},
+             {date:'',ci:'',co:'',venue:'',wt:'',client:'',copyName:'',copyPhone:''},
+             {date:'',ci:'',co:'',venue:'',wt:'',client:'',copyName:'',copyPhone:''}];
   _renderBulkModal();
 }
 
 function _renderBulkModal(){
   const staffOpts=S.staff.filter(s=>s.status==='active')
     .map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  const savedStaff=($('blkStaff')||{}).value||'';
+  const savedCompany=($('blkCompany')||{}).value||'grover';
+  const company=savedCompany;
+  const isOffice=company==='office'; const isWedding=company==='wedding'; const isGrover=company==='grover';
   const wtOpts=S.workTypes.map(w=>`<option value="${w}">${w}</option>`).join('');
+
   const rowsHTML=_bulkRows.map((r,i)=>`
-    <div style="display:grid;grid-template-columns:1fr 100px 100px 32px;gap:6px;align-items:center;margin-bottom:6px;">
-      <input class="form-input" type="date" id="bDate${i}" value="${r.date}" style="font-size:13px;" onchange="_bulkSave(${i})">
-      <input class="form-input" type="time" id="bCI${i}" value="${r.ci}" style="font-size:13px;" onchange="_bulkSave(${i})">
-      <input class="form-input" type="time" id="bCO${i}" value="${r.co}" style="font-size:13px;" onchange="_bulkSave(${i})">
-      <button onclick="_bulkRemoveRow(${i})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:4px;line-height:1;">🗑️</button>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--surface);">
+      <div style="display:grid;grid-template-columns:1fr 90px 90px 32px;gap:6px;align-items:center;margin-bottom:${isOffice?'0':'8px'};">
+        <input class="form-input" type="date" id="bDate${i}" value="${r.date}" style="font-size:13px;" onchange="_bulkSave(${i})">
+        <input class="form-input" type="time" id="bCI${i}" value="${r.ci}" style="font-size:13px;" onchange="_bulkSave(${i})">
+        <input class="form-input" type="time" id="bCO${i}" value="${r.co}" style="font-size:13px;" onchange="_bulkSave(${i})">
+        <button onclick="_bulkRemoveRow(${i})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px;">🗑️</button>
+      </div>
+      ${!isOffice?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <input class="form-input" id="bVenue${i}" value="${r.venue||''}" placeholder="Venue" autocomplete="off" style="font-size:13px;" onchange="_bulkSave(${i})">
+        <select class="form-select" id="bWT${i}" style="font-size:13px;" onchange="_bulkSave(${i})">
+          <option value="">— Work Type —</option>
+          ${wtOpts}
+        </select>
+      </div>
+      ${isWedding?`<input class="form-input" id="bClient${i}" value="${r.client||''}" placeholder="Client / couple name" autocomplete="off" style="font-size:13px;margin-top:6px;width:100%;" onchange="_bulkSave(${i})">`:''} 
+      ${isGrover?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+        <input class="form-input" id="bCopyName${i}" value="${r.copyName||''}" placeholder="Data copied by" autocomplete="off" style="font-size:13px;" onchange="_bulkSave(${i})">
+        <input class="form-input" id="bCopyPhone${i}" value="${r.copyPhone||''}" placeholder="Copy phone" autocomplete="off" style="font-size:13px;" onchange="_bulkSave(${i})">
+      </div>`:''}`:''} 
     </div>`).join('');
+
   openModal(`
     <div class="modal-header">
       <span class="modal-title">📋 Bulk Add Logs</span>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
         <div class="form-group" style="margin:0;">
           <label class="form-label">Staff *</label>
           <select class="form-select" id="blkStaff" onchange="_bulkCheckDupes()">
@@ -4407,28 +4482,17 @@ function _renderBulkModal(){
         </div>
         <div class="form-group" style="margin:0;">
           <label class="form-label">Duty Type *</label>
-          <select class="form-select" id="blkCompany" onchange="toggleBulkFields(this.value)">
-            <option value="grover">🎬 Grover A/V</option>
-            <option value="wedding">💍 Wedding</option>
-            <option value="office">🏢 Office</option>
+          <select class="form-select" id="blkCompany" onchange="_bulkRerender(this.value)">
+            <option value="grover" ${company==='grover'?'selected':''}>🎬 Grover A/V</option>
+            <option value="wedding" ${company==='wedding'?'selected':''}>💍 Wedding</option>
+            <option value="office" ${company==='office'?'selected':''}>🏢 Office</option>
           </select>
         </div>
       </div>
-      <div id="blkVenueGroup" class="form-group" style="margin-bottom:10px;">
-        <label class="form-label">Venue <span style="font-size:11px;color:var(--text-muted);">(applied to all)</span></label>
-        <input class="form-input" id="blkVenue" placeholder="Venue name" autocomplete="off">
-      </div>
-      <div id="blkWtGroup" class="form-group" style="margin-bottom:14px;">
-        <label class="form-label">Work Type <span style="font-size:11px;color:var(--text-muted);">(applied to all)</span></label>
-        <select class="form-select" id="blkWorkType">
-          <option value="">— None —</option>
-          ${wtOpts}
-        </select>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 100px 100px 32px;gap:6px;margin-bottom:6px;padding:0 2px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">Date</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">Check-In</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;">Check-Out</div>
+      <div style="display:grid;grid-template-columns:1fr 90px 90px 32px;gap:6px;margin-bottom:4px;padding:0 2px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Date</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">In</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Out</div>
         <div></div>
       </div>
       <div id="blkRowsContainer">${rowsHTML}</div>
@@ -4436,56 +4500,57 @@ function _renderBulkModal(){
       <button onclick="_bulkAddRow()" class="btn btn-outline btn-sm" style="width:100%;margin-top:6px;margin-bottom:16px;">+ Add Another Day</button>
       <button onclick="submitBulkLogs()" class="btn btn-primary" style="width:100%;font-size:15px;padding:12px;">💾 Save All Logs</button>
     </div>`);
+
+  // Restore staff selection
+  setTimeout(()=>{
+    if($('blkStaff')&&savedStaff) $('blkStaff').value=savedStaff;
+  },10);
 }
 
-function toggleBulkFields(company){
-  const isOffice=company==='office';
-  const vg=$('blkVenueGroup'); const wg=$('blkWtGroup');
-  if(vg) vg.style.display=isOffice?'none':'block';
-  if(wg) wg.style.display=isOffice?'none':'block';
+function _bulkRerender(company){
+  _bulkRows.forEach((_,i)=>_bulkSave(i));
+  _renderBulkModal();
 }
+
+function toggleBulkFields(company){ _bulkRerender(company); }
 
 function _bulkSave(i){
   if(!_bulkRows[i]) return;
   _bulkRows[i].date=($('bDate'+i)||{}).value||'';
   _bulkRows[i].ci=($('bCI'+i)||{}).value||'';
   _bulkRows[i].co=($('bCO'+i)||{}).value||'';
+  _bulkRows[i].venue=($('bVenue'+i)||{}).value||'';
+  _bulkRows[i].wt=($('bWT'+i)||{}).value||'';
+  _bulkRows[i].client=($('bClient'+i)||{}).value||'';
+  _bulkRows[i].copyName=($('bCopyName'+i)||{}).value||'';
+  _bulkRows[i].copyPhone=($('bCopyPhone'+i)||{}).value||'';
   _bulkCheckDupes();
 }
 
 function _bulkAddRow(){
   _bulkRows.forEach((_,i)=>_bulkSave(i));
+  const savedStaff=($('blkStaff')||{}).value||'';
+  const savedCompany=($('blkCompany')||{}).value||'grover';
   const last=_bulkRows[_bulkRows.length-1]||{};
-  const blkStaff=($('blkStaff')||{}).value||'';
-  const blkCompany=($('blkCompany')||{}).value||'grover';
-  const blkVenue=($('blkVenue')||{}).value||'';
-  const blkWt=($('blkWorkType')||{}).value||'';
-  _bulkRows.push({date:'',ci:last.ci||'',co:last.co||''});
+  _bulkRows.push({date:'',ci:last.ci||'',co:last.co||'',venue:last.venue||'',wt:last.wt||'',client:'',copyName:'',copyPhone:''});
   _renderBulkModal();
-  // Restore header field values after re-render
   setTimeout(()=>{
-    if($('blkStaff')) $('blkStaff').value=blkStaff;
-    if($('blkCompany')){$('blkCompany').value=blkCompany;toggleBulkFields(blkCompany);}
-    if($('blkVenue')) $('blkVenue').value=blkVenue;
-    if($('blkWorkType')) $('blkWorkType').value=blkWt;
+    if($('blkStaff')&&savedStaff) $('blkStaff').value=savedStaff;
+    if($('blkCompany')) $('blkCompany').value=savedCompany;
     const c=$('blkRowsContainer'); if(c) c.lastElementChild&&c.lastElementChild.scrollIntoView({behavior:'smooth'});
   },30);
 }
 
 function _bulkRemoveRow(i){
   _bulkRows.forEach((_,j)=>_bulkSave(j));
-  const blkStaff=($('blkStaff')||{}).value||'';
-  const blkCompany=($('blkCompany')||{}).value||'grover';
-  const blkVenue=($('blkVenue')||{}).value||'';
-  const blkWt=($('blkWorkType')||{}).value||'';
+  const savedStaff=($('blkStaff')||{}).value||'';
+  const savedCompany=($('blkCompany')||{}).value||'grover';
   _bulkRows.splice(i,1);
-  if(!_bulkRows.length) _bulkRows.push({date:'',ci:'',co:''});
+  if(!_bulkRows.length) _bulkRows.push({date:'',ci:'',co:'',venue:'',wt:'',client:'',copyName:'',copyPhone:''});
   _renderBulkModal();
   setTimeout(()=>{
-    if($('blkStaff')) $('blkStaff').value=blkStaff;
-    if($('blkCompany')){$('blkCompany').value=blkCompany;toggleBulkFields(blkCompany);}
-    if($('blkVenue')) $('blkVenue').value=blkVenue;
-    if($('blkWorkType')) $('blkWorkType').value=blkWt;
+    if($('blkStaff')&&savedStaff) $('blkStaff').value=savedStaff;
+    if($('blkCompany')) $('blkCompany').value=savedCompany;
   },30);
 }
 
@@ -4501,19 +4566,15 @@ function _bulkCheckDupes(){
   const all=[...new Set([...formDupes,...existingDupes])];
   if(all.length){
     w.style.display='block';
-    w.innerHTML='⚠️ Duplicate date'+(all.length>1?'s':'')+' detected: '+all.map(d=>fmtDate(d)).join(', ')+' — will still save but may create duplicate entries.';
-  } else {
-    w.style.display='none';
-  }
+    w.innerHTML='⚠️ Duplicate date'+(all.length>1?'s':'')+' detected: '+all.map(d=>fmtDate(d)).join(', ')+' — will still save.';
+  } else { w.style.display='none'; }
 }
 
 function submitBulkLogs(){
   _bulkRows.forEach((_,i)=>_bulkSave(i));
   const sfId=parseInt(($('blkStaff')||{}).value||0);
   const company=($('blkCompany')||{}).value||'grover';
-  const isOffice=company==='office';
-  const venue=isOffice?'Office':($('blkVenue')||{}).value.trim()||'—';
-  const wt=(!isOffice&&$('blkWorkType'))?$('blkWorkType').value:'';
+  const isOffice=company==='office'; const isWedding=company==='wedding'; const isGrover=company==='grover';
   if(!sfId){toast('Please select a staff member','err');return;}
   const validRows=_bulkRows.filter(r=>r.date);
   if(!validRows.length){toast('Please enter at least one date','err');return;}
@@ -4524,12 +4585,16 @@ function submitBulkLogs(){
       staffId:sfId,
       date:r.date,
       company,
-      venue,
+      venue:isOffice?'Office':(r.venue||'—'),
+      clientName:isWedding?(r.client||'')':'',
       checkIn:r.ci||'',
       checkOut:r.co||'',
-      workTypes:wt?[wt]:[],
+      workTypes:(!isOffice&&r.wt)?[r.wt]:[],
+      copyName:isGrover?(r.copyName||'')':'',
+      copyPhone:isGrover?(r.copyPhone||'')':'',
       ciNotes:'',
       addedByAdmin:true,
+      createdAt:Date.now(),
       gpsLat:null,gpsLng:null,selfie:null
     });
     added++;
@@ -4539,6 +4604,7 @@ function submitBulkLogs(){
   renderLogs();
   toast(`${added} log entr${added===1?'y':'ies'} added ✓`);
 }
+
 
 // ===== GROVER BILLING =====
 function billingPrevMonth(){
@@ -5084,6 +5150,8 @@ function showEditLogModal(logId){
   const staffOpts=S.staff.map(s=>`<option value="${s.id}" ${s.id==l.staffId?'selected':''}>${s.name}</option>`).join('');
   const wtOpts=['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth','Assistant'].map(wt=>`<option value="${wt}" ${(l.workTypes||[]).includes(wt)?'selected':''}>${wt}</option>`).join('');
   const isOffice=l.company==='office';
+  const isWedding=l.company==='wedding';
+  const isGrover=l.company==='grover';
   openModal(`
     <div class="modal-header"><span class="modal-title">Edit Attendance Log</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
@@ -5102,6 +5170,13 @@ function showEditLogModal(logId){
       </div>
       <div class="form-group" id="elVenueGroup" style="display:${isOffice?'none':'block'}"><label class="form-label">Venue</label><input class="form-input" id="elVenue" autocomplete="off" value="${escHtml(l.venue||'')}"></div>
       <div class="form-group" id="elWorkTypeGroup" style="display:${isOffice?'none':'block'}"><label class="form-label">Work Type</label><select class="form-select" id="elWT">${wtOpts}</select></div>
+      <div class="form-group" id="elClientGroup" style="display:${isWedding?'block':'none'}"><label class="form-label">Client Name</label><input class="form-input" id="elClientName" autocomplete="off" value="${escHtml(l.clientName||'')}"></div>
+      <div id="elCopyGroup" style="display:${isGrover?'block':'none'}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group"><label class="form-label">Data Copied By</label><input class="form-input" id="elCopyName" autocomplete="off" value="${escHtml(l.copyName||'')}"></div>
+          <div class="form-group"><label class="form-label">Copy Phone</label><input class="form-input" id="elCopyPhone" autocomplete="off" value="${escHtml(l.copyPhone||'')}"></div>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">Notes (Check-In)</label><input class="form-input" id="elCINotes" value="${escHtml(l.ciNotes||'')}"></div>
       <div class="form-group"><label class="form-label">Notes (Check-Out)</label><input class="form-input" id="elCONotes" value="${escHtml(l.coNotes||'')}"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="saveEditLog(${logId})">Save Changes</button>
@@ -5109,17 +5184,17 @@ function showEditLogModal(logId){
 }
 
 function toggleLogFields(company){
-  const isOffice = company === 'office';
-  // Add Log modal fields
-  const alVg = $('alVenueGroup');
-  const alWtg = $('alWorkTypeGroup');
-  if(alVg) alVg.style.display = isOffice ? 'none' : 'block';
-  if(alWtg) alWtg.style.display = isOffice ? 'none' : 'block';
-  // Edit Log modal fields (staff + admin share same IDs)
-  const elVg = $('elVenueGroup');
-  const elWtg = $('elWorkTypeGroup');
-  if(elVg) elVg.style.display = isOffice ? 'none' : 'block';
-  if(elWtg) elWtg.style.display = isOffice ? 'none' : 'block';
+  const isOffice=company==='office';
+  const isWedding=company==='wedding';
+  const isGrover=company==='grover';
+  // Add Log modal
+  ['alVenueGroup','alWorkTypeGroup'].forEach(id=>{const el=$(id);if(el)el.style.display=isOffice?'none':'block';});
+  const alCl=$('alClientGroup'); if(alCl) alCl.style.display=isWedding?'block':'none';
+  const alCp=$('alCopyGroup'); if(alCp) alCp.style.display=isGrover?'block':'none';
+  // Edit modals (staff + admin share same IDs)
+  ['elVenueGroup','elWorkTypeGroup'].forEach(id=>{const el=$(id);if(el)el.style.display=isOffice?'none':'block';});
+  const elCl=$('elClientGroup'); if(elCl) elCl.style.display=isWedding?'block':'none';
+  const elCp=$('elCopyGroup'); if(elCp) elCp.style.display=isGrover?'block':'none';
 }
 function toggleEditWorkType(company){ toggleLogFields(company); }
 
@@ -5132,16 +5207,14 @@ function saveEditLog(logId){
   l.date=$('elDate').value;
   l.checkIn=$('elCI').value||'';
   l.checkOut=$('elCO').value||'';
-  l.venue=$('elVenue').value.trim();
-  // Only save work type if not office duty
-  if(l.company==='office'){
-    l.workTypes=[];
-  } else {
-    const wt=$('elWT')?$('elWT').value:'';
-    l.workTypes=wt?[wt]:[];
-  }
-  l.ciNotes=$('elCINotes').value.trim();
-  l.coNotes=$('elCONotes').value.trim();
+  const isOff=l.company==='office'; const isWed=l.company==='wedding'; const isGro=l.company==='grover';
+  l.venue=isOff?'Office':($('elVenue')?$('elVenue').value.trim()||'—':'—');
+  if(isOff){ l.workTypes=[]; } else { const wt=$('elWT')?$('elWT').value:''; l.workTypes=wt?[wt]:[]; }
+  l.clientName=isWed?($('elClientName')?$('elClientName').value.trim():''):'';
+  l.copyName=isGro?($('elCopyName')?$('elCopyName').value.trim():''):'';
+  l.copyPhone=isGro?($('elCopyPhone')?$('elCopyPhone').value.trim():''):'';
+  l.ciNotes=$('elCINotes')?$('elCINotes').value.trim():'';
+  l.coNotes=$('elCONotes')?$('elCONotes').value.trim():'';
   saveData(); closeModal(); renderLogs(); toast('Log updated ✓');
 }
 
