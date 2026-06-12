@@ -5775,39 +5775,37 @@ const VAPID_KEY = 'BBif1Dfg9R0_FfpHZ57DmXaOyKCcfXcrJSmY2ly2i4v-y-llZYvtksOayKsYB
 async function initPushNotifications(){
   try {
     if(!('serviceWorker' in navigator)){
-      console.log('Service workers not supported');
-      return;
+      console.log('Service workers not supported'); return;
     }
     if(!('Notification' in window)){
-      console.log('Notifications not supported');
-      return;
+      console.log('Notifications not supported'); return;
     }
     // Register service worker
     const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
     console.log('Service worker registered:', reg.scope);
-    messaging.useServiceWorker(reg);
     // Check current permission
     if(Notification.permission === 'denied'){
-      toast('Notifications blocked — please enable in browser settings','err');
-      return;
+      toast('Notifications blocked — enable in browser settings','err'); return;
     }
     // Request permission
     const permission = await Notification.requestPermission();
     console.log('Notification permission:', permission);
     if(permission !== 'granted'){
-      toast('Notification permission not granted','err');
-      return;
+      toast('Notification permission not granted','err'); return;
     }
-    // Get FCM token
-    const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    // Get FCM token — pass serviceWorkerRegistration directly
+    const token = await messaging.getToken({
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: reg
+    });
     if(token){
       await firestore.collection('fcmTokens').doc(token).set({
         token,
         role: 'admin',
-        device: navigator.userAgent.slice(0,50),
+        device: navigator.userAgent.slice(0,80),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      console.log('FCM token registered ✅');
+      console.log('FCM token registered ✅', token.slice(0,20)+'...');
       toast('🔔 Push notifications enabled ✓');
     } else {
       console.log('No FCM token received');
