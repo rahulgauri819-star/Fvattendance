@@ -12,7 +12,21 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+<script type="module" id="fcmModule">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
+window._fcmInit = async function(config, vapidKey){
+  try {
+    const app = initializeApp(config, 'fcm-app');
+    const messaging = getMessaging(app);
+    const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted') return {error: 'Permission denied'};
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: reg });
+    return {token};
+  } catch(e){ return {error: e.message}; }
+};
+</script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 :root{
@@ -5767,7 +5781,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const storage = firebase.storage();
 const firestore = firebase.firestore();
-const messaging = firebase.messaging();
+// FCM messaging handled via modular SDK in fcmModule script tag
 
 const VAPID_KEY = 'BBjf1Dfg9R0_FfpHZ57DmXaOyKCcfXcrJSmY2iy2i4v-y-llZYvtksOayKsYBXjHvt0FleAD7lp_Agj6l8X0s-s';
 
@@ -5783,44 +5797,35 @@ function urlBase64ToUint8Array(base64String){
 // ── FCM Push Notifications ────────────────────────────────
 async function initPushNotifications(){
   try {
-    if(!('serviceWorker' in navigator)){
-      console.log('Service workers not supported'); return;
+    if(!('serviceWorker' in navigator)||!('Notification' in window)){
+      toast('Push notifications not supported','err'); return;
     }
-    if(!('Notification' in window)){
-      console.log('Notifications not supported'); return;
-    }
-    // Register service worker
-    const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-    console.log('Service worker registered:', reg.scope);
-    // Check current permission
     if(Notification.permission === 'denied'){
       toast('Notifications blocked — enable in browser settings','err'); return;
     }
-    // Request permission
-    const permission = await Notification.requestPermission();
-    console.log('Notification permission:', permission);
-    if(permission !== 'granted'){
-      toast('Notification permission not granted','err'); return;
+    if(!window._fcmInit){
+      setTimeout(initPushNotifications, 1000); return;
     }
-    const token = await messaging.getToken({
-      vapidKey: urlBase64ToUint8Array(VAPID_KEY),
-      serviceWorkerRegistration: reg
-    });
+    const result = await window._fcmInit(firebaseConfig, VAPID_KEY);
+    if(result.error){
+      toast('Notification error: '+result.error,'err');
+      console.error('FCM error:', result.error);
+      return;
+    }
+    const token = result.token;
     if(token){
       await firestore.collection('fcmTokens').doc(token).set({
-        token,
-        role: 'admin',
+        token, role: 'admin',
         device: navigator.userAgent.slice(0,80),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      console.log('FCM token registered ✅', token.slice(0,20)+'...');
+      console.log('FCM token registered ✅');
       toast('🔔 Push notifications enabled ✓');
     } else {
-      console.log('No FCM token received');
       toast('Could not get notification token','err');
     }
   } catch(e){
-    console.error('Push init error:', e.message, e);
+    console.error('Push init error:', e);
     toast('Notification setup failed: '+e.message,'err');
   }
 }
