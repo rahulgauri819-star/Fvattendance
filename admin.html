@@ -530,9 +530,10 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Admin Password</label>
         <input style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 14px;font-size:15px;box-sizing:border-box;" id="adminPanelPassword" type="password" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')submitAdminPanel()">
       </div>
-      <div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
-        <input type="checkbox" id="adminRememberMe" style="width:16px;height:16px;cursor:pointer;">
-        <label for="adminRememberMe" style="font-size:13px;color:#555;cursor:pointer;">Remember me on this device</label>
+      <div style="display:flex;align-items:center;gap:8px;margin:4px 0;cursor:pointer;" onclick="var cb=document.getElementById('adminRememberMe');cb.checked=!cb.checked;var box=document.getElementById('adminRememberMeBox');box.style.background=cb.checked?'#0d6efd':'transparent';box.style.borderColor=cb.checked?'#0d6efd':'#ccc';box.innerHTML=cb.checked?'<svg width=11 height=11 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#fff\' stroke-width=\'3\'><polyline points=\'20 6 9 17 4 12\'/></svg>':'';">
+        <input type="checkbox" id="adminRememberMe" style="position:absolute;opacity:0;width:0;height:0;">
+        <div id="adminRememberMeBox" style="width:18px;height:18px;border:2px solid #ccc;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;background:transparent;"></div>
+        <span style="font-size:13px;color:rgba(0,0,0,.6);">Remember me on this device</span>
       </div>
       <div id="adminPanelError" style="display:none;background:#fff0f0;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:500;"></div>
       <button style="background:#0d6efd;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;width:100%;" onclick="submitAdminPanel()">Sign In as Admin</button>
@@ -579,7 +580,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <svg id="darkIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
       <button id="notifBtn" onclick="initPushNotifications()" title="Enable Push Notifications" style="display:none;background:none;border:1px solid #333;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:16px;">🔔</button>
-      <button id="logoutBtn" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;color:#000!important;border-color:#333;">
+      <button id="logoutBtn" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;color:#000!important;border-color:var(--text);">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Logout
       </button>
@@ -704,12 +705,6 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 
       <!-- STAFF REPORT TAB -->
       <div id="repStaffTab">
-        <!-- Duty Breakdown -->
-        <div class="card mb-4">
-          <div class="card-header"><span class="card-title">Duty Breakdown</span></div>
-          <div class="card-body" id="companyReport"></div>
-        </div>
-
         <!-- Staff-wise Report -->
         <div class="card mb-4">
           <div class="card-header">
@@ -1749,7 +1744,7 @@ function renderStaffHistory(){
         rows+=`<div class="history-present-row" style="padding:${li===0?'14px 16px 8px':'4px 16px 8px'};border-bottom:${li===dayLogs.length-1?'1px solid var(--divider)':'none'};background:#f0fff4;">
           ${prefix}
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#333;">
+            <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text);">
               ${ciTime?`<span>⏰ <strong>${ciTime}</strong></span><span>→</span><span>⏰ <strong>${coTime||'—'}</strong></span>${showDur?`<span style="opacity:.6;color:var(--danger);">· ${durStr}</span>`:''}`:''}
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
@@ -2409,9 +2404,12 @@ function submitCheckout(){
   closeM('coModal');
   const sf=getSf(log.staffId);
   const d=dur(log.checkIn,log.checkOut);
-  toast((sf?sf.name:'Staff')+' checked out — '+fmtDur(d));
+  const _coName=sf?sf.name:'Staff';
+  const _coCo=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
+  toast(_coName+' checked out — '+fmtDur(d));
   saveData();
   syncLogToFirestore(log);
+  sendTelegramNotification(`🔴 <b>Check-Out</b>\n👤 ${_coName}\n🏢 ${_coCo} · ${log.venue||'Office'}\n⏰ ${log.checkIn} → ${log.checkOut} · ${fmtDur(d)}`);
   if(isStaffUser()) renderStaffPortal(); else {renderStatusBoard();renderDash();}
 }
 
@@ -2613,9 +2611,11 @@ function viewGps(logId){
 }
 function viewSelfie(logId){
   logId=parseInt(logId);
-  const l=S.logs.find(x=>x.id==logId); if(!l||!l.selfie) return;
+  const l=S.logs.find(x=>x.id==logId); if(!l) return;
+  const src=l.selfieUrl||(l.selfie&&l.selfie!=='[photo]'?l.selfie:null);
+  if(!src){toast('Selfie not available','err');return;}
   const sf=getSf(l.staffId);
-  $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${l.selfie}" style="width:180px;height:180px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;"><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue}</div></div>`;
+  $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${src}" style="width:220px;height:220px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;display:block;" onerror="this.style.display='none';this.nextSibling.style.display='block'"><div style="display:none;padding:20px;color:var(--text-muted);">Photo not available</div><div style="font-weight:700;margin-top:8px;">${sf?sf.name:'Staff'}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue}</div></div>`;
   $('gpsModal').querySelector('.modal-title').textContent='Check-In Selfie';
   openM('gpsModal');
 }
@@ -4291,7 +4291,7 @@ function showCeremonyForm(gId,cId){
       ...freelancers.map(f=>({name:f.name+' (F)',id:'fl_'+f.id,isFL:true}))
     ];
     const chips=allPeople.map(p=>`
-      <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid ${checked.includes(p.name)?'var(--primary)':'var(--border)'};border-radius:20px;cursor:pointer;font-size:13px;background:${checked.includes(p.name)?'var(--primary-light)':'#fff'};" id="${type}_lbl_${p.id}">
+      <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid ${checked.includes(p.name)?'var(--primary)':'var(--border)'};border-radius:20px;cursor:pointer;font-size:13px;background:${checked.includes(p.name)?'var(--primary-light)':'var(--surface)'};" id="${type}_lbl_${p.id}">
         <input type="checkbox" name="${type}Staff" value="${p.name}" ${checked.includes(p.name)?'checked':''} onchange="toggleCerStaff(this,'${type}_lbl_${p.id}')" style="width:14px;height:14px;">
         ${p.name.replace(' (F)','')}${p.isFL?'<span style="font-size:10px;color:var(--warning);margin-left:2px;">(F)</span>':''}
       </label>`).join('');
@@ -5448,12 +5448,30 @@ function showStaffExportModal(){
         <button class="btn btn-outline btn-sm" onclick="selectAllStaffExportCols(false)">None</button>
       </div>
       <div style="columns:2;gap:10px;" id="srColsContainer">${colChecks}</div>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;">
-        <input type="checkbox" id="srExpSummary" checked>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:var(--primary-light);margin-top:12px;" id="srSummaryLabel" onclick="toggleSrSummary()">
+        <div id="srSummaryBox" style="width:16px;height:16px;border-radius:3px;border:2px solid var(--primary);background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
         <span style="font-size:13px;">Include leave summary</span>
+        <input type="checkbox" id="srExpSummary" checked style="display:none;">
       </label>
       <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="doExportStaffReport()">Download CSV</button>
     </div>`);
+}
+
+function toggleSrSummary(){
+  const cb=$('srExpSummary'); if(!cb) return;
+  cb.checked=!cb.checked;
+  const box=$('srSummaryBox'), label=$('srSummaryLabel');
+  if(cb.checked){
+    box.style.background='var(--primary)'; box.style.borderColor='var(--primary)';
+    box.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+    label.style.background='var(--primary-light)';
+  } else {
+    box.style.background='transparent'; box.style.borderColor='var(--border)';
+    box.innerHTML='';
+    label.style.background='var(--surface)';
+  }
 }
 
 function toggleStaffExportCol(i){
@@ -5527,8 +5545,8 @@ function unmarkCandid(logId){
 // ===== DATA COPY YES/NO =====
 function selectDataCopy(yes){
   S.dataCopyAnswer=yes;
-  $('copyYesBtn').style.cssText=`flex:1;border:2px solid ${yes?'var(--success)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${yes?'var(--success-light)':'#fff'};`;
-  $('copyNoBtn').style.cssText=`flex:1;border:2px solid ${!yes?'var(--danger)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${!yes?'var(--danger-light)':'#fff'};`;
+  $('copyYesBtn').style.cssText=`flex:1;border:2px solid ${yes?'var(--success)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${yes?'var(--success-light)':'var(--surface)'};`;
+  $('copyNoBtn').style.cssText=`flex:1;border:2px solid ${!yes?'var(--danger)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${!yes?'var(--danger-light)':'var(--surface)'};`;
   $('copyDetailsSection').style.display=yes?'block':'none';
   if(!yes){$('coCopyName').value='';$('coCopyPhone').value='';}
 }
@@ -6176,6 +6194,25 @@ function fvGetRemember(){
 function fvClearRemember(){
   try{ fvClearRemember(); }catch(e){}
   try{ document.cookie='fv_remember=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Lax'; }catch(e){}
+}
+
+
+// Telegram Bot Notifications
+const TG_TOKEN = '8850461310:AAEpMuaDf2hAVmGDYBnesEit9iTrUOHWDOM';
+const TG_CHAT_ID = '5848142759';
+
+async function sendTelegramNotification(message) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        chat_id: TG_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+  } catch(e) { console.log('Telegram notification failed:', e); }
 }
 
 // Custom confirm/prompt replacements
