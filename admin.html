@@ -6045,6 +6045,22 @@ function init(){
     }
   }).then(()=>{
     hideLoadingScreen();
+    // One-time cleanup: delete orphaned grover log from 2026-06-04
+    (async()=>{
+      try{
+        const ghostSnap = await firestore.collection('logs').where('date','==','2026-06-04').where('company','==','grover').get();
+        ghostSnap.forEach(async doc=>{
+          const d=doc.data();
+          if(!d.checkOut||d.checkOut===''){
+            await doc.ref.delete();
+            console.log('Deleted ghost log:', doc.id);
+            // Also remove from local S.logs
+            S.logs = (S.logs||[]).filter(l=>String(l.id)!==doc.id&&!(l.date==='2026-06-04'&&l.company==='grover'&&!l.checkOut));
+            saveData();
+          }
+        });
+      }catch(e){ console.log('Ghost cleanup error:', e); }
+    })();
     renderDash();
     // Listen for real-time updates from other devices
     db.ref('appData').on('value', snap=>{
