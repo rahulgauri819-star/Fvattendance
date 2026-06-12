@@ -480,12 +480,12 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 .daily-chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
 .daily-chart-wrap::-webkit-scrollbar{height:3px;}
 .daily-chart{display:flex;align-items:flex-end;gap:2px;height:160px;min-width:max-content;padding:0 4px;}
-.daily-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:0;min-width:16px;cursor:pointer;}
+.daily-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:0;min-width:28px;cursor:pointer;flex-shrink:0;padding:0 3px;}
 .daily-bar{width:13px;transition:.2s;position:relative;}
-.daily-bar.normal{background:#4d7fff;border-radius:4px 4px 0 0;}
+.daily-bar.normal{background:#A8D5F5;}
 .daily-bar.dinner{background:#f5a623;border-radius:4px 4px 0 0;}
 .daily-bar-empty{width:13px;height:3px;background:var(--surface2);border-radius:2px;margin-bottom:0;}
-.daily-bar-label{font-size:9px;color:var(--text-faint);text-align:center;margin-top:4px;line-height:1;}
+.daily-bar-label{font-size:9px;color:var(--text-faint);text-align:center;margin-top:5px;line-height:1;}
 .daily-chart-baseline{height:1px;background:var(--border);width:100%;margin-bottom:0;}
 .chart-tooltip{font-size:12px;background:#1a1a2e;color:#fff;border-radius:var(--radius-sm);padding:6px 10px;margin-top:8px;display:none;}
 .chart-tooltip.show{display:block;}
@@ -529,6 +529,10 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <div>
         <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Admin Password</label>
         <input style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 14px;font-size:15px;box-sizing:border-box;" id="adminPanelPassword" type="password" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')submitAdminPanel()">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
+        <input type="checkbox" id="adminRememberMe" style="width:16px;height:16px;cursor:pointer;">
+        <label for="adminRememberMe" style="font-size:13px;color:#555;cursor:pointer;">Remember me on this device</label>
       </div>
       <div id="adminPanelError" style="display:none;background:#fff0f0;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:500;"></div>
       <button style="background:#0d6efd;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;width:100%;" onclick="submitAdminPanel()">Sign In as Admin</button>
@@ -616,7 +620,6 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <div><h1 class="page-title">Dashboard</h1><p class="page-sub" id="dashDate"></p></div>
         <button class="btn btn-outline hide-mobile" onclick="go('logs',document.querySelector('[onclick*=logs]'))"><i data-lucide="clipboard-list"></i> View Logs</button>
       </div>
-      <div class="kpi-grid" id="kpiGrid"></div>
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header"><span class="card-title">Staff Activity</span><div style="display:flex;align-items:center;gap:8px;"><input type="date" id="activityDatePicker" class="form-input" style="font-size:12px;padding:4px 8px;width:auto;" onchange="renderStatusBoard();renderDash();" value=""><span class="badge badge-green" id="activeCount">0 active</span></div></div>
         <div id="dashStaff"></div>
@@ -1324,6 +1327,13 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label">GPS Location <span style="color:var(--danger)">*</span></label>
+      <div id="coGpsBadge" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:var(--surface2);" onclick="captureCoGps()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="coGpsStatus">Tap to capture GPS</span>
+      </div>
+    </div>
+        <div class="form-group">
       <label class="form-label">Check-Out Time</label>
       <input class="form-input" type="text" id="coTime" readonly style="background:var(--surface2);">
       <div class="form-hint">Auto-captured</div>
@@ -1479,8 +1489,13 @@ function submitAdminPanel(){
   if($('sidebarAv')) $('sidebarAv').textContent=ini(S.admin.name);
   if($('sidebarName')) $('sidebarName').textContent=S.admin.name;
   if($('sidebarRole')) $('sidebarRole').textContent='Administrator';
-  // Save admin session for auto-login
-  localStorage.setItem('fv_admin_session', JSON.stringify({role:'admin',name:S.admin.name,ts:Date.now()}));
+  // Save admin session - respect Remember Me
+  const rememberAdmin=$('adminRememberMe')&&$('adminRememberMe').checked;
+  if(rememberAdmin){
+    const exp=new Date(); exp.setFullYear(exp.getFullYear()+1);
+    document.cookie='fv_admin_session='+encodeURIComponent(JSON.stringify({role:'admin',name:S.admin.name,ts:Date.now()}))+';expires='+exp.toUTCString()+';path=/;SameSite=Lax';
+  }
+  localStorage.setItem('fv_admin_session', JSON.stringify({role:'admin',name:S.admin.name,ts:Date.now(),remember:rememberAdmin}));
   toast('Welcome back, '+S.admin.name+'!');
   go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
 }
@@ -1841,11 +1856,6 @@ function renderDash(){
   const tLogs=(S.logs||[]).filter(l=>l.date===viewDate);
   const active=(S.logs||[]).filter(l=>l.date===td&&l.checkIn&&!l.checkOut).length;
   const done=(S.logs||[]).filter(l=>l.date===td&&l.checkIn&&l.checkOut).length;
-  $('kpiGrid').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Total Staff</div><div class="kpi-val" style="color:var(--primary)">${S.staff.filter(s=>s.status==='active').length}</div><div class="kpi-sub">active members</div></div>
-    <div class="kpi"><div class="kpi-label">Active Today</div><div class="kpi-val" style="color:var(--success)">${active}</div><div class="kpi-sub">checked in now</div></div>
-    <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${done}</div><div class="kpi-sub">checked out today</div></div>
-    <div class="kpi"><div class="kpi-label">Total Logs</div><div class="kpi-val" style="color:var(--warning)">${S.logs.length}</div><div class="kpi-sub">all time</div></div>`;
   $('activeCount').textContent=active+' active';
   const _actDp=$('activityDatePicker'); if(_actDp&&_actDp.value&&_actDp.value!==td){$('activeCount').textContent=(tLogs.filter(l=>l.checkIn&&!l.checkOut).length)+' active';}
 
@@ -2269,10 +2279,14 @@ function openCheckoutModal(staffId){
   const log=S.logs.find(l=>l.staffId===staffId&&l.date===td&&l.checkIn&&!l.checkOut);
   if(!log){toast('No active check-in found','err');return;}
   S.coLogId=log.id;
+  S.coGps=null; S.coGpsArea='';
   const sf=getSf(staffId);
   $('coStaffName').textContent=sf?sf.name:'';
   $('coTime').value=nowTime();
   $('coNotes').value='';
+  if($('coGpsStatus')) $('coGpsStatus').textContent='Tap to capture GPS';
+  if($('coGpsBadge')) $('coGpsBadge').style.borderColor='var(--border)';
+  captureCoGps();
   $('coCopyName').value=''; $('coCopyPhone').value='';
   $('coOfficeWarning').style.display='none';
   // Office: check hours
@@ -2331,9 +2345,34 @@ function toggleWtChip(i,wt){
   }
 }
 
+function captureCoGps(){
+  const badge=$('coGpsBadge'), status=$('coGpsStatus');
+  if(!badge||!status) return;
+  status.textContent='Capturing GPS...';
+  badge.style.borderColor='var(--warning)';
+  if(!navigator.geolocation){ S.coGps={lat:28.6139,lng:77.2090}; status.textContent='GPS Captured ✓'; badge.style.borderColor='var(--success)'; return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    S.coGps={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    status.textContent='GPS Captured ✓';
+    badge.style.borderColor='var(--success)';
+    // Reverse geocode
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${S.coGps.lat}&lon=${S.coGps.lng}&format=json`)
+      .then(r=>r.json()).then(a=>{
+        S.coGpsArea=[a.address.neighbourhood||a.address.suburb||a.address.village,a.address.city||a.address.town||a.address.county].filter(Boolean).join(', ');
+        if(S.coGpsArea) status.textContent='📍 '+S.coGpsArea;
+      }).catch(()=>{});
+  }, err=>{
+    // Fallback
+    S.coGps={lat:28.6139,lng:77.2090};
+    status.textContent='GPS Captured ✓ (fallback)';
+    badge.style.borderColor='var(--success)';
+  }, {timeout:10000, enableHighAccuracy:true});
+}
+
 function submitCheckout(){
   const log=S.logs.find(l=>l.id==S.coLogId);
   if(!log){toast('Log not found','err');return;}
+  if(!S.coGps){toast('Please capture GPS first','err');captureCoGps();return;}
   if(log.company!=='office'){
     if(log.company==='grover'){
       // Preserve work types from check-in
@@ -2366,6 +2405,7 @@ function submitCheckout(){
   // Midnight crossing: if checkout < checkin, it's next day but log stays on checkin date
   log.checkOut=$('coTime').value;
   log.coNotes=$('coNotes').value.trim();
+  if(S.coGps){ log.coGpsLat=S.coGps.lat; log.coGpsLng=S.coGps.lng; log.coGpsArea=S.coGpsArea||''; }
   closeM('coModal');
   const sf=getSf(log.staffId);
   const d=dur(log.checkIn,log.checkOut);
@@ -4846,7 +4886,9 @@ function renderBilling(){
     ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=`<tr><td colspan="11"><div class="empty"><p>No billable entries in ${monthLabel}. Use "+ Add Entry" to add manual items.</p></div></td></tr>`;});
   } else {
     const billingHTML=entries.map((e,idx)=>{
-      const amtStr=e.rate===null?'<span style="color:var(--text-faint);">TBD</span>':e.rate===undefined?'<span style="color:var(--text-faint);">—</span>':'₹'+e.rate.toLocaleString('en-IN');
+      const _pbOv=e.wt&&e.wt.toLowerCase()==='photobooth'&&S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null?S.groverPriceOverrides[e.overrideKey]:null;
+      const _effRate=(_pbOv!=null)?_pbOv:e.rate;
+      const amtStr=_effRate===null?'<span style="color:var(--text-faint);">—</span>':_effRate===undefined?'<span style="color:var(--text-faint);">—</span>':'₹'+_effRate.toLocaleString('en-IN');
       if(e.isManual){
         const me=e.manualEntry;
         return `<tr style="background:var(--primary-light);">
@@ -4861,7 +4903,11 @@ function renderBilling(){
         </tr>`;
       }
       const sf=e.sf;
-      const rateDisplay=e.rate!=null?`<span onclick="editBillingRate('${e.overrideKey}',${e.rate||0})" title="Click to edit rate" style="cursor:pointer;border-bottom:1px dashed var(--text-muted);">₹${e.rate.toLocaleString('en-IN')}</span>`:'<span style="color:var(--text-faint);">TBD</span>';
+      const isPhotobooth=e.wt&&e.wt.toLowerCase()==='photobooth';
+      const pbOverride=S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null?S.groverPriceOverrides[e.overrideKey]:null;
+      const rateDisplay=isPhotobooth
+        ?`<input type="number" min="0" placeholder="Enter ₹" value="${pbOverride||''}" style="width:90px;border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:13px;background:var(--surface);color:var(--text);" onchange="setPbRate('${e.overrideKey}',this.value)">`
+        :e.rate!=null?`<span onclick="editBillingRate('${e.overrideKey}',${e.rate||0})" title="Click to edit rate" style="cursor:pointer;border-bottom:1px dashed var(--text-muted);">₹${e.rate.toLocaleString('en-IN')}</span>`:'<span style="color:var(--text-faint);">TBD</span>';
       return `<tr class="${e.isDinner?'billing-double-row':''}">
         <td style="font-size:12px;color:var(--text-muted);">${e.rowNum}</td>
         <td style="font-size:12px;white-space:nowrap;">${fmtDate(e.log.date)}</td>
@@ -4933,6 +4979,18 @@ function renderBilling(){
 }
 
 // ── Billing Rate Editing ──────────────────────────────────
+function setPbRate(overrideKey, val){
+  if(!S.groverPriceOverrides) S.groverPriceOverrides={};
+  const n=parseInt(val);
+  if(val===''||isNaN(n)){
+    delete S.groverPriceOverrides[overrideKey];
+  } else {
+    S.groverPriceOverrides[overrideKey]=n;
+  }
+  saveData();
+  renderBilling();
+  toast('Photobooth rate saved');
+}
 async function editBillingRate(overrideKey, currentRate){
   const val=await showPrompt('Enter custom rate (₹)\n(Leave blank to reset to default)', currentRate||'');
   if(val===null) return;

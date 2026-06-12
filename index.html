@@ -480,12 +480,13 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 .daily-chart-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
 .daily-chart-wrap::-webkit-scrollbar{height:3px;}
 .daily-chart{display:flex;align-items:flex-end;gap:2px;height:160px;min-width:max-content;padding:0 4px;}
-.daily-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:0;min-width:16px;cursor:pointer;}
-.daily-bar{width:13px;transition:.2s;position:relative;}
-.daily-bar.normal{background:#4d7fff;border-radius:4px 4px 0 0;}
-.daily-bar.dinner{background:#f5a623;border-radius:4px 4px 0 0;}
-.daily-bar-empty{width:13px;height:3px;background:var(--surface2);border-radius:2px;margin-bottom:0;}
-.daily-bar-label{font-size:9px;color:var(--text-faint);text-align:center;margin-top:4px;line-height:1;}
+.daily-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:0;min-width:28px;cursor:pointer;flex-shrink:0;padding:0 3px;}
+.daily-bar{width:20px;transition:.2s;position:relative;border-radius:6px 6px 0 0;}
+.daily-bar.normal{background:#A8D5F5;}
+.daily-bar.dinner{background:#FFB347;border-radius:6px 6px 0 0;}
+.daily-bar-empty{width:20px;height:2px;background:var(--surface2);border-radius:2px;}
+.daily-bar-label{font-size:9px;color:var(--text-faint);text-align:center;margin-top:5px;line-height:1;}
+.daily-chart-baseline{height:1.5px;background:var(--border);width:100%;margin:0;}
 .daily-chart-baseline{height:1px;background:var(--border);width:100%;margin-bottom:0;}
 .chart-tooltip{font-size:12px;background:#1a1a2e;color:#fff;border-radius:var(--radius-sm);padding:6px 10px;margin-top:8px;display:none;}
 .chart-tooltip.show{display:block;}
@@ -1764,8 +1765,7 @@ function renderStaffHistory(){
         const durMins=ciTime&&coTime?dur(ciTime,coTime):null;
         const showDur=isOffice&&durMins!==null&&durMins<480;
         const durStr=showDur?fmtDur(durMins):'';
-        const checkoutTime=l.checkOut?(() => { const [h,m]=l.checkOut.split(':').map(Number); const d=new Date(); d.setHours(h,m,0,0); return d.getTime(); })():null;
-        const canDelete=(l.createdAt&&(nowMs-l.createdAt)<30*60*1000)||(checkoutTime&&(nowMs-checkoutTime)<30*60*1000);
+        const canDelete=l.createdAt&&(nowMs-l.createdAt)<30*60*1000;
         const prefix=li===0?`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">${dayLabel}</div>`:'';
         rows+=`<div class="history-present-row" style="padding:${li===0?'14px 16px 8px':'4px 16px 8px'};border-bottom:${li===dayLogs.length-1?'1px solid var(--divider)':'none'};background:#f0fff4;">
           ${prefix}
@@ -1806,10 +1806,7 @@ async function staffDeleteOwnLog(logId){
   const l=S.logs.find(x=>x.id==logId);
   if(!l){toast('Log not found','err');return;}
   // Double-check 30 min window
-  const nowMs2=Date.now();
-  const coT=l.checkOut?(() => { const [h,m]=l.checkOut.split(':').map(Number); const d=new Date(); d.setHours(h,m,0,0); return d.getTime(); })():null;
-  const withinWindow=(l.createdAt&&(nowMs2-l.createdAt)<30*60*1000)||(coT&&(nowMs2-coT)<30*60*1000);
-  if(!withinWindow){
+  if(!l.createdAt||(Date.now()-l.createdAt)>=30*60*1000){
     toast('Delete window expired (30 min)','err');
     renderStaffHistory();
     return;
