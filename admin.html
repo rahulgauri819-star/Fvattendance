@@ -12,6 +12,22 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+window._fcmInit = async function(config, vapidKey){
+  try {
+    const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    await navigator.serviceWorker.ready;
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted') return {error: 'Permission denied'};
+    // Use native Web Push API - no FCM topic subscription needed
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: vapidKey
+    });
+    return {subscription: JSON.stringify(sub)};
+  } catch(e){ return {error: e.message}; }
+};
+</script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 :root{
@@ -152,8 +168,8 @@ body.staff-mode .sidebar{display:none;}
 body.staff-mode .main{margin-left:0;}
 body.staff-mode .hamburger{display:none!important;}
 body.staff-mode .page{padding:16px 16px 80px;}
-.staff-tab-bar{display:none;}
-body.staff-mode .staff-tab-bar{display:none;}
+.staff-tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--surface);border-top:1px solid var(--border);z-index:200;padding:0 8px;padding-bottom:env(safe-area-inset-bottom);}
+body.staff-mode .staff-tab-bar{display:flex;}
 .staff-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--text-muted);cursor:pointer;border-radius:var(--radius-sm);padding:8px 0;transition:.15s;}
 .staff-tab.active{color:var(--primary);}
 .staff-tab svg{width:20px;height:20px;}
@@ -505,19 +521,17 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   <div style="width:100%;max-width:380px;">
     <div style="text-align:center;margin-bottom:28px;">
       <div style="width:60px;height:60px;background:#0d6efd;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 4px 20px rgba(13,110,253,.4);"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg></div>
-      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.3px;">Fotovision Admin</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;">Fotovision Admin</div>
       <div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:4px;">Administration Panel</div>
     </div>
-    <div class="card">
-      <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
-        <div><div style="font-size:16px;font-weight:700;">Admin Sign In</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Enter your admin password</div></div>
-        <div class="form-group">
-          <label class="form-label">Admin Password</label>
-          <input class="form-input" id="adminPanelPassword" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')submitAdminPanel()">
-        </div>
-        <div id="adminPanelError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-weight:500;"></div>
-        <button class="btn btn-primary btn-lg w-full" type="button" onclick="submitAdminPanel()" style="justify-content:center;">Sign In as Admin</button>
+    <div style="background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px;">
+      <div><div style="font-size:16px;font-weight:700;">Admin Sign In</div></div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Admin Password</label>
+        <input style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 14px;font-size:15px;box-sizing:border-box;" id="adminPanelPassword" type="password" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')submitAdminPanel()">
       </div>
+      <div id="adminPanelError" style="display:none;background:#fff0f0;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:500;"></div>
+      <button style="background:#0d6efd;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;width:100%;" onclick="submitAdminPanel()">Sign In as Admin</button>
     </div>
     <div style="text-align:center;margin-top:16px;"><a href="./" style="font-size:12px;color:rgba(255,255,255,.4);text-decoration:none;">← Staff Portal</a></div>
   </div>
@@ -561,6 +575,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <button onclick="toggleDarkMode()" id="darkModeBtn" class="btn btn-ghost btn-sm" style="padding:6px;margin-right:4px;" title="Toggle dark mode">
         <svg id="darkIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
+      <button id="notifBtn" onclick="initPushNotifications()" title="Enable Push Notifications" style="display:none;background:none;border:1px solid #333;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:16px;">🔔</button>
       <button id="logoutBtn" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;color:#000!important;border-color:#333;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Logout
@@ -570,6 +585,31 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </header>
 
   <div class="page">
+
+    <!-- STAFF PORTAL -->
+    <div class="view" id="view-staff-portal">
+      <div id="staffPortalCheckin" class="staff-tab-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div>
+            <div style="font-size:24px;font-weight:800;" id="portalGreeting">Hello 👋</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:2px;" id="portalRoleLine"></div>
+          </div>
+        </div>
+        <div id="portalActionArea" style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px;"></div>
+        <!-- Success screen (hidden by default) -->
+        <div class="checkin-success" id="checkinSuccess">
+          <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div style="font-size:20px;font-weight:800;color:var(--success);">Checked In!</div>
+          <div style="font-size:14px;color:var(--text-muted);" id="successMsg"></div>
+          <button class="btn btn-outline" onclick="hideCheckinSuccess()" style="margin-top:8px;">Done</button>
+        </div>
+      </div>
+      <div id="staffPortalHistory" class="staff-tab-content" style="display:none;">
+        <div style="font-size:20px;font-weight:800;margin-bottom:4px;">My Attendance</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;" id="portalMonthLabel"></div>
+        <div class="card"><div id="portalLogList"></div></div>
+      </div>
+    </div>
 
     <!-- DASHBOARD -->
     <div class="view active" id="view-dashboard">
@@ -582,8 +622,8 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <div class="card-header"><span class="card-title">Staff Activity</span><div style="display:flex;align-items:center;gap:8px;"><input type="date" id="activityDatePicker" class="form-input" style="font-size:12px;padding:4px 8px;width:auto;" onchange="renderStatusBoard()" value=""><span class="badge badge-green" id="activeCount">0 active</span></div></div>
         <div id="dashStaff"></div>
       </div>
-      <!-- Grover Monthly Sales (admin only) -->
-      <div class="card" id="groverSalesCard" style="display:none;">
+      <!-- Grover Monthly Sales -->
+      <div class="card">
         <div class="card-header">
           <span class="card-title">🎬 Grover A/V — Monthly Sales</span>
           <div style="display:flex;align-items:center;gap:8px;">
@@ -1105,6 +1145,12 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div><!-- /page -->
 </div><!-- /main -->
 
+<!-- STAFF TAB BAR -->
+<div class="staff-tab-bar">
+  <div class="staff-tab active" id="staffTab0" onclick="switchStaffTab(0)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    Check In/Out
+  </div>
   <div class="staff-tab" id="staffTab1" onclick="switchStaffTab(1)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     My Attendance
@@ -1430,12 +1476,16 @@ function submitAdminPanel(){
   if(pw!==S.admin.password){e.textContent='Incorrect password.';e.style.display='block';return;}
   S.currentUser={role:'admin',name:S.admin.name};
   $('loginScreen').style.display='none';
-  if($('logoutBtn')) $('logoutBtn').style.display='inline-flex';
-  if($('sidebarAv')) $('sidebarAv').textContent=ini(S.admin.name);
-  if($('sidebarName')) $('sidebarName').textContent=S.admin.name;
-  if($('sidebarRole')) $('sidebarRole').textContent='Administrator';
-  // Save admin session
-  localStorage.setItem('fv_admin_session', JSON.stringify({role:'admin',name:S.admin.name,ts:Date.now()}));
+  $('logoutBtn').style.display='inline-flex';
+  if($('notifBtn')) $('notifBtn').style.display='inline-flex';
+  $('sidebarAv').textContent=ini(S.admin.name);
+  $('sidebarName').textContent=S.admin.name;
+  $('sidebarRole').textContent='Administrator';
+  hideAdminLogin();
+  // Init push notifications for admin
+  if('serviceWorker' in navigator && 'Notification' in window){
+    initPushNotifications().catch(e=>console.log('Push init failed:',e));
+  }
   toast('Welcome back, '+S.admin.name+'!');
   go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
 }
@@ -1454,7 +1504,7 @@ function showSwitchAccountLink(){
   portal.appendChild(link);
 }
 function switchAccount(){
-  localStorage.removeItem('fv_remember'); localStorage.removeItem('fv_admin_session');
+  localStorage.removeItem('fv_remember');
   logout();
 }
 function getStaffLoginId(sf){
@@ -1505,16 +1555,25 @@ window.submitLogin = function(){
   $('loginScreen').style.display='none';
   $('logoutBtn').style.display='inline-flex';
 
-  document.body.classList.add('staff-mode');
+  // Staff user on admin page - redirect
+          window.location.href='./';
+          return;
+          document.body.classList.add('staff-mode');
   $('topbarTitle').textContent='Hi '+sf.name.split(' ')[0];
-  // Staff user on admin page - redirect to staff portal
-  window.location.href = './';
+  $('hamburgerBtn').style.display='none';
+  // Staff mode: hide GPS hint
+  document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='none');
+  renderStaffPortal();
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('view-staff-portal').classList.add('active');
+  toast('Welcome, '+sf.name+'!');
 };
 
 window.logout = function(){
   S.currentUser=null;
   $('loginScreen').style.display='flex';
   $('logoutBtn').style.display='none';
+  if($('notifBtn')) $('notifBtn').style.display='none';
   $('loginError').style.display='none';
   document.body.classList.remove('staff-mode');
   $('topbarTitle').textContent='Dashboard';
@@ -1839,9 +1898,7 @@ function renderDash(){
       +'</div>';
   }).join('');
 
-  // Grover Sales — admin only
-  if($('groverSalesCard')) $('groverSalesCard').style.display = (S.currentUser&&S.currentUser.role==='admin') ? 'block' : 'none';
-  if(S.currentUser&&S.currentUser.role==='admin') renderGroverSales();
+  renderGroverSales();
   lucide.createIcons();
 }
 
@@ -5689,6 +5746,49 @@ const storage = firebase.storage();
 const firestore = firebase.firestore();
 // FCM messaging handled via modular SDK in fcmModule script tag
 
+const VAPID_KEY = 'BBjf1Dfg9R0_FfpHZ57DmXaOyKCcfXcrJSmY2iy2i4v-y-llZYvtksOayKsYBXjHvt0FleAD7lp_Agj6l8X0s-s';
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const rawData=window.atob(base64);
+  const outputArray=new Uint8Array(rawData.length);
+  for(let i=0;i<rawData.length;++i) outputArray[i]=rawData.charCodeAt(i);
+  return outputArray;
+}
+
+// ── FCM Push Notifications ────────────────────────────────
+async function initPushNotifications(){
+  try {
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)){
+      toast('Push notifications not supported in this browser','err'); return;
+    }
+    if(Notification.permission === 'denied'){
+      toast('Notifications blocked — enable in browser settings','err'); return;
+    }
+    const result = await window._fcmInit(firebaseConfig, VAPID_KEY);
+    if(result.error){
+      toast('Notification error: '+result.error,'err');
+      console.error('Push error:', result.error);
+      return;
+    }
+    // Save Web Push subscription to Firestore
+    const subObj = JSON.parse(result.subscription);
+    const subId = btoa(subObj.endpoint).slice(-20);
+    await firestore.collection('pushSubscriptions').doc(subId).set({
+      subscription: result.subscription,
+      role: 'admin',
+      device: navigator.userAgent.slice(0,80),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    console.log('Web Push subscription saved ✅');
+    toast('🔔 Push notifications enabled ✓');
+  } catch(e){
+    console.error('Push init error:', e);
+    toast('Notification setup failed: '+e.message,'err');
+  }
+}
+
 // Sync a log to Firestore (called on check-in and check-out)
 async function syncLogToFirestore(log){
   try {
@@ -5889,30 +5989,6 @@ function init(){
     toast('Could not connect to database. Working offline.','err');
     renderDash();
   });
-  // Auto-login admin from saved session
-  try{
-    const saved=localStorage.getItem('fv_admin_session');
-    if(saved){
-      const sess=JSON.parse(saved);
-      // Valid for 7 days
-      if(sess.role==='admin' && sess.ts && (Date.now()-sess.ts)<7*24*60*60*1000){
-        setTimeout(()=>{
-          if(S.currentUser) return;
-          S.currentUser={role:'admin',name:sess.name||S.admin.name};
-          const ls=$('loginScreen');
-          if(ls) ls.style.display='none';
-          if($('logoutBtn')) $('logoutBtn').style.display='inline-flex';
-          if($('sidebarAv')) $('sidebarAv').textContent=ini(S.admin.name);
-          if($('sidebarName')) $('sidebarName').textContent=S.admin.name;
-          if($('sidebarRole')) $('sidebarRole').textContent='Administrator';
-          renderDash();
-          lucide.createIcons();
-        }, 1000);
-      } else {
-        localStorage.removeItem('fv_admin_session');
-      }
-    }
-  } catch(e){}
   // Auto-fill remember me fields
   try{
     const saved=localStorage.getItem('fv_remember');
@@ -5933,9 +6009,21 @@ function init(){
         if(S.currentUser) return; // already logged in
         const sf=(S.staff||[]).find(s=>s.phone===phone&&(s.password||'123')===pw&&s.status==='active');
         if(sf){
-          // Staff user trying to access admin panel - redirect
-          window.location.href = './';
+          S.currentUser={role:'staff',name:sf.name,staffId:sf.id};
+          const ls=$('loginScreen');
+          if(ls) ls.style.display='none';
+          const lb=$('logoutBtn');
+          if(lb) lb.style.display='inline-flex';
+          // Staff user on admin page - redirect
+          window.location.href='./';
           return;
+          document.body.classList.add('staff-mode');
+          const tt=$('topbarTitle');
+          if(tt) tt.textContent='Hi '+sf.name.split(' ')[0];
+          renderStaffPortal();
+          lucide.createIcons();
+          // Show switch account link
+          showSwitchAccountLink();
         }
       }, 1500);
     }
