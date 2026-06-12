@@ -1476,15 +1476,11 @@ function submitAdminPanel(){
   S.currentUser={role:'admin',name:S.admin.name};
   $('loginScreen').style.display='none';
   $('logoutBtn').style.display='inline-flex';
-  if($('notifBtn')) $('notifBtn').style.display='inline-flex';
-  $('sidebarAv').textContent=ini(S.admin.name);
-  $('sidebarName').textContent=S.admin.name;
-  $('sidebarRole').textContent='Administrator';
-  hideAdminLogin();
-  // Init push notifications for admin
-  if('serviceWorker' in navigator && 'Notification' in window){
-    initPushNotifications().catch(e=>console.log('Push init failed:',e));
-  }
+  if($('sidebarAv')) $('sidebarAv').textContent=ini(S.admin.name);
+  if($('sidebarName')) $('sidebarName').textContent=S.admin.name;
+  if($('sidebarRole')) $('sidebarRole').textContent='Administrator';
+  // Save admin session for auto-login
+  localStorage.setItem('fv_admin_session', JSON.stringify({role:'admin',name:S.admin.name,ts:Date.now()}));
   toast('Welcome back, '+S.admin.name+'!');
   go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
 }
@@ -1602,8 +1598,7 @@ window.addEventListener('keydown',function(e){
   if(!ls||ls.style.display==='none') return;
   if(e.key==='Escape') hideAdminLogin();
   if(e.key==='Enter'){
-    if($('adminLoginPanel').style.display!=='none') submitAdminPanel();
-    else submitLogin();
+    submitLogin();
   }
 });
 
