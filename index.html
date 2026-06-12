@@ -5803,7 +5803,7 @@ async function initPushNotifications(){
       toast('Notification permission not granted','err'); return;
     }
     const token = await messaging.getToken({
-      vapidKey: VAPID_KEY,
+      vapidKey: urlBase64ToUint8Array(VAPID_KEY),
       serviceWorkerRegistration: reg
     });
     if(token){
