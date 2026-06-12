@@ -500,59 +500,61 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
 </div>
 
-<!-- LOGIN SCREEN -->
-<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#eef4ff 0%,#f8f9fa 60%,#fce4ec 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
-  <div style="width:100%;max-width:400px;">
+<!-- ADMIN LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+  <div style="width:100%;max-width:380px;">
     <div style="text-align:center;margin-bottom:28px;">
-      <div style="width:56px;height:56px;background:var(--primary);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 4px 16px rgba(13,110,253,.25);">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg>
-      </div>
-      <div style="width:60px;height:60px;background:var(--primary);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg></div>
-      <div style="font-size:22px;font-weight:800;letter-spacing:-.3px;color:var(--text);">Fotovision</div>
-      <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Attendance Management System</div>
+      <div style="width:60px;height:60px;background:#0d6efd;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 4px 20px rgba(13,110,253,.4);"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg></div>
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.3px;">Fotovision Admin</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:4px;">Administration Panel</div>
     </div>
     <div class="card">
       <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
-        <div>
-          <div style="font-size:16px;font-weight:700;">Staff Sign In</div>
-          <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Enter your phone number and password</div>
-        </div>
+        <div><div style="font-size:16px;font-weight:700;">Admin Sign In</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Enter your admin password</div></div>
         <div class="form-group">
-          <label class="form-label">Phone Number <span class="req" style="color:var(--danger)">*</span></label>
-          <div style="position:relative;">
-            <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <input class="form-input" id="loginPhone" type="text" inputmode="text" placeholder="Phone number or first name" autocomplete="username" style="padding-left:36px;" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
-          </div>
+          <label class="form-label">Admin Password</label>
+          <input class="form-input" id="adminPanelPassword" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')submitAdminPanel()">
         </div>
-        <div class="form-group">
-          <label class="form-label">Password <span class="req" style="color:var(--danger)">*</span></label>
-          <div style="position:relative;">
-            <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-faint);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input class="form-input" id="loginPassword" type="text" placeholder="Default: 123" style="padding-left:36px;" onkeydown="if(event.key==='Enter')submitLogin()">
-          </div>
-          <div class="form-hint">Default password: <strong>123</strong></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;margin-bottom:4px;">
-          <input type="checkbox" id="rememberMe" style="position:absolute;opacity:0;width:0;height:0;" onchange="var box=document.getElementById('rememberMeBox');box.style.background=this.checked?'var(--primary)':'transparent';box.style.borderColor=this.checked?'var(--primary)':'#555';box.innerHTML=this.checked?'<svg width=11 height=11 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'#fff\' stroke-width=\'3\'><polyline points=\'20 6 9 17 4 12\'/></svg>':'';this.nextElementSibling.nextElementSibling.style.fontWeight=this.checked?'700':'400';">
-          <div id="rememberMeBox" onclick="var cb=document.getElementById('rememberMe');cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));" style="width:18px;height:18px;border:2px solid #555;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;background:transparent;"></div>
-          <label for="rememberMe" style="font-size:13px;color:var(--text-muted);cursor:pointer;">Remember me on this device</label>
-        </div>
-        <div id="loginError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-weight:500;"></div>
-        <button class="btn btn-primary btn-lg w-full" type="button" onclick="submitLogin()" style="justify-content:center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          Sign In
-        </button>
+        <div id="adminPanelError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;font-weight:500;"></div>
+        <button class="btn btn-primary btn-lg w-full" type="button" onclick="submitAdminPanel()" style="justify-content:center;">Sign In as Admin</button>
       </div>
     </div>
+    <div style="text-align:center;margin-top:16px;"><a href="./" style="font-size:12px;color:rgba(255,255,255,.4);text-decoration:none;">← Staff Portal</a></div>
   </div>
-
 </div>
 
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="15" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><rect x="9" y="2" width="6" height="4" rx="1"/></svg></div>
+    <div><div class="logo-text">Fotovision</div><div class="logo-sub">Attendance System</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <span class="nav-label">Overview</span>
+    <div class="nav-item active" onclick="go('dashboard',this)"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+    <span class="nav-label">Manage</span>
+    <div class="nav-item" onclick="go('staff',this)"><i data-lucide="users"></i> Staff</div>
+    <div class="nav-item" onclick="go('logs',this)"><i data-lucide="clipboard-list"></i> Attendance Log</div>
+    <span class="nav-label">Data Management</span>
+    <div class="nav-item" onclick="go('wedding-data',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Wedding Groups</div>
+    <span class="nav-label">Insights</span>
+    <div class="nav-item" onclick="go('reports',this)"><i data-lucide="bar-chart-2"></i> Reports</div>
+    <span class="nav-label">System</span>
+    <div class="nav-item" onclick="go('settings',this)"><i data-lucide="settings"></i> Settings</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="admin-card">
+      <div class="admin-av" id="sidebarAv">R</div>
+      <div><div class="admin-name" id="sidebarName">Rahul Gauri</div><div class="admin-role" id="sidebarRole">Administrator</div></div>
+    </div>
+  </div>
+</aside>
+
 <!-- MAIN -->
-<div class="main" style="margin-left:0!important;width:100%!important;">
+<div class="main">
   <header class="topbar">
     <div class="flex items-center gap-2">
-      
+      <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu"><i data-lucide="menu"></i></button>
       <span class="topbar-title" id="topbarTitle">Dashboard</span>
     </div>
     <div class="topbar-right">
@@ -569,12 +571,6 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 
   <div class="page">
 
-    <!-- STAFF PORTAL -->
-    <div class="view" id="view-staff-portal">
-      <div id="staffPortalCheckin" class="staff-tab-content">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-          <div>
-            <div style="font-size:24px;font-weight:800;" id="portalGreeting">Hello 👋</div>
             <div style="font-size:13px;color:var(--text-muted);margin-top:2px;" id="portalRoleLine"></div>
           </div>
         </div>
@@ -594,23 +590,540 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       </div>
     </div>
 
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div><h1 class="page-title">Dashboard</h1><p class="page-sub" id="dashDate"></p></div>
+        <button class="btn btn-outline hide-mobile" onclick="go('logs',document.querySelector('[onclick*=logs]'))"><i data-lucide="clipboard-list"></i> View Logs</button>
+      </div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">Staff Activity</span><div style="display:flex;align-items:center;gap:8px;"><input type="date" id="activityDatePicker" class="form-input" style="font-size:12px;padding:4px 8px;width:auto;" onchange="renderStatusBoard()" value=""><span class="badge badge-green" id="activeCount">0 active</span></div></div>
+        <div id="dashStaff"></div>
+      </div>
+      <!-- Grover Monthly Sales (admin only) -->
+      <div class="card" id="groverSalesCard" style="display:none;">
+        <div class="card-header">
+          <span class="card-title">🎬 Grover A/V — Monthly Sales</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="groverSalesPrevMonth()"><i data-lucide="chevron-left"></i></button>
+            <span style="font-size:13px;font-weight:700;min-width:110px;text-align:center;" id="groverSalesMonthLabel"></span>
+            <button class="btn btn-ghost btn-sm" onclick="groverSalesNextMonth()"><i data-lucide="chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="groverSalesKpi" class="kpi-grid" style="gap:10px;margin-bottom:18px;"></div>
+          <div id="groverDailyChartWrap" style="margin-bottom:18px;"></div>
+          <div id="groverSalesChart" style="margin-bottom:18px;"></div>
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:10px;">Recent Activity</div>
+          <div id="groverSalesRecent"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TODAY'S STATUS (admin check-in view) -->
+    <div class="view" id="view-checkin">
+      <div class="page-header">
+        <div><h1 class="page-title">Today's Status</h1><p class="page-sub" id="statusDate"></p></div>
         <button class="btn btn-primary" onclick="openCheckinModal(null)"><i data-lucide="plus"></i> Check In Staff</button>
       </div>
       <div class="status-grid" id="statusGrid"></div>
     </div>
 
+    <!-- STAFF -->
+    <div class="view" id="view-staff">
+      <div class="page-header">
+        <div><h1 class="page-title">Staff</h1><p class="page-sub">Manage your photography team</p></div>
+        <button class="btn btn-primary" onclick="openAddStaff()"><i data-lucide="user-plus"></i> Add Staff</button>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Search staff..." id="staffSearch" oninput="renderStaff()"></div>
+        <select class="form-select" style="width:auto;" id="staffRoleF" onchange="renderStaff()"><option value="">All Roles</option></select>
+      </div>
+      <div class="card"><div class="table-wrap hide-mobile" id="staffTableWrap">
+        <table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Status</th><th>Check-ins</th><th>Leaves</th><th>Actions</th></tr></thead>
+        <tbody id="staffTbody"></tbody></table>
+      </div></div>
+    <div id="staffMobileList" style="display:none;"></div>
+    </div>
+
+    <!-- ATTENDANCE LOG -->
+    <div class="view" id="view-logs">
+      <div class="page-header">
+        <div><h1 class="page-title">Attendance Log</h1><p class="page-sub">Full check-in/out history</p></div>
+        <button class="btn btn-outline btn-sm" onclick="openAddLogModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Log</button>
+        <button class="btn btn-primary btn-sm" onclick="openBulkAddModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Bulk Add</button>
+        <button class="btn btn-outline" onclick="exportCSV()"><i data-lucide="download"></i> Export CSV</button>
+        <button class="btn btn-outline" onclick="showAttendanceExportModal()"><i data-lucide="calendar"></i> Export by Date Range</button>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name or venue..." id="logSearch" oninput="renderLogs()"></div>
+        <select class="form-select" style="width:auto;" id="logCompF" onchange="renderLogs()"><option value="">All</option><option value="grover">Grover A/V</option><option value="wedding">Wedding</option><option value="office">Office</option></select>
+        <input type="date" class="form-input" id="logDateF" onchange="renderLogs()" style="max-width:150px;">
+      </div>
+      <div id="logsMobileList"></div>
+      <div class="card"><div class="table-wrap log-table-wrap" id="logTableWrap">
+        <table class="data-table"><thead><tr><th>Staff</th><th>Duty</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Work Done</th><th>Selfie</th><th>GPS</th><th>Actions</th></tr></thead>
+        <tbody id="logTbody"></tbody></table>
+      </div></div>
+    <div id="logMobileList" style="display:none;"></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="view" id="view-reports">
+      <div class="page-header"><div><h1 class="page-title">Reports</h1><p class="page-sub">Staff analytics & Grover billing</p></div></div>
+      <!-- Report tabs -->
+      <div class="tabs" style="flex-wrap:wrap;gap:4px;">
+        <div class="tab active" id="repTab0" onclick="switchReportTab(0)">Staff Report</div>
+        <div class="tab" id="repTab4" onclick="switchReportTab(4)">Grover Billing</div>
+      </div>
+
+      <!-- STAFF REPORT TAB -->
+      <div id="repStaffTab">
+        <!-- Duty Breakdown -->
+        <div class="card mb-4">
+          <div class="card-header"><span class="card-title">Duty Breakdown</span></div>
+          <div class="card-body" id="companyReport"></div>
+        </div>
+
+        <!-- Staff-wise Report -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <span class="card-title">Staff-wise Report</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn btn-outline btn-sm" onclick="showStaffExportModal()"><i data-lucide="download"></i> Export</button>
+              <button class="btn btn-ghost btn-sm" onclick="staffReportPrevMonth()"><i data-lucide="chevron-left"></i></button>
+              <span style="font-size:13px;font-weight:700;min-width:110px;text-align:center;" id="staffReportMonthLabel"></span>
+              <button class="btn btn-ghost btn-sm" onclick="staffReportNextMonth()"><i data-lucide="chevron-right"></i></button>
+            </div>
+          </div>
+          <div class="card-body" style="padding-bottom:0;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;" id="staffReportFilterTabs">
+              <button class="btn btn-primary btn-sm" onclick="setStaffReportFilter('all',this)">All Duties + Leave</button>
+              <button class="btn btn-outline btn-sm" onclick="setStaffReportFilter('grover',this)">🎬 Grover</button>
+              <button class="btn btn-outline btn-sm" onclick="setStaffReportFilter('wedding',this)">💍 Wedding</button>
+              <button class="btn btn-outline btn-sm" onclick="setStaffReportFilter('office',this)">🏢 Office</button>
+            </div>
+          </div>
+          <div id="staffWiseCards"></div>
+        </div>
+
+        <!-- Data Copy Log -->
+        <div class="card mt-4">
+          <div class="card-header"><span class="card-title">Data Copy Log (Grover Events)</span></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Staff</th><th>Date</th><th>Venue</th><th>Copied By</th><th>Phone</th></tr></thead><tbody id="copyLogTbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- GROVER BILLING TAB -->
+      <div id="repBillingTab" style="display:none;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <button class="btn btn-outline btn-sm" onclick="billingPrevMonth()"><i data-lucide="chevron-left"></i></button>
+          <span style="font-size:16px;font-weight:700;min-width:140px;text-align:center;" id="billingMonthLabel"></span>
+          <button class="btn btn-outline btn-sm" onclick="billingNextMonth()"><i data-lucide="chevron-right"></i></button>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="exportBillingCSV()"><i data-lucide="download"></i> CSV</button>
+            <button class="btn btn-primary btn-sm" onclick="exportBillingPDF()"><i data-lucide="file-text"></i> PDF</button>
+          </div>
+        </div>
+        <div class="info-box" style="margin-bottom:20px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div><strong>Dinner Shift Rule:</strong> Check-in between 5:00 AM–11:00 AM AND check-out at or after 8:30 PM = duty billed as Shift + Dinner (twice). Rates configured in Settings.</div>
+        </div>
+        <div id="billingPendingWarn" style="display:none;background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:#7c4a00;margin-bottom:16px;"></div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount">0 entries</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead>
+              <tbody id="billingTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header"><span class="card-title">Staff-wise Subtotals</span></div>
+          <div id="billingSubtotals"></div>
+        </div>
+        <div id="billingGrandTotal" style="background:#1a1a2e;color:#fff;border-radius:var(--radius-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;"></div>
+      </div>
+
+      <!-- GROVER DUTIES TAB -->
+      <div id="repGroverTab" style="display:none;">
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name or venue..." id="repGroverSearch" oninput="renderDivision('grover')" style="max-width:200px;"></div>
+          <select class="form-select" style="width:auto;" id="repGroverStaffF" onchange="renderDivision('grover')"><option value="">All Staff</option></select>
+          <select class="form-select" style="width:auto;" id="repGroverWtF" onchange="renderDivision('grover')"><option value="">All Work Types</option></select>
+        </div>
+        <div class="tabs" style="margin-bottom:16px;">
+          <div class="tab active" id="rgdt0" onclick="switchDivTab('grover',0,this)">Daily</div>
+          <div class="tab" id="rgdt1" onclick="switchDivTab('grover',1,this)">Weekly</div>
+          <div class="tab" id="rgdt2" onclick="switchDivTab('grover',2,this)">Monthly</div>
+        </div>
+        <div id="groverDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+        <div id="groverDivContent"></div>
+      </div>
+
+      <!-- WEDDING DUTIES TAB -->
+      <div id="repWeddingTab" style="display:none;">
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name, venue or client..." id="repWeddingSearch" oninput="renderDivision('wedding')" style="max-width:200px;"></div>
+          <select class="form-select" style="width:auto;" id="repWeddingStaffF" onchange="renderDivision('wedding')"><option value="">All Staff</option></select>
+          <select class="form-select" style="width:auto;" id="repWeddingClientF" onchange="renderDivision('wedding')"><option value="">All Clients</option></select>
+        </div>
+        <div class="tabs" style="margin-bottom:16px;">
+          <div class="tab active" id="rwdt0" onclick="switchDivTab('wedding',0,this)">Daily</div>
+          <div class="tab" id="rwdt1" onclick="switchDivTab('wedding',1,this)">Weekly</div>
+          <div class="tab" id="rwdt2" onclick="switchDivTab('wedding',2,this)">Monthly</div>
+        </div>
+        <div id="weddingDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+        <div id="weddingDivContent"></div>
+      </div>
+
+      <!-- OFFICE DUTY TAB -->
+      <div id="repOfficeTab" style="display:none;">
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Search staff..." id="repOfficeSearch" oninput="renderDivision('office')" style="max-width:200px;"></div>
+          <select class="form-select" style="width:auto;" id="repOfficeStaffF" onchange="renderDivision('office')"><option value="">All Staff</option></select>
+          <select class="form-select" style="width:auto;" id="repOfficeStatusF" onchange="renderDivision('office')"><option value="">All</option><option value="full">Full Days</option><option value="short">Short Days</option></select>
+        </div>
+        <div class="tabs" style="margin-bottom:16px;">
+          <div class="tab active" id="rodt0" onclick="switchDivTab('office',0,this)">Daily</div>
+          <div class="tab" id="rodt1" onclick="switchDivTab('office',1,this)">Weekly</div>
+          <div class="tab" id="rodt2" onclick="switchDivTab('office',2,this)">Monthly</div>
+        </div>
+        <div id="officeDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+        <div id="officeDivContent"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="view" id="view-settings">
+      <div class="page-header"><div><h1 class="page-title">Settings</h1><p class="page-sub">Manage roles, work types, hours and credentials</p></div></div>
+      <div style="display:flex;flex-direction:column;gap:20px;max-width:680px;">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Staff Roles</span><span class="badge badge-gray" id="roleCount">0 roles</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div id="rolesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div style="display:flex;gap:10px;padding-top:4px;border-top:1px solid var(--divider);">
+              <input class="form-input" id="newRoleInput" type="text" placeholder="e.g. Lighting Technician" maxlength="40" onkeydown="if(event.key==='Enter')addRole()" style="flex:1;">
+              <button class="btn btn-primary" onclick="addRole()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add</button>
+            </div>
+            <div class="form-hint">Roles used by existing staff cannot be deleted.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Work Types</span><span class="badge badge-gray" id="wtCount">0 types</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div id="wtList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div style="display:flex;gap:10px;padding-top:4px;border-top:1px solid var(--divider);">
+              <input class="form-input" id="newWtInput" type="text" placeholder="e.g. Aerial Photography" maxlength="40" onkeydown="if(event.key==='Enter')addWorkType()" style="flex:1;">
+              <button class="btn btn-primary" onclick="addWorkType()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add</button>
+            </div>
+            <div class="form-hint">Shown as options during staff check-out.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Standard Working Hours</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-hint">Used for overtime calculation and office duty warning. Currently <strong id="stdHrsDisplay">8</strong> hours.</div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="position:relative;width:120px;">
+                <input class="form-input" id="stdHrsInput" type="number" min="1" max="24" value="8" style="padding-right:36px;">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);pointer-events:none;">hrs</span>
+              </div>
+              <button class="btn btn-primary" onclick="saveStdHours()">Save</button>
+              <span id="stdHrsMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Grover Billing Rates</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="form-hint">Rates used for Grover billing report. Photobooth rate can be left empty and filled manually.</div>
+            <div id="settingsRatesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <button class="btn btn-primary" onclick="saveSettingsRates()" style="align-self:flex-start;">Save Rates</button>
+            <span id="ratesSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Rates saved</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Paid Leave Policy</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-hint">Annual paid leaves per staff member. Admin marks leaves manually from the Staff page.</div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="position:relative;width:120px;">
+                <input class="form-input" id="paidLeaveInput" type="number" min="1" max="365" value="18" style="padding-right:50px;">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);pointer-events:none;">days</span>
+              </div>
+              <button class="btn btn-primary" onclick="savePaidLeavePolicy()">Save</button>
+              <span id="plSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Hard Disks</span><span class="badge badge-gray" id="hdCount">0</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-hint">Manage your hard disk names. Assign disks to wedding groups from the Data Management page.</div>
+            <div id="hardDisksList" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <input class="form-input" id="newHardDiskInput" placeholder="e.g. HD-01, WD-Blue-2TB" style="flex:1;">
+              <button class="btn btn-primary" onclick="addHardDiskFromSettings()">+ Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Office Duty Settings</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="form-hint">Standard check-in time for office duty. Staff checking in more than 1 hour late will be asked for a reason.</div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <label class="form-label" style="margin:0;">Standard Check-in Time:</label>
+              <input class="form-input" type="time" id="officeStdTimeInput" style="width:130px;">
+              <button class="btn btn-primary" onclick="saveOfficeStandardTime()">Save</button>
+              <span id="officeTimeSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Attendance Period</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="form-hint">Sets which day of the month attendance tracking starts. Default is 1st. Days before this are not counted as Leave.</div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <label class="form-label" style="margin:0;">Default Start Day:</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input class="form-input" type="number" id="attStartDayInput" min="1" max="31" value="1" style="width:80px;">
+                <span style="font-size:13px;color:var(--text-muted);">of each month</span>
+              </div>
+              <button class="btn btn-primary" onclick="saveAttendanceStartDay()">Save</button>
+              <span id="attStartSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Freelancers</span><span class="badge badge-gray" id="flCount">0</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-hint">Saved freelancers appear as options when assigning staff to wedding events.</div>
+            <div id="freelancersList" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <input class="form-input" id="newFreelancerInput" placeholder="Freelancer name" style="flex:1;">
+              <button class="btn btn-primary" onclick="addFreelancerFromSettings()">+ Add</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Manager Account</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="form-hint">Manager can create and manage wedding groups. Set credentials below.</div>
+            <div class="form-grid form-grid-2">
+              <div class="form-group"><label class="form-label">Manager Name</label><input class="form-input" id="mgrNameInput" placeholder="e.g. Ravi Sharma"></div>
+              <div class="form-group"><label class="form-label">Phone Number</label><input class="form-input" id="mgrPhoneInput" placeholder="e.g. 999" type="tel"></div>
+            </div>
+            <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="mgrPasswordInput" type="password" placeholder="Manager password"></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button class="btn btn-primary" onclick="saveManagerCredentials()">Save Manager Credentials</button>
+              <span id="mgrSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Change Admin Password</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+            <div class="form-group"><label class="form-label">Current Password <span style="color:var(--danger)">*</span></label><input class="form-input" id="pwCurrent" type="password" placeholder="Current password"></div>
+            <div class="form-grid form-grid-2">
+              <div class="form-group"><label class="form-label">New Password <span style="color:var(--danger)">*</span></label><input class="form-input" id="pwNew" type="password" placeholder="New password"></div>
+              <div class="form-group"><label class="form-label">Confirm <span style="color:var(--danger)">*</span></label><input class="form-input" id="pwConfirm" type="password" placeholder="Repeat"></div>
+            </div>
+            <div id="pwError" style="display:none;background:var(--danger-light);color:var(--danger);border-radius:var(--radius-sm);padding:9px 13px;font-size:13px;"></div>
+            <button class="btn btn-primary" onclick="changeAdminPassword()">Update Password</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- GROVER DUTIES -->
+    <div class="view" id="view-grover-duties">
+      <div class="page-header">
+        <div><h1 class="page-title">🎬 Grover Duties</h1><p class="page-sub">Grover Audio Visual Services attendance</p></div>
+        <button class="btn btn-outline" onclick="exportDivisionCSV('grover')"><i data-lucide="download"></i> Export CSV</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="gdt0" onclick="switchDivTab('grover',0,this)">Daily</div>
+        <div class="tab" id="gdt1" onclick="switchDivTab('grover',1,this)">Weekly</div>
+        <div class="tab" id="gdt2" onclick="switchDivTab('grover',2,this)">Monthly</div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name or venue..." id="groverSearch" oninput="renderDivision('grover')" style="max-width:200px;"></div>
+        <select class="form-select" style="width:auto;" id="groverStaffF" onchange="renderDivision('grover')"><option value="">All Staff</option></select>
+        <select class="form-select" style="width:auto;" id="groverWtF" onchange="renderDivision('grover')"><option value="">All Work Types</option></select>
+      </div>
+      <div id="groverDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+      <div id="groverDivContent"></div>
+    </div>
+
+    <!-- WEDDING DUTIES -->
+    <div class="view" id="view-wedding-duties">
+      <div class="page-header">
+        <div><h1 class="page-title">💍 Wedding Duties</h1><p class="page-sub">Fotovision Wedding Division attendance</p></div>
+        <button class="btn btn-outline" onclick="exportDivisionCSV('wedding')"><i data-lucide="download"></i> Export CSV</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="wdt0" onclick="switchDivTab('wedding',0,this)">Daily</div>
+        <div class="tab" id="wdt1" onclick="switchDivTab('wedding',1,this)">Weekly</div>
+        <div class="tab" id="wdt2" onclick="switchDivTab('wedding',2,this)">Monthly</div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Name, venue or client..." id="weddingSearch" oninput="renderDivision('wedding')" style="max-width:200px;"></div>
+        <select class="form-select" style="width:auto;" id="weddingStaffF" onchange="renderDivision('wedding')"><option value="">All Staff</option></select>
+        <select class="form-select" style="width:auto;" id="weddingClientF" onchange="renderDivision('wedding')"><option value="">All Clients</option></select>
+      </div>
+      <div id="weddingDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+      <div id="weddingDivContent"></div>
+    </div>
+
+    <!-- OFFICE DUTIES -->
+    <div class="view" id="view-office-duties">
+      <div class="page-header">
+        <div><h1 class="page-title">🏢 Office Duty</h1><p class="page-sub">Office attendance & hours tracking</p></div>
+        <button class="btn btn-outline" onclick="exportDivisionCSV('office')"><i data-lucide="download"></i> Export CSV</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="odt0" onclick="switchDivTab('office',0,this)">Daily</div>
+        <div class="tab" id="odt1" onclick="switchDivTab('office',1,this)">Weekly</div>
+        <div class="tab" id="odt2" onclick="switchDivTab('office',2,this)">Monthly</div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap"><i data-lucide="search"></i><input class="form-input" placeholder="Search staff..." id="officeSearch" oninput="renderDivision('office')" style="max-width:200px;"></div>
+        <select class="form-select" style="width:auto;" id="officeStaffF" onchange="renderDivision('office')"><option value="">All Staff</option></select>
+        <select class="form-select" style="width:auto;" id="officeStatusF" onchange="renderDivision('office')"><option value="">All</option><option value="full">Full Days</option><option value="short">Short Days</option></select>
+      </div>
+      <div id="officeDivNav" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"></div>
+      <div id="officeDivContent"></div>
+    </div>
+
+    <!-- GROVER BILLING (old standalone — now hidden, kept for JS compat) -->
+    <div class="view" id="view-billing">
+      <div class="page-header">
+        <div><h1 class="page-title">🎬 Grover Billing Report</h1><p class="page-sub">Monthly invoice to Grover Audio Visual Services</p></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="exportBillingCSV()"><i data-lucide="download"></i> Export CSV</button>
+          <button class="btn btn-primary" onclick="exportBillingPDF()"><i data-lucide="file-text"></i> Download PDF</button>
+        </div>
+      </div>
+
+      <!-- Month selector -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <button class="btn btn-outline btn-sm" onclick="billingPrevMonth()"><i data-lucide="chevron-left"></i></button>
+        <span style="font-size:16px;font-weight:700;min-width:140px;text-align:center;" id="billingMonthLabel2"></span>
+        <button class="btn btn-outline btn-sm" onclick="billingNextMonth()"><i data-lucide="chevron-right"></i></button>
+      </div>
+
+      <!-- Rates reference card -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title">Billing Rates</span><button class="btn btn-ghost btn-sm" onclick="toggleRatesEdit()"><i data-lucide="edit-2"></i> Edit Rates</button></div>
+        <div class="card-body" id="billingRatesCard"></div>
+      </div>
+
+      <!-- Double shift rule info -->
+      <div class="info-box" style="margin-bottom:20px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><strong>Double Shift Rule:</strong> Check-in between 5:00 AM–11:00 AM AND check-out at or after 8:30 PM = duty billed twice at full rate.</div>
+      </div>
+
+      <!-- Pending warning -->
+      <div id="billingPendingWarn2" style="display:none;background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:#7c4a00;margin-bottom:16px;"></div>
+
+      <!-- Main billing table -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount2">0 entries</span></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead>
+            <tbody id="billingTbody2"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Staff subtotals -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><span class="card-title">Staff-wise Subtotals</span></div>
+        <div id="billingSubtotals2"></div>
+      </div>
+
+      <!-- Grand total -->
+      <div id="billingGrandTotal2" style="background:#1a1a2e;color:#fff;border-radius:var(--radius-lg);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      </div>
+    </div>
+
+    <!-- WEDDING DATA -->
+    <div class="view" id="view-wedding-data">
+      <div class="page-header" style="flex-wrap:wrap;gap:10px;">
+        <div><h1 class="page-title">💒 Data Management</h1><p class="page-sub">Photo & video data management</p></div>
+        <button class="btn btn-primary" onclick="openNewWeddingGroup()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Wedding Group</button>
+      </div>
+      <!-- Toolbar -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+        <div class="search-wrap" style="flex:1;min-width:180px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="form-input" placeholder="Search wedding groups..." id="wgSearch" oninput="renderDataManagement()" style="font-size:15px;">
+        </div>
+        <select class="form-select" id="wgSortBy" onchange="renderDataManagement()" style="width:auto;font-size:14px;">
+          <option value="month">Sort: Month</option>
+          <option value="disk">Sort: Hard Disk</option>
+          <option value="name">Sort: Name A→Z</option>
+          <option value="pending">Sort: Most Pending</option>
+        </select>
+        <select class="form-select" id="wgDiskFilter" onchange="renderDataManagement()" style="width:auto;font-size:14px;">
+          <option value="">All Disks</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="openExportByMonthModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export
+        </button>
+      </div>
+      <div class="search-wrap" style="margin-bottom:16px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="form-input" placeholder="Search staff name across all events..." id="wgStaffSearch" oninput="renderDataManagement()" style="font-size:15px;">
+      </div>
+      <div id="dataManagementContent"></div>
+    </div>
+
+    <!-- WEDDING GROUP DETAIL -->
+    <div class="view" id="view-wedding-group-detail">
+      <div class="page-header" style="flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn btn-outline btn-sm" onclick="wgDetailBack()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Back
+          </button>
+          <div>
+            <h1 class="page-title" id="wgDetailTitle">Wedding Group</h1>
+            <p class="page-sub" id="wgDetailSub"></p>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="exportWeddingGroupCSV()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export CSV
+          </button>
+          <button class="btn btn-primary" onclick="addEventToCurrentGroup()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Event
+          </button>
+        </div>
+      </div>
+      <div id="wgDetailContent"></div>
+    </div>
+
+    <!-- EVENT FORM PAGE -->
+    <div class="view" id="view-event-form">
+      <div class="page-header">
+        <button class="btn btn-outline btn-sm" id="eventFormBackBtn" onclick="eventFormBack()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Back
+        </button>
+        <h1 class="page-title" id="eventFormTitle">Add Event</h1>
+      </div>
       <div id="eventFormBody" style="max-width:600px;margin:0 auto;"></div>
     </div>
 
   </div><!-- /page -->
 </div><!-- /main -->
 
-<!-- STAFF TAB BAR -->
-<div class="staff-tab-bar">
-  <div class="staff-tab active" id="staffTab0" onclick="switchStaffTab(0)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-    Check In/Out
-  </div>
   <div class="staff-tab" id="staffTab1" onclick="switchStaffTab(1)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     My Attendance
@@ -934,12 +1447,14 @@ function submitAdminPanel(){
   const pw=($('adminPanelPassword').value||'').trim();
   if(!pw){e.textContent='Enter password.';e.style.display='block';return;}
   if(pw!==S.admin.password){e.textContent='Incorrect password.';e.style.display='block';return;}
-  // Admin - redirect to admin panel
-  window.location.href='admin.html';
-  return;
-  // Init push notifications for admin
-  if('serviceWorker' in navigator && 'Notification' in window){
-  }
+  S.currentUser={role:'admin',name:S.admin.name};
+  $('loginScreen').style.display='none';
+  if($('logoutBtn')) $('logoutBtn').style.display='inline-flex';
+  if($('sidebarAv')) $('sidebarAv').textContent=ini(S.admin.name);
+  if($('sidebarName')) $('sidebarName').textContent=S.admin.name;
+  if($('sidebarRole')) $('sidebarRole').textContent='Administrator';
+  // Save admin session
+  localStorage.setItem('fv_admin_session', JSON.stringify({role:'admin',name:S.admin.name,ts:Date.now()}));
   toast('Welcome back, '+S.admin.name+'!');
   go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
 }
@@ -958,7 +1473,7 @@ function showSwitchAccountLink(){
   portal.appendChild(link);
 }
 function switchAccount(){
-  localStorage.removeItem('fv_remember');
+  localStorage.removeItem('fv_remember'); localStorage.removeItem('fv_admin_session');
   logout();
 }
 function getStaffLoginId(sf){
@@ -5398,6 +5913,30 @@ function init(){
     toast('Could not connect to database. Working offline.','err');
     renderDash();
   });
+  // Auto-login admin from saved session
+  try{
+    const saved=localStorage.getItem('fv_admin_session');
+    if(saved){
+      const sess=JSON.parse(saved);
+      // Valid for 7 days
+      if(sess.role==='admin' && sess.ts && (Date.now()-sess.ts)<7*24*60*60*1000){
+        setTimeout(()=>{
+          if(S.currentUser) return;
+          S.currentUser={role:'admin',name:sess.name||S.admin.name};
+          const ls=$('loginScreen');
+          if(ls) ls.style.display='none';
+          if($('logoutBtn')) $('logoutBtn').style.display='inline-flex';
+          if($('sidebarAv')) $('sidebarAv').textContent=ini(S.admin.name);
+          if($('sidebarName')) $('sidebarName').textContent=S.admin.name;
+          if($('sidebarRole')) $('sidebarRole').textContent='Administrator';
+          renderDash();
+          lucide.createIcons();
+        }, 1000);
+      } else {
+        localStorage.removeItem('fv_admin_session');
+      }
+    }
+  } catch(e){}
   // Auto-fill remember me fields
   try{
     const saved=localStorage.getItem('fv_remember');
@@ -5416,22 +5955,11 @@ function init(){
       // Wait for data to load then auto-login
       setTimeout(()=>{
         if(S.currentUser) return; // already logged in
-        // Check admin remember
-        if(window._savedLoginId && (window._savedLoginId === '__admin__')) { window.location.href='admin.html'; return; }
         const sf=(S.staff||[]).find(s=>s.phone===phone&&(s.password||'123')===pw&&s.status==='active');
         if(sf){
-          S.currentUser={role:'staff',name:sf.name,staffId:sf.id};
-          const ls=$('loginScreen');
-          if(ls) ls.style.display='none';
-          const lb=$('logoutBtn');
-          if(lb) lb.style.display='inline-flex';
-          document.body.classList.add('staff-mode');
-          const tt=$('topbarTitle');
-          if(tt) tt.textContent='Hi '+sf.name.split(' ')[0];
-          renderStaffPortal();
-          lucide.createIcons();
-          // Show switch account link
-          showSwitchAccountLink();
+          // Staff user trying to access admin panel - redirect
+          window.location.href = './';
+          return;
         }
       }, 1500);
     }
