@@ -5569,7 +5569,7 @@ function renderLeaveHistory(sfId,yr){
       <button class="btn btn-danger btn-sm" onclick="deletePaidLeave(${sfId},'${l.date}')">Remove</button>
     </div>`).join(''):'<div style="padding:12px;font-size:13px;color:var(--text-muted);">No paid leaves marked yet.</div>';
 }
-function markPaidLeave(sfId){
+async function markPaidLeave(sfId){
   const d=$('leaveDate').value;
   if(!d){toast('Select a date','err');return;}
   if(!S.leaves[sfId]) S.leaves[sfId]=[];
@@ -5584,7 +5584,7 @@ function markPaidLeave(sfId){
   const taken=S.leaves[sfId].filter(l=>l.year===yr).length;
   toast('Paid leave marked for '+fmtDate(d));
 }
-function deletePaidLeave(sfId,date){
+async function deletePaidLeave(sfId,date){
   if(!await showConfirm('Remove paid leave for '+fmtDate(date)+'?','Remove')) return;
   S.leaves[sfId]=(S.leaves[sfId]||[]).filter(l=>l.date!==date);
   saveData();
