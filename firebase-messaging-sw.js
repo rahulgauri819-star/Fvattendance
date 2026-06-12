@@ -12,9 +12,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background notifications
+// Handle FCM background messages
 messaging.onBackgroundMessage((payload) => {
-  console.log('Background message received:', payload);
+  console.log('FCM background message received:', payload);
   const { title, body } = payload.notification;
   self.registration.showNotification(title, {
     body,
@@ -23,4 +23,26 @@ messaging.onBackgroundMessage((payload) => {
     vibrate: [200, 100, 200],
     data: payload.data
   });
+});
+
+// Handle native Web Push messages (sent via webpush.sendNotification)
+self.addEventListener('push', (event) => {
+  console.log('Native push event received:', event);
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch(e) { payload = { title: 'Fotovision', body: event.data ? event.data.text() : '' }; }
+  const title = payload.title || 'Fotovision';
+  const options = {
+    body: payload.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    vibrate: [200, 100, 200],
+    data: payload.data || {}
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Optional: handle notification click
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow('/'));
 });
