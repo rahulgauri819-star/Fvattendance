@@ -152,8 +152,8 @@ body.staff-mode .sidebar{display:none;}
 body.staff-mode .main{margin-left:0;}
 body.staff-mode .hamburger{display:none!important;}
 body.staff-mode .page{padding:16px 16px 80px;}
-.staff-tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--surface);border-top:1px solid var(--border);z-index:200;padding:0 8px;padding-bottom:env(safe-area-inset-bottom);}
-body.staff-mode .staff-tab-bar{display:flex;}
+.staff-tab-bar{display:none;}
+body.staff-mode .staff-tab-bar{display:none;}
 .staff-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--text-muted);cursor:pointer;border-radius:var(--radius-sm);padding:8px 0;transition:.15s;}
 .staff-tab.active{color:var(--primary);}
 .staff-tab svg{width:20px;height:20px;}
@@ -1507,13 +1507,8 @@ window.submitLogin = function(){
 
   document.body.classList.add('staff-mode');
   $('topbarTitle').textContent='Hi '+sf.name.split(' ')[0];
-  $('hamburgerBtn').style.display='none';
-  // Staff mode: hide GPS hint
-  document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='none');
-  renderStaffPortal();
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  $('view-staff-portal').classList.add('active');
-  toast('Welcome, '+sf.name+'!');
+  // Staff user on admin page - redirect to staff portal
+  window.location.href = './';
 };
 
 window.logout = function(){

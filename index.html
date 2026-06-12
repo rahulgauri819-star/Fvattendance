@@ -927,7 +927,7 @@ const compBadge = c => c==='grover'
   : '<span class="badge badge-purple">Office</span>';
 
 // ===== ADMIN LOGIN =====
-function revealAdminLogin(){ $('adminLoginPanel').style.display='block'; setTimeout(()=>$('adminPanelPassword')?.focus(),50); }
+function revealAdminLogin(){ window.location.href='admin.html'; }
 function hideAdminLogin(){ $('adminLoginPanel').style.display='none'; $('adminPanelPassword').value=''; $('adminPanelError').style.display='none'; }
 function submitAdminPanel(){
   const e=$('adminPanelError'); e.style.display='none';
@@ -935,13 +935,9 @@ function submitAdminPanel(){
   if(!pw){e.textContent='Enter password.';e.style.display='block';return;}
   if(pw!==S.admin.password){e.textContent='Incorrect password.';e.style.display='block';return;}
   // Admin - redirect to admin panel
+  localStorage.setItem('fv_admin_redirect', '1');
   window.location.href='admin.html';
   return;
-  // Init push notifications for admin
-  if('serviceWorker' in navigator && 'Notification' in window){
-  }
-  toast('Welcome back, '+S.admin.name+'!');
-  go('dashboard',document.querySelector('.nav-item[onclick*="dashboard"]'));
 }
 
 // ===== STAFF LOGIN =====
