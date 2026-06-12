@@ -601,6 +601,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <button onclick="toggleDarkMode()" id="darkModeBtn" class="btn btn-ghost btn-sm" style="padding:6px;margin-right:4px;" title="Toggle dark mode">
         <svg id="darkIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
+      <button id="notifBtn" onclick="initPushNotifications()" title="Enable Push Notifications" style="display:none;background:none;border:1px solid #333;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:16px;">🔔</button>
       <button id="logoutBtn" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;color:#000!important;border-color:#333;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Logout
@@ -1502,6 +1503,7 @@ function submitAdminPanel(){
   S.currentUser={role:'admin',name:S.admin.name};
   $('loginScreen').style.display='none';
   $('logoutBtn').style.display='inline-flex';
+  if($('notifBtn')) $('notifBtn').style.display='inline-flex';
   $('sidebarAv').textContent=ini(S.admin.name);
   $('sidebarName').textContent=S.admin.name;
   $('sidebarRole').textContent='Administrator';
@@ -1594,6 +1596,7 @@ window.logout = function(){
   S.currentUser=null;
   $('loginScreen').style.display='flex';
   $('logoutBtn').style.display='none';
+  if($('notifBtn')) $('notifBtn').style.display='none';
   $('loginError').style.display='none';
   document.body.classList.remove('staff-mode');
   $('topbarTitle').textContent='Dashboard';
@@ -5771,22 +5774,49 @@ const VAPID_KEY = 'BBif1Dfg9R0_FfpHZ57DmXaOyKCcfXcrJSmY2ly2i4v-y-llZYvtksOayKsYB
 // ── FCM Push Notifications ────────────────────────────────
 async function initPushNotifications(){
   try {
+    if(!('serviceWorker' in navigator)){
+      console.log('Service workers not supported');
+      return;
+    }
+    if(!('Notification' in window)){
+      console.log('Notifications not supported');
+      return;
+    }
     // Register service worker
     const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    console.log('Service worker registered:', reg.scope);
     messaging.useServiceWorker(reg);
+    // Check current permission
+    if(Notification.permission === 'denied'){
+      toast('Notifications blocked — please enable in browser settings','err');
+      return;
+    }
     // Request permission
     const permission = await Notification.requestPermission();
-    if(permission !== 'granted'){ console.log('Notification permission denied'); return; }
-    // Get token
+    console.log('Notification permission:', permission);
+    if(permission !== 'granted'){
+      toast('Notification permission not granted','err');
+      return;
+    }
+    // Get FCM token
     const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
     if(token){
-      // Subscribe to admin-notifications topic via backend
       await firestore.collection('fcmTokens').doc(token).set({
-        token, role: 'admin', updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        token,
+        role: 'admin',
+        device: navigator.userAgent.slice(0,50),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      console.log('FCM token registered:', token.slice(0,20)+'...');
+      console.log('FCM token registered ✅');
+      toast('🔔 Push notifications enabled ✓');
+    } else {
+      console.log('No FCM token received');
+      toast('Could not get notification token','err');
     }
-  } catch(e){ console.log('FCM init error:', e.message); }
+  } catch(e){
+    console.error('Push init error:', e.message, e);
+    toast('Notification setup failed: '+e.message,'err');
+  }
 }
 
 // Sync a log to Firestore (called on check-in and check-out)
