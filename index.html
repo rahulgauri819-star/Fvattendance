@@ -5771,6 +5771,15 @@ const messaging = firebase.messaging();
 
 const VAPID_KEY = 'BBif1Dfg9R0_FfpHZ57DmXaOyKCcfXcrJSmY2ly2i4v-y-llZYvtksOayKsYBXjHvt0FleAD7lp_Aqj6i8X0s-s';
 
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const rawData=window.atob(base64);
+  const outputArray=new Uint8Array(rawData.length);
+  for(let i=0;i<rawData.length;++i) outputArray[i]=rawData.charCodeAt(i);
+  return outputArray;
+}
+
 // ── FCM Push Notifications ────────────────────────────────
 async function initPushNotifications(){
   try {
@@ -5793,7 +5802,6 @@ async function initPushNotifications(){
     if(permission !== 'granted'){
       toast('Notification permission not granted','err'); return;
     }
-    // Get FCM token — pass serviceWorkerRegistration directly
     const token = await messaging.getToken({
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: reg
