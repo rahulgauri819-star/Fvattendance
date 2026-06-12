@@ -1499,7 +1499,7 @@ function showSwitchAccountLink(){
   portal.appendChild(link);
 }
 function switchAccount(){
-  localStorage.removeItem('fv_remember');
+  fvClearRemember();
   logout();
 }
 function getStaffLoginId(sf){
@@ -1544,7 +1544,7 @@ window.submitLogin = function(){
   if(!sf){e.textContent='Phone number or password is incorrect.';e.style.display='block';return;}
   // Remember me - save login ID and password for auto-fill
   if($('rememberMe')&&$('rememberMe').checked){
-    localStorage.setItem('fv_remember',JSON.stringify({loginId:rawInput,pw:($('loginPassword').value||'').trim(),phone:sf.phone,sfPw:sf.password||'123'}));
+    fvSetRemember({loginId:rawInput,pw:($('loginPassword').value||'').trim(),phone:sf.phone,sfPw:sf.password||'123'});
   }
   S.currentUser={role:'staff',name:sf.name,staffId:sf.id};
   $('loginScreen').style.display='none';
@@ -1577,9 +1577,9 @@ window.logout = function(){
   document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='');
   // Re-fill Remember Me fields if saved
   try{
-    const saved=localStorage.getItem('fv_remember');
+    const saved=fvGetRemember();
     if(saved){
-      const parsed=JSON.parse(saved);
+      const parsed=saved;
       if(parsed.loginId&&$('loginPhone')) $('loginPhone').value=parsed.loginId;
       if(parsed.pw&&$('loginPassword')) $('loginPassword').value=parsed.pw;
       if($('rememberMe')) $('rememberMe').checked=true;
@@ -2449,9 +2449,9 @@ function submitStaff(){
     // If name changed, clear stale fv_remember so login ID updates
     if(oldName!==d.name){
       try{
-        const saved=localStorage.getItem('fv_remember');
+        const saved=fvGetRemember();
         if(saved){
-          const parsed=JSON.parse(saved);
+          const parsed=saved;
           // Check if this staff member's remember me uses old name as loginId
           if(parsed.loginId&&parsed.loginId.toLowerCase()===oldName.split(' ')[0].toLowerCase()){
             // Update loginId to new first name
@@ -2878,20 +2878,20 @@ function renderGroverDailyChart(logs, month){
     days[d].wts.push(wt);
     if(isDinner) days[d].dinner+=rate;
   });
-  const CHART_H=140;
+  const CHART_H=160;
   const maxVal=Math.max(...Object.values(days).map(d=>d.normal+d.dinner),1);
   const bars=Object.entries(days).map(([d,v])=>{
     const total=v.normal+v.dinner;
-    const normalH=total>0?Math.max(Math.round((v.normal/maxVal)*CHART_H),4):0;
-    const dinnerH=v.dinner>0?Math.max(Math.round((v.dinner/maxVal)*CHART_H),4):0;
+    const normalH=total>0?Math.max(Math.round((v.normal/maxVal)*CHART_H),6):0;
+    const dinnerH=v.dinner>0?Math.max(Math.round((v.dinner/maxVal)*CHART_H),6):0;
     const isToday=new Date().getDate()===parseInt(d)&&new Date().getMonth()+1===m&&new Date().getFullYear()===y;
-    const showLabel=parseInt(d)===1||parseInt(d)%5===0;
+    const showLabel=parseInt(d)===1||parseInt(d)%5===0||parseInt(d)===daysInMonth;
     return `<div class="daily-bar-wrap" onclick="showChartTooltip(${d},${total},${v.shifts},${v.dinner>0?1:0},'${month}')">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:${CHART_H}px;">
-        ${v.dinner>0?`<div class="daily-bar dinner" style="height:${dinnerH}px;${isToday?'filter:brightness(1.2);':''}"></div>`:''}
-        ${total>0?`<div class="daily-bar normal" style="height:${normalH}px;${isToday?'background:#2a5cd8;':''}"></div>`:'<div class="daily-bar-empty"></div>'}
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:${CHART_H}px;gap:0;">
+        ${v.dinner>0?`<div class="daily-bar dinner" style="height:${dinnerH}px;${isToday?'opacity:.85;':''}"></div>`:''}
+        ${total>0?`<div class="daily-bar normal" style="height:${normalH}px;${isToday?'background:#5BA3F5;':''}"></div>`:'<div class="daily-bar-empty"></div>'}
       </div>
-      <div style="height:1px;width:13px;background:var(--border);"></div>
+      <div class="daily-chart-baseline"></div>
       <div class="daily-bar-label" style="${isToday?'color:var(--primary);font-weight:700;':''}">${showLabel?d:''}</div>
     </div>`;
   }).join('');
@@ -2899,17 +2899,17 @@ function renderGroverDailyChart(logs, month){
   const totalShifts=Object.values(days).reduce((a,d)=>a+d.shifts,0);
   const dinnerCount=Object.values(days).filter(d=>d.dinner>0).length;
   el.innerHTML=`
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;flex-wrap:wrap;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);">Daily Sales — ${new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
-        <span style="width:10px;height:10px;background:#4d7fff;border-radius:2px;display:inline-block;"></span>Shift
-        <span style="width:10px;height:10px;background:#f5a623;border-radius:2px;display:inline-block;margin-left:4px;"></span>Dinner
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);">Daily Sales — ${new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-muted);">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#90C3F5;border-radius:3px;display:inline-block;"></span>Shift</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#FFB347;border-radius:3px;display:inline-block;"></span>Dinner</span>
       </div>
     </div>
-    <div class="daily-chart-wrap"><div class="daily-chart">${bars}</div></div>
+    <div class="daily-chart-wrap" style="background:var(--surface);border-radius:12px;padding:16px 8px 0;border:1px solid var(--border);"><div class="daily-chart">${bars}</div></div>
     <div id="chartTooltip" class="chart-tooltip"></div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">
-      ${totalRev>0?`Month Total: <strong style="color:var(--text);">&#8377;${totalRev.toLocaleString('en-IN')}</strong> · ${totalShifts} shifts · ${dinnerCount} dinner shifts`:'No confirmed billing data yet for this month.'}
+    <div style="font-size:12px;color:var(--text-muted);margin-top:10px;padding:0 2px;">
+      ${totalRev>0?`Month Total: <strong style="color:var(--text);">&#8377;${totalRev.toLocaleString('en-IN')}</strong> &nbsp;·&nbsp; ${totalShifts} shift${totalShifts!==1?'s':''} &nbsp;·&nbsp; ${dinnerCount} dinner shift${dinnerCount!==1?'s':''}`:'No confirmed billing data yet for this month.'}
     </div>`;
 }
 function showChartTooltip(day,total,shifts,hasDinner,month){
@@ -2936,9 +2936,9 @@ function logoutManager(){
   $('managerPortal').style.display='none';
   $('loginScreen').style.display='flex';
   try{
-    const saved=localStorage.getItem('fv_remember');
+    const saved=fvGetRemember();
     if(saved){
-      const parsed=JSON.parse(saved);
+      const parsed=saved;
       if(parsed.loginId&&$('loginPhone')) $('loginPhone').value=parsed.loginId;
       if(parsed.pw&&$('loginPassword')) $('loginPassword').value=parsed.pw;
     } else {
@@ -6014,9 +6014,9 @@ function init(){
   });
   // Auto-fill remember me fields
   try{
-    const saved=localStorage.getItem('fv_remember');
+    const saved=fvGetRemember();
     if(saved){
-      const parsed=JSON.parse(saved);
+      const parsed=saved;
       if(parsed.loginId&&$('loginPhone')) $('loginPhone').value=parsed.loginId;
       if(parsed.pw&&$('loginPassword')) $('loginPassword').value=parsed.pw;
       if($('rememberMe')){ $('rememberMe').checked=true; var box=$('rememberMeBox'); if(box){box.style.background='var(--primary)';box.style.borderColor='var(--primary)';box.innerHTML='<svg width=11 height=11 viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';} }
@@ -6024,7 +6024,7 @@ function init(){
   } catch(e){}
   // Auto-login check
   try{
-    const saved=localStorage.getItem('fv_remember');
+    const saved=fvGetRemember();
     if(saved){
       const {phone,pw}=JSON.parse(saved);
       // Wait for data to load then auto-login
@@ -6059,6 +6059,38 @@ function init(){
     }
   }, 30000);
 }
+// Remember Me helpers — dual storage (localStorage + cookie backup)
+function fvSetRemember(data){
+  try{ localStorage.setItem('fv_remember', JSON.stringify(data)); }catch(e){}
+  try{
+    const val=encodeURIComponent(JSON.stringify(data));
+    const exp=new Date(); exp.setFullYear(exp.getFullYear()+1);
+    document.cookie='fv_remember='+val+';expires='+exp.toUTCString()+';path=/;SameSite=Lax';
+  }catch(e){}
+}
+function fvGetRemember(){
+  try{
+    const ls=fvGetRemember();
+    if(ls) return JSON.parse(ls);
+  }catch(e){}
+  // Fallback: read from cookie
+  try{
+    const match=document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('fv_remember='));
+    if(match){
+      const val=decodeURIComponent(match.split('=').slice(1).join('='));
+      const parsed=JSON.parse(val);
+      // Restore to localStorage
+      try{ localStorage.setItem('fv_remember', JSON.stringify(parsed)); }catch(e){}
+      return parsed;
+    }
+  }catch(e){}
+  return null;
+}
+function fvClearRemember(){
+  try{ fvClearRemember(); }catch(e){}
+  try{ document.cookie='fv_remember=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Lax'; }catch(e){}
+}
+
 // Custom confirm/prompt replacements
 window.showConfirm = function(msg, okLabel='Delete'){
   return new Promise(resolve=>{
