@@ -533,7 +533,6 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <div id="adminPanelError" style="display:none;background:#fff0f0;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:500;"></div>
       <button style="background:#0d6efd;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;width:100%;" onclick="submitAdminPanel()">Sign In as Admin</button>
     </div>
-    <div style="text-align:center;margin-top:16px;"><a href="./" style="font-size:12px;color:rgba(255,255,255,.4);text-decoration:none;">← Staff Portal</a></div>
   </div>
 </div>
 
@@ -619,7 +618,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       </div>
       <div class="kpi-grid" id="kpiGrid"></div>
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-header"><span class="card-title">Staff Activity</span><div style="display:flex;align-items:center;gap:8px;"><input type="date" id="activityDatePicker" class="form-input" style="font-size:12px;padding:4px 8px;width:auto;" onchange="renderStatusBoard()" value=""><span class="badge badge-green" id="activeCount">0 active</span></div></div>
+        <div class="card-header"><span class="card-title">Staff Activity</span><div style="display:flex;align-items:center;gap:8px;"><input type="date" id="activityDatePicker" class="form-input" style="font-size:12px;padding:4px 8px;width:auto;" onchange="renderStatusBoard();renderDash();" value=""><span class="badge badge-green" id="activeCount">0 active</span></div></div>
         <div id="dashStaff"></div>
       </div>
       <!-- Grover Monthly Sales -->
@@ -1558,7 +1557,6 @@ window.submitLogin = function(){
   // Staff user on admin page - redirect
           window.location.href='./';
           return;
-          document.body.classList.add('staff-mode');
   $('topbarTitle').textContent='Hi '+sf.name.split(' ')[0];
   $('hamburgerBtn').style.display='none';
   // Staff mode: hide GPS hint
@@ -1571,11 +1569,13 @@ window.submitLogin = function(){
 
 window.logout = function(){
   S.currentUser=null;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const dv=$('view-dashboard'); if(dv) dv.classList.add('active');
+  document.body.classList.remove('staff-mode');
   $('loginScreen').style.display='flex';
   $('logoutBtn').style.display='none';
   if($('notifBtn')) $('notifBtn').style.display='none';
   $('loginError').style.display='none';
-  document.body.classList.remove('staff-mode');
   $('topbarTitle').textContent='Dashboard';
   $('hamburgerBtn').style.display='';
   document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='');
@@ -1770,7 +1770,7 @@ function renderStaffHistory(){
   lucide.createIcons();
 }
 
-function staffDeleteOwnLog(logId){
+async function staffDeleteOwnLog(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId);
   if(!l){toast('Log not found','err');return;}
@@ -1780,7 +1780,7 @@ function staffDeleteOwnLog(logId){
     renderStaffHistory();
     return;
   }
-  if(!confirm('Delete this check-in? This cannot be undone.')) return;
+  if(!await showConfirm('Delete this check-in? This cannot be undone.')) return;
   const idx=S.logs.findIndex(x=>x.id==logId);
   if(idx>=0) S.logs.splice(idx,1);
   saveData();
@@ -1840,15 +1840,19 @@ function openStaffLogs(sfId){
 function renderDash(){
   const td=today();
   $('dashDate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const tLogs=(S.logs||[]).filter(l=>l.date===td);
-  const active=tLogs.filter(l=>l.checkIn&&!l.checkOut).length;
-  const done=tLogs.filter(l=>l.checkIn&&l.checkOut).length;
+  const dp=$('activityDatePicker');
+  if(dp&&!dp.value) dp.value=td;
+  const viewDate=(dp&&dp.value)||td;
+  const tLogs=(S.logs||[]).filter(l=>l.date===viewDate);
+  const active=(S.logs||[]).filter(l=>l.date===td&&l.checkIn&&!l.checkOut).length;
+  const done=(S.logs||[]).filter(l=>l.date===td&&l.checkIn&&l.checkOut).length;
   $('kpiGrid').innerHTML=`
     <div class="kpi"><div class="kpi-label">Total Staff</div><div class="kpi-val" style="color:var(--primary)">${S.staff.filter(s=>s.status==='active').length}</div><div class="kpi-sub">active members</div></div>
     <div class="kpi"><div class="kpi-label">Active Today</div><div class="kpi-val" style="color:var(--success)">${active}</div><div class="kpi-sub">checked in now</div></div>
     <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${done}</div><div class="kpi-sub">checked out today</div></div>
     <div class="kpi"><div class="kpi-label">Total Logs</div><div class="kpi-val" style="color:var(--warning)">${S.logs.length}</div><div class="kpi-sub">all time</div></div>`;
   $('activeCount').textContent=active+' active';
+  const _actDp=$('activityDatePicker'); if(_actDp&&_actDp.value&&_actDp.value!==td){$('activeCount').textContent=(tLogs.filter(l=>l.checkIn&&!l.checkOut).length)+' active';}
 
   // All staff — sorted: on duty first, then done, then not in
   const allStaff=S.staff.filter(s=>s.status==='active');
@@ -2022,6 +2026,7 @@ function renderStatusBoard(){
     </div>`;
   };
   $('activeCount').textContent=onDuty.length+' active';
+  if(!$('statusGrid')) return;
   $('statusGrid').innerHTML=`
     <div>
       <div class="status-col-title"><span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;"></span> On Duty (${onDuty.length})</div>
@@ -2466,8 +2471,8 @@ function submitStaff(){
   else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];d.password=d.password||'123';S.staff.push(d);toast(name+' added');}
   closeM('sfModal');renderStaff();
 }
-function deleteStaff(id){
-  if(!confirm('Remove this staff member?')) return;
+async function deleteStaff(id){
+  if(!await showConfirm('Remove this staff member?','Remove')) return;
   S.staff=S.staff.filter(s=>s.id!==id);
   saveData();
   toast('Staff removed');renderStaff();
@@ -2568,9 +2573,9 @@ function viewSelfie(logId){
 }
 
 // ===== EXPORT CSV =====
-function deleteLog(id){
+async function deleteLog(id){
   id=parseInt(id);
-  if(!confirm('Delete this attendance record?')) return;
+  if(!await showConfirm('Delete this attendance record?')) return;
   const idx=S.logs.findIndex(l=>l.id==id);
   if(idx===-1){toast('Log not found','err');return;}
   S.logs.splice(idx,1);
@@ -2826,9 +2831,9 @@ function addRole(){
   if(S.roles.some(r=>r.toLowerCase()===val.toLowerCase())){toast('Role already exists','err');return;}
   S.roles.push(val); input.value=''; saveData(); renderSettings(); toast('"'+val+'" added');
 }
-function deleteRole(i){
+async function deleteRole(i){
   if(S.staff.some(s=>s.role===S.roles[i])){toast('Reassign staff first','err');return;}
-  if(!confirm('Delete role "'+S.roles[i]+'"?')) return;
+  if(!await showConfirm('Delete role "'+S.roles[i]+'"?')) return;
   S.roles.splice(i,1); saveData(); renderSettings(); toast('Role deleted');
 }
 function addWorkType(){
@@ -2837,8 +2842,8 @@ function addWorkType(){
   if(S.workTypes.some(w=>w.toLowerCase()===val.toLowerCase())){toast('Already exists','err');return;}
   S.workTypes.push(val); input.value=''; saveData(); renderSettings(); toast('"'+val+'" added');
 }
-function deleteWorkType(i){
-  if(!confirm('Delete "'+S.workTypes[i]+'"?')) return;
+async function deleteWorkType(i){
+  if(!await showConfirm('Delete "'+S.workTypes[i]+'"?')) return;
   S.workTypes.splice(i,1); saveData(); renderSettings(); toast('Deleted');
 }
 function saveStdHours(){
@@ -2974,8 +2979,8 @@ function addHardDiskFromSettings(){
   renderHardDisksList();
   toast('"'+name+'" added');
 }
-function deleteHardDisk(id){
-  if(!confirm('Remove this hard disk?')) return;
+async function deleteHardDisk(id){
+  if(!await showConfirm('Remove this hard disk?','Remove')) return;
   S.hardDisks=(S.hardDisks||[]).filter(d=>d.id!==id);
   saveData();
   renderHardDisksList();
@@ -3021,7 +3026,7 @@ function selectHd(name){
   $('hdDropdown').classList.remove('open');
   renderHdTags();
 }
-function removeHdTag(name){
+async function removeHdTag(name){
   window._hdSelected=window._hdSelected.filter(n=>n!==name);
   renderHdTags();
 }
@@ -3442,8 +3447,8 @@ function markUninformedLeave(sfId,date){
   renderStaffWiseReport();
   toast('Uninformed leave marked for '+fmtDate(date));
 }
-function removeUninformedLeave(sfId,date){
-  if(!confirm('Remove uninformed leave for '+fmtDate(date)+'?')) return;
+async function removeUninformedLeave(sfId,date){
+  if(!await showConfirm('Remove uninformed leave for '+fmtDate(date)+'?','Remove')) return;
   S.uninformedLeaves[sfId]=(S.uninformedLeaves[sfId]||[]).filter(l=>l.date!==date);
   saveData();
   renderStaffWiseReport();
@@ -3472,8 +3477,8 @@ function addFreelancerFromSettings(){
   renderFreelancersList();
   toast('"'+name+'" added');
 }
-function deleteFreelancer(id){
-  if(!confirm('Remove this freelancer?')) return;
+async function deleteFreelancer(id){
+  if(!await showConfirm('Remove this freelancer?','Remove')) return;
   S.freelancers=(S.freelancers||[]).filter(f=>f.id!==id);
   saveData();
   renderFreelancersList();
@@ -3680,8 +3685,8 @@ function editEventInline(gId,cId){
   _editCeremonyData={gId,cId};
   showEventFormPage(gId,cId);
 }
-function deleteEventInline(gId,cId){
-  if(!confirm('Delete this event?')) return;
+async function deleteEventInline(gId,cId){
+  if(!await showConfirm('Delete this event?')) return;
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
   g.ceremonies=(g.ceremonies||[]).filter(c=>c.id!==cId);
   saveData();
@@ -4331,16 +4336,16 @@ function saveCeremony(){
   // Go back to main page
   go('wedding-data',document.querySelector('[onclick*=wedding-data]'));
 }
-function deleteCeremony(gId,cId){
-  if(!confirm('Delete this ceremony/event?')) return;
+async function deleteCeremony(gId,cId){
+  if(!await showConfirm('Delete this ceremony/event?')) return;
   const g=(S.weddingGroups||[]).find(w=>w.id===gId); if(!g) return;
   g.ceremonies=(g.ceremonies||[]).filter(c=>c.id!==cId);
   saveData();
   renderWeddingGroupDetail();
   toast('Event deleted');
 }
-function deleteWeddingGroup(id){
-  if(!confirm('Delete this wedding group and all its events?')) return;
+async function deleteWeddingGroup(id){
+  if(!await showConfirm('Delete this wedding group and all its events?')) return;
   S.weddingGroups=(S.weddingGroups||[]).filter(g=>g.id!==id);
   saveData();
   renderDataManagement();
@@ -4920,11 +4925,11 @@ function renderBilling(){
 }
 
 // ── Billing Rate Editing ──────────────────────────────────
-function editBillingRate(overrideKey, currentRate){
-  const val=prompt('Enter custom rate (₹) for this entry:\n(Leave blank to reset to default)', currentRate||'');
+async function editBillingRate(overrideKey, currentRate){
+  const val=await showPrompt('Enter custom rate (₹)\n(Leave blank to reset to default)', currentRate||'');
   if(val===null) return;
   if(!S.groverPriceOverrides) S.groverPriceOverrides={};
-  if(val.trim()===''){
+  if(val.toString().trim()===''){
     delete S.groverPriceOverrides[overrideKey];
   } else {
     const n=parseInt(val.trim());
@@ -4982,8 +4987,8 @@ function saveManualBillingEntry(month){
 
 function editManualBillingEntry(month,id){ showAddManualEntryModal(month,id); }
 
-function deleteManualBillingEntry(month,id){
-  if(!confirm('Delete this manual entry?')) return;
+async function deleteManualBillingEntry(month,id){
+  if(!await showConfirm('Delete this manual entry?')) return;
   if(S.groverManualEntries&&S.groverManualEntries[month]){
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
   }
@@ -5106,7 +5111,30 @@ function _doExportBillingPDF(){
   <tbody>${tableRows}<tr class="total-row"><td colspan="${colHeaders.length-1}" style="text-align:right;">GRAND TOTAL</td><td style="text-align:right;">₹${grand.toLocaleString('en-IN')}</td></tr></tbody>
   </table>
   <p style="margin-top:16px;font-size:11px;color:#666;">Generated on ${new Date().toLocaleDateString('en-IN',{dateStyle:'long'})}</p>
-  </body></html>`;
+  <!-- CUSTOM CONFIRM MODAL -->
+<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div id="confirmModalMsg" style="font-size:16px;font-weight:600;margin-bottom:20px;line-height:1.4;"></div>
+    <div style="display:flex;gap:10px;">
+      <button id="confirmModalCancel" class="btn" style="flex:1;background:var(--surface2);justify-content:center;" onclick="window._confirmResolve(false)">Cancel</button>
+      <button id="confirmModalOk" class="btn btn-danger" style="flex:1;justify-content:center;" onclick="window._confirmResolve(true)">Delete</button>
+    </div>
+  </div>
+</div>
+<!-- CUSTOM PROMPT MODAL -->
+<div id="promptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div id="promptModalMsg" style="font-size:15px;font-weight:600;margin-bottom:12px;"></div>
+    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="number" placeholder="Enter amount (₹)">
+    <div style="display:flex;gap:10px;">
+      <button class="btn" style="flex:1;background:var(--surface2);justify-content:center;" onclick="window._promptResolve(null)">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="window._promptResolve($('promptModalInput').value)">OK</button>
+    </div>
+  </div>
+</div>
+
+
+</body></html>`;
 
   const pw=window.open('','_blank');
   pw.document.write(pdfHTML);
@@ -5522,7 +5550,7 @@ function markPaidLeave(sfId){
   if(S.leaves[sfId].some(l=>l.date===d)){toast('Already marked as paid leave','err');return;}
   // Check if staff has check-in that day
   const hasCI=S.logs.some(l=>l.staffId===sfId&&l.date===d);
-  if(hasCI&&!confirm('Staff has a check-in on this date. Mark as paid leave anyway?')) return;
+  if(hasCI&&!await showConfirm('Staff has a check-in on this date. Mark as paid leave anyway?','Mark Leave')) return;
   S.leaves[sfId].push({date:d,year:yr});
   saveData();
   renderLeaveHistory(sfId,yr);
@@ -5530,7 +5558,7 @@ function markPaidLeave(sfId){
   toast('Paid leave marked for '+fmtDate(d));
 }
 function deletePaidLeave(sfId,date){
-  if(!confirm('Remove paid leave for '+fmtDate(date)+'?')) return;
+  if(!await showConfirm('Remove paid leave for '+fmtDate(date)+'?','Remove')) return;
   S.leaves[sfId]=(S.leaves[sfId]||[]).filter(l=>l.date!==date);
   saveData();
   const yr=new Date(date+'T00:00:00').getFullYear();
@@ -6017,12 +6045,12 @@ function init(){
           // Staff user on admin page - redirect
           window.location.href='./';
           return;
-          document.body.classList.add('staff-mode');
           const tt=$('topbarTitle');
           if(tt) tt.textContent='Hi '+sf.name.split(' ')[0];
+          document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+          $('view-staff-portal').classList.add('active');
           renderStaffPortal();
           lucide.createIcons();
-          // Show switch account link
           showSwitchAccountLink();
         }
       }, 1500);
@@ -6036,7 +6064,54 @@ function init(){
     }
   }, 30000);
 }
+// Custom confirm/prompt replacements
+window.showConfirm = function(msg, okLabel='Delete'){
+  return new Promise(resolve=>{
+    window._confirmResolve=(val)=>{
+      $('confirmModal').style.display='none';
+      resolve(val);
+    };
+    $('confirmModalMsg').textContent=msg;
+    $('confirmModalOk').textContent=okLabel;
+    $('confirmModal').style.display='flex';
+  });
+};
+window.showPrompt = function(msg, defaultVal=''){
+  return new Promise(resolve=>{
+    window._promptResolve=(val)=>{
+      $('promptModal').style.display='none';
+      resolve(val);
+    };
+    $('promptModalMsg').textContent=msg;
+    $('promptModalInput').value=defaultVal||'';
+    $('promptModal').style.display='flex';
+    setTimeout(()=>$('promptModalInput').focus(),100);
+  });
+};
 init();
 </script>
+<!-- CUSTOM CONFIRM MODAL -->
+<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div id="confirmModalMsg" style="font-size:16px;font-weight:600;margin-bottom:20px;line-height:1.4;"></div>
+    <div style="display:flex;gap:10px;">
+      <button id="confirmModalCancel" class="btn" style="flex:1;background:var(--surface2);justify-content:center;" onclick="window._confirmResolve(false)">Cancel</button>
+      <button id="confirmModalOk" class="btn btn-danger" style="flex:1;justify-content:center;" onclick="window._confirmResolve(true)">Delete</button>
+    </div>
+  </div>
+</div>
+<!-- CUSTOM PROMPT MODAL -->
+<div id="promptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div id="promptModalMsg" style="font-size:15px;font-weight:600;margin-bottom:12px;"></div>
+    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="number" placeholder="Enter amount (₹)">
+    <div style="display:flex;gap:10px;">
+      <button class="btn" style="flex:1;background:var(--surface2);justify-content:center;" onclick="window._promptResolve(null)">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="window._promptResolve($('promptModalInput').value)">OK</button>
+    </div>
+  </div>
+</div>
+
+
 </body>
 </html>
