@@ -5356,7 +5356,7 @@ function init(){
     }
   }).then(()=>{
     hideLoadingScreen();
-    renderDash();
+    if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal(); else renderDash();
     // Listen for real-time updates from other devices
     db.ref('appData').on('value', snap=>{
       const data = snap.val();
@@ -5383,16 +5383,13 @@ function init(){
       const activeView = document.querySelector('.view.active');
       if(activeView){
         const vid = activeView.id.replace('view-','');
-        if(vid==='dashboard') renderDash();
-        else if(vid==='staff') renderStaff();
-        else if(vid==='logs') renderLogs();
-        else if(vid==='reports') renderReports();
+        if(vid==='staff-portal') renderStaffPortal();
       }
     });
   }).catch(e=>{
     hideLoadingScreen();
     toast('Could not connect to database. Working offline.','err');
-    renderDash();
+    if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
   });
   // Auto-fill remember me fields
   try{
