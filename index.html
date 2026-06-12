@@ -183,7 +183,7 @@ body.staff-mode .staff-tab-bar{display:flex;}
 .btn-success:hover{opacity:.9;}
 .btn-danger{background:var(--danger-light);color:var(--danger);}
 .btn-danger:hover{opacity:.85;}
-.btn-outline{background:#fff;color:var(--text);border-color:var(--border);}
+.btn-outline{background:var(--surface);color:var(--text);border-color:var(--border);}
 .btn-outline:hover{background:var(--surface2);}
 .btn-ghost{color:var(--text-muted);}
 .btn-ghost:hover{background:var(--surface2);color:var(--text);}
@@ -195,7 +195,7 @@ body.staff-mode .staff-tab-bar{display:flex;}
 .form-group{display:flex;flex-direction:column;gap:6px;}
 .form-label{font-size:13px;font-weight:600;color:var(--text);}
 .form-label .req{color:var(--danger);}
-.form-input,.form-select,.form-textarea{padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;font-size:14px;width:100%;transition:.15s;}
+.form-input,.form-select,.form-textarea{padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);font-size:14px;width:100%;transition:.15s;}
 .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(13,110,253,.12);}
 .form-textarea{resize:vertical;min-height:72px;}
 .form-hint{font-size:12px;color:var(--text-muted);}
@@ -232,13 +232,13 @@ body.staff-mode .staff-tab-bar{display:flex;}
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:0;opacity:0;pointer-events:none;transition:.2s;}
 .modal-bg.open{opacity:1;pointer-events:all;}
-.modal{background:#fff;border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;transform:translateY(40px);transition:.2s;}
+.modal{background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:92dvh;overflow-y:auto;transform:translateY(40px);transition:.2s;}
 .modal-bg.open .modal{transform:translateY(0);}
 @media(min-width:600px){
   .modal-bg{align-items:center;padding:16px;}
   .modal{border-radius:var(--radius-lg);max-height:92dvh;}
 }
-.modal-header{padding:16px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;}
 .modal-title{font-size:15px;font-weight:700;}
 .modal-body{padding:20px;display:flex;flex-direction:column;gap:16px;}
 .modal-footer{padding:14px 20px;border-top:1px solid var(--divider);display:flex;justify-content:flex-end;gap:10px;}
@@ -275,7 +275,7 @@ body.staff-mode .staff-tab-bar{display:flex;}
 
 /* COMPANY CARDS */
 .company-cards-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
-.company-card{border:2px solid var(--border);border-radius:var(--radius);padding:14px 8px;cursor:pointer;transition:.15s;text-align:center;background:#fff;}
+.company-card{border:2px solid var(--border);border-radius:var(--radius);padding:14px 8px;cursor:pointer;transition:.15s;text-align:center;background:var(--surface);}
 .company-card:hover{border-color:var(--primary);background:var(--primary-light);}
 .company-card.selected-grover{border-color:#0d6efd;background:var(--primary-light);}
 .company-card.selected-wedding{border-color:var(--wedding-color);background:var(--wedding-light);}
@@ -305,7 +305,7 @@ body.staff-mode .staff-tab-bar{display:flex;}
 /* TOAST */
 .toast-wrap{position:fixed;bottom:80px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:999;pointer-events:none;}
 body:not(.staff-mode) .toast-wrap{bottom:20px;}
-.toast{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;max-width:300px;pointer-events:auto;animation:toastIn .2s ease;}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;max-width:300px;pointer-events:auto;animation:toastIn .2s ease;}
 .toast svg{width:15px;height:15px;flex-shrink:0;}
 .toast-ok{border-left:3px solid var(--success);}
 .toast-err{border-left:3px solid var(--danger);}
@@ -641,7 +641,6 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <div><h1 class="page-title">Dashboard</h1><p class="page-sub" id="dashDate"></p></div>
         <button class="btn btn-outline hide-mobile" onclick="go('logs',document.querySelector('[onclick*=logs]'))"><i data-lucide="clipboard-list"></i> View Logs</button>
       </div>
-      <div class="kpi-grid" id="kpiGrid"></div>
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header"><span class="card-title">Staff Activity</span><div style="display:flex;align-items:center;gap:8px;"><input type="date" id="activityDatePicker" class="form-input" style="font-size:12px;padding:4px 8px;width:auto;" onchange="renderStatusBoard();renderDash();" value=""><span class="badge badge-green" id="activeCount">0 active</span></div></div>
         <div id="dashStaff"></div>
@@ -1349,6 +1348,13 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label">GPS Location <span style="color:var(--danger)">*</span></label>
+      <div id="coGpsBadge" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:var(--surface2);" onclick="captureCoGps()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="coGpsStatus">Tap to capture GPS</span>
+      </div>
+    </div>
+    <div class="form-group">
       <label class="form-label">Check-Out Time</label>
       <input class="form-input" type="text" id="coTime" readonly style="background:var(--surface2);">
       <div class="form-hint">Auto-captured</div>
@@ -1758,7 +1764,8 @@ function renderStaffHistory(){
         const durMins=ciTime&&coTime?dur(ciTime,coTime):null;
         const showDur=isOffice&&durMins!==null&&durMins<480;
         const durStr=showDur?fmtDur(durMins):'';
-        const canDelete=l.createdAt&&(nowMs-l.createdAt)<30*60*1000;
+        const checkoutTime=l.checkOut?(() => { const [h,m]=l.checkOut.split(':').map(Number); const d=new Date(); d.setHours(h,m,0,0); return d.getTime(); })():null;
+        const canDelete=(l.createdAt&&(nowMs-l.createdAt)<30*60*1000)||(checkoutTime&&(nowMs-checkoutTime)<30*60*1000);
         const prefix=li===0?`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">${dayLabel}</div>`:'';
         rows+=`<div class="history-present-row" style="padding:${li===0?'14px 16px 8px':'4px 16px 8px'};border-bottom:${li===dayLogs.length-1?'1px solid var(--divider)':'none'};background:#f0fff4;">
           ${prefix}
@@ -1799,7 +1806,10 @@ async function staffDeleteOwnLog(logId){
   const l=S.logs.find(x=>x.id==logId);
   if(!l){toast('Log not found','err');return;}
   // Double-check 30 min window
-  if(!l.createdAt||(Date.now()-l.createdAt)>=30*60*1000){
+  const nowMs2=Date.now();
+  const coT=l.checkOut?(() => { const [h,m]=l.checkOut.split(':').map(Number); const d=new Date(); d.setHours(h,m,0,0); return d.getTime(); })():null;
+  const withinWindow=(l.createdAt&&(nowMs2-l.createdAt)<30*60*1000)||(coT&&(nowMs2-coT)<30*60*1000);
+  if(!withinWindow){
     toast('Delete window expired (30 min)','err');
     renderStaffHistory();
     return;
@@ -1872,11 +1882,6 @@ function renderDash(){
   const tLogs=(S.logs||[]).filter(l=>l.date===viewDate);
   const active=(S.logs||[]).filter(l=>l.date===td&&l.checkIn&&!l.checkOut).length;
   const done=(S.logs||[]).filter(l=>l.date===td&&l.checkIn&&l.checkOut).length;
-  $('kpiGrid').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Total Staff</div><div class="kpi-val" style="color:var(--primary)">${S.staff.filter(s=>s.status==='active').length}</div><div class="kpi-sub">active members</div></div>
-    <div class="kpi"><div class="kpi-label">Active Today</div><div class="kpi-val" style="color:var(--success)">${active}</div><div class="kpi-sub">checked in now</div></div>
-    <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${done}</div><div class="kpi-sub">checked out today</div></div>
-    <div class="kpi"><div class="kpi-label">Total Logs</div><div class="kpi-val" style="color:var(--warning)">${S.logs.length}</div><div class="kpi-sub">all time</div></div>`;
   $('activeCount').textContent=active+' active';
   // Update date label if viewing different date
   const _actDp=$('activityDatePicker'); if(_actDp&&_actDp.value&&_actDp.value!==td){$('activeCount').textContent=(tLogs.filter(l=>l.checkIn&&!l.checkOut).length)+' active';}
@@ -2301,10 +2306,16 @@ function openCheckoutModal(staffId){
   const log=S.logs.find(l=>l.staffId===staffId&&l.date===td&&l.checkIn&&!l.checkOut);
   if(!log){toast('No active check-in found','err');return;}
   S.coLogId=log.id;
+  S.coGps=null; S.coGpsArea='';
   const sf=getSf(staffId);
   $('coStaffName').textContent=sf?sf.name:'';
   $('coTime').value=nowTime();
   $('coNotes').value='';
+  // Reset GPS status
+  if($('coGpsStatus')) $('coGpsStatus').textContent='Tap to capture GPS';
+  if($('coGpsBadge')) $('coGpsBadge').style.borderColor='var(--border)';
+  // Auto-capture GPS on open
+  captureCoGps();
   $('coCopyName').value=''; $('coCopyPhone').value='';
   $('coOfficeWarning').style.display='none';
   // Office: check hours
@@ -2363,9 +2374,34 @@ function toggleWtChip(i,wt){
   }
 }
 
+function captureCoGps(){
+  const badge=$('coGpsBadge'), status=$('coGpsStatus');
+  if(!badge||!status) return;
+  status.textContent='Capturing GPS...';
+  badge.style.borderColor='var(--warning)';
+  if(!navigator.geolocation){ S.coGps={lat:28.6139,lng:77.2090}; status.textContent='GPS Captured ✓'; badge.style.borderColor='var(--success)'; return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    S.coGps={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    status.textContent='GPS Captured ✓';
+    badge.style.borderColor='var(--success)';
+    // Reverse geocode
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${S.coGps.lat}&lon=${S.coGps.lng}&format=json`)
+      .then(r=>r.json()).then(a=>{
+        S.coGpsArea=[a.address.neighbourhood||a.address.suburb||a.address.village,a.address.city||a.address.town||a.address.county].filter(Boolean).join(', ');
+        if(S.coGpsArea) status.textContent='📍 '+S.coGpsArea;
+      }).catch(()=>{});
+  }, err=>{
+    // Fallback
+    S.coGps={lat:28.6139,lng:77.2090};
+    status.textContent='GPS Captured ✓ (fallback)';
+    badge.style.borderColor='var(--success)';
+  }, {timeout:10000, enableHighAccuracy:true});
+}
+
 function submitCheckout(){
   const log=S.logs.find(l=>l.id==S.coLogId);
   if(!log){toast('Log not found','err');return;}
+  if(!S.coGps){toast('Please capture GPS location first','err');captureCoGps();return;}
   if(log.company!=='office'){
     if(log.company==='grover'){
       // Preserve work types from check-in
@@ -2398,6 +2434,8 @@ function submitCheckout(){
   // Midnight crossing: if checkout < checkin, it's next day but log stays on checkin date
   log.checkOut=$('coTime').value;
   log.coNotes=$('coNotes').value.trim();
+  // Save checkout GPS
+  if(S.coGps){ log.coGpsLat=S.coGps.lat; log.coGpsLng=S.coGps.lng; log.coGpsArea=S.coGpsArea||''; }
   closeM('coModal');
   const sf=getSf(log.staffId);
   const d=dur(log.checkIn,log.checkOut);
@@ -2583,10 +2621,23 @@ function viewGps(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId); if(!l||!l.gpsLat) return;
   const sf=getSf(l.staffId);
+  const coGpsSection=l.coGpsLat?`
+    <div style="margin-top:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px;">🔴 Check-Out GPS</div>
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;">
+        <div><strong>GPS:</strong> ${l.coGpsLat.toFixed(5)}, ${l.coGpsLng.toFixed(5)}</div>
+        ${l.coGpsArea?`<div style="margin-top:6px;padding:8px;background:#fff3cd;border-radius:var(--radius-sm);"><div style="font-size:11px;color:var(--text-muted);">📍 AREA</div><div style="font-weight:700;color:#856404;font-size:14px;">${l.coGpsArea}</div></div>`:''}
+      </div>
+      <a href="https://www.google.com/maps?q=${l.coGpsLat},${l.coGpsLng}" target="_blank" rel="noopener" class="btn btn-outline w-full" style="justify-content:center;margin-top:8px;font-size:13px;">Open Check-Out in Maps</a>
+    </div>`:'';
   $('gpsModalBody').innerHTML=`<div style="display:flex;flex-direction:column;gap:12px;">
     <div style="display:flex;align-items:center;gap:10px;"><div class="av" style="background:${sf.color};">${ini(sf.name)}</div><div><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)}</div></div></div>
-    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;"><div><strong>Venue:</strong> ${l.venue}</div><div style="margin-top:6px;"><strong>GPS:</strong> ${l.gpsLat.toFixed(5)}, ${l.gpsLng.toFixed(5)}</div>${l.gpsArea?`<div style="margin-top:6px;padding:8px;background:var(--primary-light);border-radius:var(--radius-sm);"><div style="font-size:11px;color:var(--text-muted);">📍 AREA</div><div style="font-weight:700;color:var(--primary);font-size:14px;">${l.gpsArea}</div></div>`:''} ${l.gpsAddr?`<div style="margin-top:4px;"><strong>Location:</strong> ${l.gpsAddr}</div>`:''}</div>
-    <a href="https://www.google.com/maps?q=${l.gpsLat},${l.gpsLng}" target="_blank" rel="noopener" class="btn btn-primary w-full" style="justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Open in Google Maps</a>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px;">🟢 Check-In GPS</div>
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;"><div><strong>Venue:</strong> ${l.venue}</div><div style="margin-top:6px;"><strong>GPS:</strong> ${l.gpsLat.toFixed(5)}, ${l.gpsLng.toFixed(5)}</div>${l.gpsArea?`<div style="margin-top:6px;padding:8px;background:var(--primary-light);border-radius:var(--radius-sm);"><div style="font-size:11px;color:var(--text-muted);">📍 AREA</div><div style="font-weight:700;color:var(--primary);font-size:14px;">${l.gpsArea}</div></div>`:''}</div>
+      <a href="https://www.google.com/maps?q=${l.gpsLat},${l.gpsLng}" target="_blank" rel="noopener" class="btn btn-primary w-full" style="justify-content:center;margin-top:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Open Check-In in Maps</a>
+    </div>
+    ${coGpsSection}
   </div>`;
   openM('gpsModal');
 }
@@ -2938,7 +2989,7 @@ function renderGroverDailyChart(logs, month){
         <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#FFB347;border-radius:3px;display:inline-block;"></span>Dinner</span>
       </div>
     </div>
-    <div class="daily-chart-wrap" style="background:var(--surface);border-radius:12px;padding:16px 8px 0;border:1px solid var(--border);"><div class="daily-chart">${bars}</div></div>
+    <div class="daily-chart-wrap" style="background:var(--surface);border-radius:12px;padding:16px 4px 0;border:1px solid var(--border);"><div class="daily-chart" style="gap:0;">${bars}</div></div>
     <div id="chartTooltip" class="chart-tooltip"></div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:10px;padding:0 2px;">
       ${totalRev>0?`Month Total: <strong style="color:var(--text);">&#8377;${totalRev.toLocaleString('en-IN')}</strong> &nbsp;·&nbsp; ${totalShifts} shift${totalShifts!==1?'s':''} &nbsp;·&nbsp; ${dinnerCount} dinner shift${dinnerCount!==1?'s':''}`:'No confirmed billing data yet for this month.'}
@@ -4865,7 +4916,9 @@ function renderBilling(){
     ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=`<tr><td colspan="11"><div class="empty"><p>No billable entries in ${monthLabel}. Use "+ Add Entry" to add manual items.</p></div></td></tr>`;});
   } else {
     const billingHTML=entries.map((e,idx)=>{
-      const amtStr=e.rate===null?'<span style="color:var(--text-faint);">TBD</span>':e.rate===undefined?'<span style="color:var(--text-faint);">—</span>':'₹'+e.rate.toLocaleString('en-IN');
+      const _pbOv=e.wt&&e.wt.toLowerCase()==='photobooth'&&S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null?S.groverPriceOverrides[e.overrideKey]:null;
+      const _effRate=(_pbOv!=null)?_pbOv:e.rate;
+      const amtStr=_effRate===null?'<span style="color:var(--text-faint);">—</span>':_effRate===undefined?'<span style="color:var(--text-faint);">—</span>':'₹'+_effRate.toLocaleString('en-IN');
       if(e.isManual){
         const me=e.manualEntry;
         return `<tr style="background:var(--primary-light);">
@@ -4880,7 +4933,11 @@ function renderBilling(){
         </tr>`;
       }
       const sf=e.sf;
-      const rateDisplay=e.rate!=null?`<span onclick="editBillingRate('${e.overrideKey}',${e.rate||0})" title="Click to edit rate" style="cursor:pointer;border-bottom:1px dashed var(--text-muted);">₹${e.rate.toLocaleString('en-IN')}</span>`:'<span style="color:var(--text-faint);">TBD</span>';
+      const isPhotobooth=e.wt&&e.wt.toLowerCase()==='photobooth';
+      const pbOverride=S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null?S.groverPriceOverrides[e.overrideKey]:null;
+      const rateDisplay=isPhotobooth
+        ?`<input type="number" min="0" placeholder="Enter ₹" value="${pbOverride||''}" style="width:90px;border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:13px;background:var(--surface);color:var(--text);" onchange="setPbRate('${e.overrideKey}',this.value)">`
+        :e.rate!=null?`<span onclick="editBillingRate('${e.overrideKey}',${e.rate||0})" title="Click to edit rate" style="cursor:pointer;border-bottom:1px dashed var(--text-muted);">₹${e.rate.toLocaleString('en-IN')}</span>`:'<span style="color:var(--text-faint);">TBD</span>';
       return `<tr class="${e.isDinner?'billing-double-row':''}">
         <td style="font-size:12px;color:var(--text-muted);">${e.rowNum}</td>
         <td style="font-size:12px;white-space:nowrap;">${fmtDate(e.log.date)}</td>
@@ -4952,6 +5009,18 @@ function renderBilling(){
 }
 
 // ── Billing Rate Editing ──────────────────────────────────
+function setPbRate(overrideKey, val){
+  if(!S.groverPriceOverrides) S.groverPriceOverrides={};
+  const n=parseInt(val);
+  if(val===''||isNaN(n)){
+    delete S.groverPriceOverrides[overrideKey];
+  } else {
+    S.groverPriceOverrides[overrideKey]=n;
+  }
+  saveData();
+  renderBilling();
+  toast('Photobooth rate saved');
+}
 async function editBillingRate(overrideKey, currentRate){
   const val=await showPrompt('Enter custom rate (₹)\n(Leave blank to reset to default)', currentRate||'');
   if(val===null) return;
@@ -5945,7 +6014,7 @@ function showLoadingScreen(msg){
   if(!el){
     el = document.createElement('div');
     el.id = 'fbLoadingScreen';
-    el.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Inter,sans-serif;';
+    el.style.cssText = 'position:fixed;inset:0;background:var(--surface);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Inter,sans-serif;';
     el.innerHTML = '<div style="width:48px;height:48px;border:4px solid #dbeafe;border-top-color:#0d6efd;border-radius:50%;animation:spin 1s linear infinite;"></div><div style="font-size:15px;color:#6c757d;" id="fbLoadingMsg">Loading...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
     document.body.appendChild(el);
   }
