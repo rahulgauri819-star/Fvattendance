@@ -1589,6 +1589,10 @@ window.submitLogin = function(){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   if($('view-staff-portal')) $('view-staff-portal').classList.add('active');
   renderStaffPortal();
+  // Fallback re-render after data loads
+  setTimeout(()=>{
+    if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
+  }, 800);
   toast('Welcome, '+sf.name+'!');
 };
 
@@ -6120,7 +6124,7 @@ function init(){
     }
   }).then(()=>{
     hideLoadingScreen();
-    renderDash();
+    if(!S.currentUser||S.currentUser.role==='admin') renderDash();
     // Listen for real-time updates from other devices
     db.ref('appData').on('value', snap=>{
       const data = snap.val();
@@ -6147,10 +6151,11 @@ function init(){
       const activeView = document.querySelector('.view.active');
       if(activeView){
         const vid = activeView.id.replace('view-','');
-        if(vid==='dashboard') renderDash();
+        if(vid==='dashboard'&&S.currentUser&&S.currentUser.role==='admin') renderDash();
         else if(vid==='staff') renderStaff();
         else if(vid==='logs') renderLogs();
         else if(vid==='reports') renderReports();
+        else if(vid==='staff-portal'&&S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
       }
     });
   }).catch(e=>{
