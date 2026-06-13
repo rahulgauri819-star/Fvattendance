@@ -6131,7 +6131,7 @@ function init(){
   try{
     const saved=fvGetRemember();
     if(saved){
-      const {phone,pw}=JSON.parse(saved);
+      const {phone,pw}=typeof saved==="string"?JSON.parse(saved):saved;
       // Wait for data to load then auto-login
       setTimeout(()=>{
         if(S.currentUser) return; // already logged in
