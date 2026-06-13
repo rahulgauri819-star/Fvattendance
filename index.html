@@ -2436,12 +2436,9 @@ function submitCheckout(){
   closeM('coModal');
   const sf=getSf(log.staffId);
   const d=dur(log.checkIn,log.checkOut);
-  const _coName=sf?sf.name:'Staff';
-  const _coCo=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
-  toast(_coName+' checked out — '+fmtDur(d));
+  toast((sf?sf.name:'Staff')+' checked out — '+fmtDur(d));
   saveData();
   syncLogToFirestore(log);
-  sendTelegramNotification(`🔴 <b>Check-Out</b>\n👤 ${_coName}\n🏢 ${_coCo} · ${log.venue||'Office'}\n⏰ ${log.checkIn} → ${log.checkOut} · ${fmtDur(d)}`);
   if(isStaffUser()) renderStaffPortal(); else {renderStatusBoard();renderDash();}
 }
 
@@ -6190,25 +6187,6 @@ function fvGetRemember(){
 function fvClearRemember(){
   try{ fvClearRemember(); }catch(e){}
   try{ document.cookie='fv_remember=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Lax'; }catch(e){}
-}
-
-
-// Telegram Bot Notifications
-const TG_TOKEN = '8850461310:AAEpMuaDf2hAVmGDYBnesEit9iTrUOHWDOM';
-const TG_CHAT_ID = '5848142759';
-
-async function sendTelegramNotification(message) {
-  try {
-    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        chat_id: TG_CHAT_ID,
-        text: message,
-        parse_mode: 'HTML'
-      })
-    });
-  } catch(e) { console.log('Telegram notification failed:', e); }
 }
 
 // Custom confirm/prompt replacements
