@@ -6079,8 +6079,8 @@ function init(){
     const data = snap.val();
     if(data){
       // Merge Firebase data into S
-      if(data.staff) S.staff = data.staff;
-      if(data.logs) S.logs = data.logs;
+      if(data.staff) S.staff = data.staff.filter(Boolean);
+      if(data.logs) S.logs = data.logs.filter(Boolean);
       if(data.nId) S.nId = data.nId;
       if(data.roles) S.roles = data.roles;
       if(data.workTypes) S.workTypes = data.workTypes;
@@ -6090,12 +6090,11 @@ function init(){
       // Cleanup: remove ghost grover logs with no checkout from past dates
       if(data.logs){
         const todayD=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-        data.logs=data.logs.filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
+        data.logs=data.logs.filter(Boolean).filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
       }
-      // One-time cleanup: remove ghost logs (grover logs with no checkout older than today)
       if(data.logs){
         const todayD=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-        data.logs=data.logs.filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
+        data.logs=data.logs.filter(Boolean).filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
       }
       if(data.groverManualEntries) S.groverManualEntries = data.groverManualEntries;
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
@@ -6132,8 +6131,8 @@ function init(){
       // Only update if not currently in a modal (to avoid disrupting active forms)
       const anyModalOpen = document.querySelector('.modal-bg.open');
       if(anyModalOpen) return;
-      if(data.staff) S.staff = data.staff;
-      if(data.logs) S.logs = data.logs;
+      if(data.staff) S.staff = data.staff.filter(Boolean);
+      if(data.logs) S.logs = data.logs.filter(Boolean);
       if(data.nId) S.nId = data.nId;
       if(data.leaves) S.leaves = data.leaves;
       if(data.medicalLeaves) S.medicalLeaves = data.medicalLeaves;
