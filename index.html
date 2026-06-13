@@ -601,7 +601,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       <button onclick="toggleDarkMode()" id="darkModeBtn" class="btn btn-ghost btn-sm" style="padding:6px;margin-right:4px;" title="Toggle dark mode">
         <svg id="darkIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
-      <button id="logoutBtn" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;color:#000!important;border-color:var(--text);">
+      <button id="logoutBtn" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;color:#000!important;border-color:#333;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Logout
       </button>
@@ -726,6 +726,12 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 
       <!-- STAFF REPORT TAB -->
       <div id="repStaffTab">
+        <!-- Duty Breakdown -->
+        <div class="card mb-4">
+          <div class="card-header"><span class="card-title">Duty Breakdown</span></div>
+          <div class="card-body" id="companyReport"></div>
+        </div>
+
         <!-- Staff-wise Report -->
         <div class="card mb-4">
           <div class="card-header">
@@ -1293,7 +1299,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
   </div>
   <div class="modal-body">
     <!-- Office duty warning -->
-    <div id="coOfficeWarning" style="display:none;background:var(--surface)3cd;border:1px solid #ffe69c;color:#664d03;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;font-weight:500;">
+    <div id="coOfficeWarning" style="display:none;background:#fff3cd;border:1px solid #ffe69c;color:#664d03;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;font-weight:500;">
       ⚠️ 8 hours is mandatory for full attendance. You are checking out early.
     </div>
     <!-- Work types -->
@@ -1764,7 +1770,7 @@ function renderStaffHistory(){
         rows+=`<div class="history-present-row" style="padding:${li===0?'14px 16px 8px':'4px 16px 8px'};border-bottom:${li===dayLogs.length-1?'1px solid var(--divider)':'none'};background:#f0fff4;">
           ${prefix}
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text);">
+            <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#333;">
               ${ciTime?`<span>⏰ <strong>${ciTime}</strong></span><span>→</span><span>⏰ <strong>${coTime||'—'}</strong></span>${showDur?`<span style="opacity:.6;color:var(--danger);">· ${durStr}</span>`:''}`:''}
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
@@ -2598,7 +2604,7 @@ function renderLogs(){
       <td>${l.checkOut?'<span class="badge badge-gray">'+l.checkOut+'</span>':'<span class="badge badge-orange">Active</span>'}</td>
       <td style="font-size:12px;">${fmtDur(d)}</td>
       <td style="font-size:12px;max-width:120px;" class="truncate">${wt}</td>
-      <td>${(l.selfieUrl||(l.selfie&&l.selfie!=='[photo]'))?`<img src="${l.selfieUrl||l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
+      <td>${l.selfie?`<img src="${l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
       <td>${l.gpsLat?`<button class="badge badge-green" style="cursor:pointer;border:none;" onclick="viewGps(${l.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.gpsArea||'View'}</button>`:'<span class="text-muted text-xs">—</span>'}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit">✏️</button>
@@ -2620,7 +2626,7 @@ function viewGps(logId){
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px;">🔴 Check-Out GPS</div>
       <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;">
         <div><strong>GPS:</strong> ${l.coGpsLat.toFixed(5)}, ${l.coGpsLng.toFixed(5)}</div>
-        ${l.coGpsArea?`<div style="margin-top:6px;padding:8px;background:var(--surface)3cd;border-radius:var(--radius-sm);"><div style="font-size:11px;color:var(--text-muted);">📍 AREA</div><div style="font-weight:700;color:#856404;font-size:14px;">${l.coGpsArea}</div></div>`:''}
+        ${l.coGpsArea?`<div style="margin-top:6px;padding:8px;background:#fff3cd;border-radius:var(--radius-sm);"><div style="font-size:11px;color:var(--text-muted);">📍 AREA</div><div style="font-weight:700;color:#856404;font-size:14px;">${l.coGpsArea}</div></div>`:''}
       </div>
       <a href="https://www.google.com/maps?q=${l.coGpsLat},${l.coGpsLng}" target="_blank" rel="noopener" class="btn btn-outline w-full" style="justify-content:center;margin-top:8px;font-size:13px;">Open Check-Out in Maps</a>
     </div>`:'';
@@ -2637,11 +2643,9 @@ function viewGps(logId){
 }
 function viewSelfie(logId){
   logId=parseInt(logId);
-  const l=S.logs.find(x=>x.id==logId); if(!l) return;
-  const src=l.selfieUrl||(l.selfie&&l.selfie!=='[photo]'?l.selfie:null);
-  if(!src){toast('Selfie not available','err');return;}
+  const l=S.logs.find(x=>x.id==logId); if(!l||!l.selfie) return;
   const sf=getSf(l.staffId);
-  $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${src}" style="width:220px;height:220px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;display:block;" onerror="this.style.display='none';this.nextSibling.style.display='block'"><div style="display:none;padding:20px;color:var(--text-muted);">Photo not available</div><div style="font-weight:700;margin-top:8px;">${sf?sf.name:'Staff'}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue}</div></div>`;
+  $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${l.selfie}" style="width:180px;height:180px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;"><div style="font-weight:700;">${sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue}</div></div>`;
   $('gpsModal').querySelector('.modal-title').textContent='Check-In Selfie';
   openM('gpsModal');
 }
@@ -2782,7 +2786,7 @@ function renderStaffWiseReport(){
         } else {
           const isUL=(S.uninformedLeaves[sf.id]||[]).some(l=>l.date===ds);
           if(isUL){
-            dayRows+=`<div class="sw-day-row" style="padding:6px 12px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:8px;background:var(--surface)3cd;">
+            dayRows+=`<div class="sw-day-row" style="padding:6px 12px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:8px;background:#fff3cd;">
               <div class="sw-day-label" style="width:72px;font-size:11px;font-weight:600;color:var(--text-muted);">${dlabel}</div>
               <span style="font-size:11px;font-weight:700;color:#856404;">🟠 UL</span>
               <button class="btn btn-ghost btn-sm sw-mark-ul" style="margin-left:auto;padding:1px 6px;font-size:10px;" onclick="removeUninformedLeave(${sf.id},'${ds}')">Remove</button>
@@ -4317,7 +4321,7 @@ function showCeremonyForm(gId,cId){
       ...freelancers.map(f=>({name:f.name+' (F)',id:'fl_'+f.id,isFL:true}))
     ];
     const chips=allPeople.map(p=>`
-      <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid ${checked.includes(p.name)?'var(--primary)':'var(--border)'};border-radius:20px;cursor:pointer;font-size:13px;background:${checked.includes(p.name)?'var(--primary-light)':'var(--surface)'};" id="${type}_lbl_${p.id}">
+      <label style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid ${checked.includes(p.name)?'var(--primary)':'var(--border)'};border-radius:20px;cursor:pointer;font-size:13px;background:${checked.includes(p.name)?'var(--primary-light)':'#fff'};" id="${type}_lbl_${p.id}">
         <input type="checkbox" name="${type}Staff" value="${p.name}" ${checked.includes(p.name)?'checked':''} onchange="toggleCerStaff(this,'${type}_lbl_${p.id}')" style="width:14px;height:14px;">
         ${p.name.replace(' (F)','')}${p.isFL?'<span style="font-size:10px;color:var(--warning);margin-left:2px;">(F)</span>':''}
       </label>`).join('');
@@ -4663,7 +4667,7 @@ function _renderBulkModal(){
         <div></div>
       </div>
       <div id="blkRowsContainer">${rowsHTML}</div>
-      <div id="blkDupeWarn" style="display:none;font-size:12px;margin:6px 0;padding:8px 10px;background:var(--surface)8e1;border:1px solid #f59e0b;border-radius:6px;color:#7c4a00;"></div>
+      <div id="blkDupeWarn" style="display:none;font-size:12px;margin:6px 0;padding:8px 10px;background:#fff8e1;border:1px solid #f59e0b;border-radius:6px;color:#7c4a00;"></div>
       <button onclick="_bulkAddRow()" class="btn btn-outline btn-sm" style="width:100%;margin-top:6px;margin-bottom:16px;">+ Add Another Day</button>
       <button onclick="submitBulkLogs()" class="btn btn-primary" style="width:100%;font-size:15px;padding:12px;">💾 Save All Logs</button>
     </div>`);
@@ -4965,7 +4969,7 @@ function renderBilling(){
     const dinners=d.entries.filter(e=>e.isDinner).length;
     const wtLines={};
     d.entries.forEach(e=>{ if(!wtLines[e.wt]) wtLines[e.wt]={count:0,total:0,hasTBD:false}; wtLines[e.wt].count++; if(e.rate!=null)wtLines[e.wt].total+=e.rate; else wtLines[e.wt].hasTBD=true; });
-    return `<div class="billing-subtotal-card" style="background:var(--surface);border:1px solid var(--border);">
+    return `<div class="billing-subtotal-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <div class="av" style="background:${d.sf.color};">${ini(d.sf.name)}</div>
         <div style="flex:1;"><div style="font-weight:700;">${d.sf.name}</div><div style="font-size:12px;color:var(--text-muted);">${d.entries.length} entr${d.entries.length===1?'y':'ies'}${dinners?' · '+dinners+' dinner shift'+(dinners>1?'s':''):''}</div></div>
@@ -4980,7 +4984,7 @@ function renderBilling(){
       </div>
     </div>`;
   }).join('');
-  if(manualTotal>0) subtotalHTML+=`<div class="billing-subtotal-card" style="background:var(--surface);border:1px solid var(--border);"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;color:var(--primary);">Manual Entries</span><span style="font-size:18px;font-weight:800;color:var(--primary);">₹${manualTotal.toLocaleString('en-IN')}</span></div></div>`;
+  if(manualTotal>0) subtotalHTML+=`<div class="billing-subtotal-card"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600;color:var(--primary);">Manual Entries</span><span style="font-size:18px;font-weight:800;color:var(--primary);">₹${manualTotal.toLocaleString('en-IN')}</span></div></div>`;
   ['billingSubtotals','billingSubtotals2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=subtotalHTML||'<div class="empty"><p>No billable entries</p></div>';});
 
   // Grand total
@@ -5186,7 +5190,7 @@ function _doExportBillingPDF(){
   const colHeaders=_billingExportCols.map(i=>BILLING_COLS[i]);
   const tableRows=entries.map(e=>{
     const vals=_getBillingRowValues(e,monthLabel);
-    return `<tr style="${e.isDinner?'background:var(--surface)beb;':''}${e.isManual?'background:#e8f4fd;':''}">
+    return `<tr style="${e.isDinner?'background:#fffbeb;':''}${e.isManual?'background:#e8f4fd;':''}">
       ${vals.map((v,idx)=>`<td style="text-align:${idx>=colHeaders.length-2?'right':'left'}">${v}</td>`).join('')}
     </tr>`;
   }).join('');
@@ -5474,30 +5478,12 @@ function showStaffExportModal(){
         <button class="btn btn-outline btn-sm" onclick="selectAllStaffExportCols(false)">None</button>
       </div>
       <div style="columns:2;gap:10px;" id="srColsContainer">${colChecks}</div>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:var(--primary-light);margin-top:12px;" id="srSummaryLabel" onclick="toggleSrSummary()">
-        <div id="srSummaryBox" style="width:16px;height:16px;border-radius:3px;border:2px solid var(--primary);background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;">
+        <input type="checkbox" id="srExpSummary" checked>
         <span style="font-size:13px;">Include leave summary</span>
-        <input type="checkbox" id="srExpSummary" checked style="display:none;">
       </label>
       <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="doExportStaffReport()">Download CSV</button>
     </div>`);
-}
-
-function toggleSrSummary(){
-  const cb=$('srExpSummary'); if(!cb) return;
-  cb.checked=!cb.checked;
-  const box=$('srSummaryBox'), label=$('srSummaryLabel');
-  if(cb.checked){
-    box.style.background='var(--primary)'; box.style.borderColor='var(--primary)';
-    box.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
-    label.style.background='var(--primary-light)';
-  } else {
-    box.style.background='transparent'; box.style.borderColor='var(--border)';
-    box.innerHTML='';
-    label.style.background='var(--surface)';
-  }
 }
 
 function toggleStaffExportCol(i){
@@ -5520,44 +5506,14 @@ function doExportStaffReport(){
   if(sfId!=='all') logs=logs.filter(l=>l.staffId==sfId);
   logs.sort((a,b)=>a.date.localeCompare(b.date));
   const rows=[_staffExportCols.map(i=>STAFF_REPORT_COLS[i])];
-  // Build date range
-  const dateRange=[];
-  let cur=new Date(from+'T00:00:00');
-  const endD=new Date(to+'T00:00:00');
-  while(cur<=endD){ dateRange.push(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
-  // Determine which staff to include
-  const exportStaffIds=sfId==='all'?S.staff.filter(s=>s.status==='active').map(s=>s.id):[parseInt(sfId)];
-  let rowNum=1;
-  exportStaffIds.forEach(sid=>{
-    const sf=getSf(sid)||{name:'Unknown',role:''};
-    dateRange.forEach(dateStr=>{
-      const dayLogs=logs.filter(l=>l.staffId==sid&&l.date===dateStr);
-      if(dayLogs.length===0){
-        // Absent
-        const dt=new Date(dateStr+'T00:00:00');
-        const allVals=[rowNum++,dateStr,dt.toLocaleDateString('en-IN',{weekday:'short'}),'','','','','','','','','Absent'];
-        // Add staff name as first if all staff export
-        if(sfId==='all'){
-          const nameCol=[sf.name,..._staffExportCols.map(i=>allVals[i])];
-          rows.push(nameCol);
-        } else {
-          rows.push(_staffExportCols.map(i=>allVals[i]));
-        }
-      } else {
-        dayLogs.forEach(l=>{
-          const d2=l.checkIn&&l.checkOut?dur(l.checkIn,l.checkOut):null;
-          const dt=new Date(l.date+'T00:00:00');
-          const allVals=[rowNum++,l.date,dt.toLocaleDateString('en-IN',{weekday:'short'}),l.company||'',l.venue||'',
-            (l.workTypes||[]).join(', '),l.checkIn||'',l.checkOut||'',d2?fmtDur(d2):'',
-            l.clientName||'',l.copyName||'',l.ciNotes||''];
-          if(sfId==='all'){
-            rows.push([sf.name,..._staffExportCols.map(i=>allVals[i])]);
-          } else {
-            rows.push(_staffExportCols.map(i=>allVals[i]));
-          }
-        });
-      }
-    });
+  logs.forEach((l,idx)=>{
+    const sf=getSf(l.staffId)||{name:'Unknown',role:''};
+    const d2=l.checkIn&&l.checkOut?dur(l.checkIn,l.checkOut):null;
+    const dt=new Date(l.date+'T00:00:00');
+    const allVals=[idx+1,l.date,dt.toLocaleDateString('en-IN',{weekday:'short'}),l.company||'',l.venue||'',
+      (l.workTypes||[]).join(', '),l.checkIn||'',l.checkOut||'',d2?fmtDur(d2):'',
+      l.clientName||'',l.copyName||'',l.ciNotes||''];
+    rows.push(_staffExportCols.map(i=>allVals[i]));
   });
   if(incSummary){
     const staffIds=sfId==='all'?[...new Set(logs.map(l=>l.staffId))]:[sfId];
@@ -5601,8 +5557,8 @@ function unmarkCandid(logId){
 // ===== DATA COPY YES/NO =====
 function selectDataCopy(yes){
   S.dataCopyAnswer=yes;
-  $('copyYesBtn').style.cssText=`flex:1;border:2px solid ${yes?'var(--success)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${yes?'var(--success-light)':'var(--surface)'};`;
-  $('copyNoBtn').style.cssText=`flex:1;border:2px solid ${!yes?'var(--danger)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${!yes?'var(--danger-light)':'var(--surface)'};`;
+  $('copyYesBtn').style.cssText=`flex:1;border:2px solid ${yes?'var(--success)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${yes?'var(--success-light)':'#fff'};`;
+  $('copyNoBtn').style.cssText=`flex:1;border:2px solid ${!yes?'var(--danger)':'var(--border)'};border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;background:${!yes?'var(--danger-light)':'#fff'};`;
   $('copyDetailsSection').style.display=yes?'block':'none';
   if(!yes){$('coCopyName').value='';$('coCopyPhone').value='';}
 }
