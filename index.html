@@ -1585,9 +1585,10 @@ window.submitLogin = function(){
   $('hamburgerBtn').style.display='none';
   // Staff mode: hide GPS hint
   document.querySelectorAll('.admin-only-hint').forEach(el=>el.style.display='none');
-  renderStaffPortal();
+  // Switch view BEFORE rendering to prevent dashboard bleed-through
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  $('view-staff-portal').classList.add('active');
+  if($('view-staff-portal')) $('view-staff-portal').classList.add('active');
+  renderStaffPortal();
   toast('Welcome, '+sf.name+'!');
 };
 
@@ -6198,7 +6199,7 @@ function init(){
   setInterval(()=>{
     if(S.currentUser&&S.currentUser.role==='admin'){
       const activeView=document.querySelector('.view.active');
-      if(activeView&&activeView.id==='view-dashboard') renderDash();
+      if(activeView&&activeView.id==='view-dashboard'&&S.currentUser&&S.currentUser.role==='admin') renderDash();
     }
   }, 30000);
 }

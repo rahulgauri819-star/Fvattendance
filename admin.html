@@ -6160,7 +6160,7 @@ function init(){
   setInterval(()=>{
     if(S.currentUser&&S.currentUser.role==='admin'){
       const activeView=document.querySelector('.view.active');
-      if(activeView&&activeView.id==='view-dashboard') renderDash();
+      if(activeView&&activeView.id==='view-dashboard'&&S.currentUser&&S.currentUser.role==='admin') renderDash();
     }
   }, 30000);
 }
