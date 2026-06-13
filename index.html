@@ -6216,7 +6216,7 @@ function fvSetRemember(data){
 }
 function fvGetRemember(){
   try{
-    const ls=fvGetRemember();
+    const ls=localStorage.getItem('fv_remember');
     if(ls) return JSON.parse(ls);
   }catch(e){}
   // Fallback: read from cookie
