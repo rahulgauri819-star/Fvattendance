@@ -1459,7 +1459,13 @@ const toMins = t => { if(!t) return 0; const [h,m]=t.split(':').map(Number); ret
 const fmtDur = m => { if(!m||m<=0) return '—'; return Math.floor(m/60)+'h '+(m%60)+'m'; };
 // Midnight-crossing duration: if checkout < checkin time, add 24hrs
 const dur = (ci,co) => { if(!ci||!co) return null; if(ci===co) return 0; let d=toMins(co)-toMins(ci); if(d<=0) d+=1440; return d; };
-const getSf = id => S.staff.find(s=>s.id===id);
+const getSf = id => {
+  const sf=S.staff.find(s=>s.id===id);
+  if(sf) return sf;
+  const snapLog=(S.logs||[]).find(l=>l&&l.staffId===id&&l.staffNameSnapshot);
+  if(snapLog) return {id:id,name:snapLog.staffNameSnapshot,role:snapLog.staffRoleSnapshot||'',color:snapLog.staffColorSnapshot||'#0d6efd',status:'deleted',phone:''};
+  return null;
+};
 const normalizePhone = p => (p||'').replace(/\D/g,'');
 const isStaffUser = () => S.currentUser && S.currentUser.role==='staff';
 const currentStaffId = () => isStaffUser() ? S.currentUser.staffId : null;
@@ -2094,13 +2100,13 @@ function selectCompany(c){
         $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> GPS Captured ✓';
         $('gpsCoords').textContent='Lat: '+pos.coords.latitude.toFixed(5)+' | Lng: '+pos.coords.longitude.toFixed(5);
       },()=>{
-        S.ciGps={lat:28.6139,lng:77.2090};
+        S.ciGps=null;
         $('gpsBadge').className='gps-badge';
         $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location Noted';
         $('gpsCoords').textContent='(Simulated) Delhi, India';
       });
     } else {
-      S.ciGps={lat:28.6139,lng:77.2090};
+      S.ciGps=null;
       $('gpsBadge').className='gps-badge';
       $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location Noted';
       $('gpsCoords').textContent='(Simulated)';
@@ -2154,13 +2160,13 @@ function venueChanged(){
       $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> GPS Captured ✓';
       $('gpsCoords').textContent='Lat: '+pos.coords.latitude.toFixed(5)+' | Lng: '+pos.coords.longitude.toFixed(5);
     },()=>{
-      S.ciGps={lat:28.6139,lng:77.2090};
+      S.ciGps=null;
       $('gpsBadge').className='gps-badge';
       $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location Noted';
       $('gpsCoords').textContent='(Simulated) Delhi, India';
     });
   } else {
-    S.ciGps={lat:28.6139,lng:77.2090};
+    S.ciGps=null;
     $('gpsBadge').className='gps-badge';
     $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location Noted';
     $('gpsCoords').textContent='(Simulated)';
@@ -2206,6 +2212,9 @@ function submitCheckin(){
   if(!S.ciSelfieData){toast('Selfie is mandatory','err');return;}
   const isStaff=isStaffUser();
   const staffId=isStaff?S.currentUser.staffId:parseInt(S.ciCompany==='office'?$('ciOfficeStaff').value:$('ciStaff').value);
+  const _activeLog=(S.logs||[]).find(l=>l&&l.staffId===staffId&&l.checkIn&&!l.checkOut);
+  if(_activeLog){toast('Already checked in. Please check out first.','err');closeM('ciModal');return;}
+  if(!S.ciGps||!S.ciGps.lat){toast('GPS location required. Please enable location and try again.','err');return;}
   let venue,notes,checkInTime,clientName='';
   if(S.ciCompany==='office'){
     venue='Office';
@@ -2346,7 +2355,7 @@ function captureCoGps(){
   if(!badge||!status) return;
   status.textContent='Capturing GPS...';
   badge.style.borderColor='var(--warning)';
-  if(!navigator.geolocation){ S.coGps={lat:28.6139,lng:77.2090}; status.textContent='GPS Captured ✓'; badge.style.borderColor='var(--success)'; return; }
+  if(!navigator.geolocation){ S.coGps=null; status.textContent='GPS unavailable — enable location'; badge.style.borderColor='var(--danger)'; return; }
   navigator.geolocation.getCurrentPosition(pos=>{
     S.coGps={lat:pos.coords.latitude,lng:pos.coords.longitude};
     status.textContent='GPS Captured ✓';
@@ -2359,9 +2368,9 @@ function captureCoGps(){
       }).catch(()=>{});
   }, err=>{
     // Fallback
-    S.coGps={lat:28.6139,lng:77.2090};
-    status.textContent='GPS Captured ✓ (fallback)';
-    badge.style.borderColor='var(--success)';
+    S.coGps=null;
+    status.textContent='GPS unavailable — enable location';
+    badge.style.borderColor='var(--danger)';
   }, {timeout:10000, enableHighAccuracy:true});
 }
 
@@ -2506,10 +2515,20 @@ function submitStaff(){
   closeM('sfModal');renderStaff();
 }
 async function deleteStaff(id){
-  if(!await showConfirm('Remove this staff member?','Remove')) return;
+  if(!await showConfirm('Remove this staff member? Their attendance history will be preserved.','Remove')) return;
+  const sf=S.staff.find(s=>s.id===id);
+  if(sf){
+    (S.logs||[]).forEach(l=>{
+      if(l&&l.staffId===id){
+        l.staffNameSnapshot=sf.name;
+        l.staffRoleSnapshot=sf.role||'';
+        l.staffColorSnapshot=sf.color||'#0d6efd';
+      }
+    });
+  }
   S.staff=S.staff.filter(s=>s.id!==id);
   saveData();
-  toast('Staff removed');renderStaff();
+  toast('Staff removed (history preserved)');renderStaff();
 }
 
 // ===== LOGS =====
@@ -2520,8 +2539,9 @@ function renderLogs(){
   const dfrom='';
   const dto='';
   const filtered=S.logs.filter(l=>{
-    const sf=getSf(l.staffId); if(!sf) return false;
-    if(q&&!sf.name.toLowerCase().includes(q)&&!(l.venue||'').toLowerCase().includes(q)) return false;
+    const sf=getSf(l.staffId);
+    const sfName=sf?sf.name:(l.staffNameSnapshot||'Unknown');
+    if(q&&!sfName.toLowerCase().includes(q)&&!(l.venue||'').toLowerCase().includes(q)) return false;
     if(cf&&l.company!==cf) return false;
     if(df&&l.date!==df) return false;
     if(dfrom&&l.date<dfrom) return false;
@@ -5972,7 +5992,21 @@ function saveData(){
       uninformedLeaves: S.uninformedLeaves||{},
       officeStandardTime: S.officeStandardTime||'11:00'
     };
-    db.ref('appData').set(toSave).catch(e=>console.error('Save error',e));
+    // FIX 13: Retry-on-failure save (never lose data if Firebase briefly unreachable)
+    const _doSave=(attempt=0)=>{
+      db.ref('appData').set(toSave)
+        .then(()=>{ if(attempt>0) console.log('Save succeeded on retry',attempt); })
+        .catch(e=>{
+          console.error('Save error (attempt '+attempt+'):',e.message);
+          if(attempt<5){
+            setTimeout(()=>_doSave(attempt+1), Math.min(1000*Math.pow(2,attempt),15000));
+          } else {
+            // Persist to localStorage as last resort
+            try{ localStorage.setItem('fv_pending_save', JSON.stringify(toSave)); }catch(_){}
+          }
+        });
+    };
+    _doSave();
     // Save selfies to Firebase Storage with 30-day auto-delete
     S.logs.forEach(l=>{
       if(l.selfie&&l.selfie.startsWith('data:')){
@@ -6017,11 +6051,25 @@ function hideLoadingScreen(){ const el=$('fbLoadingScreen'); if(el) el.remove();
 function init(){
   lucide.createIcons();
   showLoadingScreen('Connecting to Fotovision...');
+  // FIX 13: Flush any pending save that failed last session
+  try{
+    const pending=localStorage.getItem('fv_pending_save');
+    if(pending){
+      db.ref('appData').set(JSON.parse(pending))
+        .then(()=>{ localStorage.removeItem('fv_pending_save'); console.log('Flushed pending save'); })
+        .catch(()=>{});
+    }
+  }catch(_){}
   db.ref('appData').once('value').then(snap=>{
     const data = snap.val();
     if(data){
       // Merge Firebase data into S
-      if(data.staff) S.staff = data.staff.filter(Boolean);
+      if(data.staff){
+        const incoming=data.staff.filter(Boolean);
+        const local=S.staff||[];
+        const pendingLocal=local.filter(s=>s&&!incoming.find(i=>i&&i.id===s.id));
+        S.staff=[...incoming,...pendingLocal];
+      }
       if(data.logs) S.logs = data.logs.filter(Boolean);
       if(data.nId) S.nId = data.nId;
       if(data.roles) S.roles = data.roles;
@@ -6066,23 +6114,7 @@ function init(){
     }
   }).then(()=>{
     hideLoadingScreen();
-    // One-time cleanup: delete orphaned grover log from 2026-06-04
-    (async()=>{
-      try{
-        const ghostSnap = await firestore.collection('logs').where('date','==','2026-06-04').where('company','==','grover').get();
-        ghostSnap.forEach(async doc=>{
-          const d=doc.data();
-          if(!d.checkOut||d.checkOut===''){
-            await doc.ref.delete();
-            console.log('Deleted ghost log:', doc.id);
-            // Also remove from local S.logs
-            S.logs = (S.logs||[]).filter(l=>String(l.id)!==doc.id&&!(l.date==='2026-06-04'&&l.company==='grover'&&!l.checkOut));
-            saveData();
-          }
-        });
-      }catch(e){ console.log('Ghost cleanup error:', e); }
-    })();
-    renderDash();
+        renderDash();
     // Listen for real-time updates from other devices
     db.ref('appData').on('value', snap=>{
       const data = snap.val();
@@ -6090,7 +6122,12 @@ function init(){
       // Only update if not currently in a modal (to avoid disrupting active forms)
       const anyModalOpen = document.querySelector('.modal-bg.open');
       if(anyModalOpen) return;
-      if(data.staff) S.staff = data.staff.filter(Boolean);
+      if(data.staff){
+        const incoming=data.staff.filter(Boolean);
+        const local=S.staff||[];
+        const pendingLocal=local.filter(s=>s&&!incoming.find(i=>i&&i.id===s.id));
+        S.staff=[...incoming,...pendingLocal];
+      }
       if(data.logs) S.logs = data.logs.filter(Boolean);
       if(data.nId) S.nId = data.nId;
       if(data.leaves) S.leaves = data.leaves;
