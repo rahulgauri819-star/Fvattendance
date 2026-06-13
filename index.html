@@ -1477,6 +1477,8 @@ const nowTime = () => new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Kolk
 const fmtDate = d => { if(!d) return '—'; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); };
 const escHtml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const toMins = t => { if(!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; };
+// Globally-unique ID: timestamp + random (collision-proof across devices)
+function genUid(){ return Date.now()*1000 + Math.floor(Math.random()*1000); }
 const fmtDur = m => { if(!m||m<=0) return '—'; return Math.floor(m/60)+'h '+(m%60)+'m'; };
 // Midnight-crossing duration: if checkout < checkin time, add 24hrs
 const dur = (ci,co) => { if(!ci||!co) return null; if(ci===co) return 0; let d=toMins(co)-toMins(ci); if(d<=0) d+=1440; return d; };
@@ -2280,7 +2282,7 @@ function submitCheckin(){
     }
   }
   const log={
-    id:S.nId.log++,staffId,company:S.ciCompany,venue,clientName,
+    id:genUid(),staffId,company:S.ciCompany,venue,clientName,
     date:today(),checkIn:checkInTime,checkOut:'',
     createdAt:Date.now(),
     selfie:S.ciSelfieData||'',  // compressed base64
@@ -2298,7 +2300,7 @@ function submitCheckin(){
   const sf=getSf(staffId);
   // Telegram notification for ALL check-ins
   const _ciCo2=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
-  sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo2} · ${log.venue||'Office'}\n⏰ ${checkInTime}`);
+  sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo2}\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
   if(isStaff){
     // Show success screen
     $('portalActionArea').style.display='none';
@@ -2412,6 +2414,7 @@ function captureCoGps(){
 function submitCheckout(){
   const log=S.logs.find(l=>l.id==S.coLogId);
   if(!log){toast('Log not found','err');return;}
+  if(log.checkOut){toast('Already checked out','err');closeM('coModal');return;}
   if(!S.coGps){toast('Please capture GPS location first','err');captureCoGps();return;}
   if(log.company!=='office'){
     if(log.company==='grover'){
@@ -2455,7 +2458,7 @@ function submitCheckout(){
   toast(_coName+' checked out — '+fmtDur(d));
   saveData();
   syncLogToFirestore(log);
-  sendTelegramNotification(`🔴 <b>Check-Out</b>\n👤 ${_coName}\n🏢 ${_coCo} · ${log.venue||'Office'}\n⏰ ${log.checkIn} → ${log.checkOut} · ${fmtDur(d)}`);
+  sendTelegramNotification(`🔴 <b>Check-Out</b>\n👤 ${_coName}\n🏢 ${_coCo}\n⏰ ${log.checkIn} → ${log.checkOut} · ${fmtDur(d)}`+buildTgDetails(log));
   if(isStaffUser()) renderStaffPortal(); else {renderStatusBoard();renderDash();}
 }
 
@@ -3367,7 +3370,7 @@ function confirmLateCheckin(){
 function finishOfficeCheckin(staffId,venue,notes,checkInTime,lateReason){
   const isStaff=isStaffUser();
   const log={
-    id:S.nId.log++,staffId,company:'office',venue,clientName:'',
+    id:genUid(),staffId,company:'office',venue,clientName:'',
     date:today(),checkIn:checkInTime,checkOut:'',
     selfie:S.ciSelfieData||'',  // compressed base64
     gpsLat:S.ciGps?S.ciGps.lat:null,gpsLng:S.ciGps?S.ciGps.lng:null,
@@ -3388,7 +3391,7 @@ function finishOfficeCheckin(staffId,venue,notes,checkInTime,lateReason){
   } else {
     const sf=getSf(staffId);
     const _ciCo3=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
-    sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo3} · ${log.venue||'Office'}\n⏰ ${checkInTime}`);
+    sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo3}\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
     toast((sf?sf.name:'Staff')+' checked in — '+checkInTime);
     renderStatusBoard();
   }
@@ -4603,7 +4606,7 @@ function submitAddLog(){
   const isGrover=company==='grover';
   const wt=(!isOffice&&$('alWorkType'))?$('alWorkType').value:'';
   const log={
-    id:S.nId.log++,
+    id:genUid(),
     staffId:sfId,
     date,
     company,
@@ -4782,7 +4785,7 @@ function submitBulkLogs(){
   let added=0;
   validRows.forEach(r=>{
     S.logs.push({
-      id:S.nId.log++,
+      id:genUid(),
       staffId:sfId,
       date:r.date,
       company,
@@ -6308,6 +6311,18 @@ function fvClearRemember(){
 const TG_TOKEN = '8850461310:AAEpMuaDf2hAVmGDYBnesEit9iTrUOHWDOM';
 const TG_CHAT_ID = '5848142759';
 
+function buildTgDetails(log){
+  let lines='';
+  const wt=(log.workTypes||[]).filter(Boolean).join(', ');
+  if(log.venue) lines+=`\n📍 Venue: ${log.venue}`;
+  if(wt) lines+=`\n🎬 Work: ${wt}`;
+  if(log.clientName) lines+=`\n👥 Client: ${log.clientName}`;
+  if(log.copyName) lines+=`\n💾 Data Copied By: ${log.copyName}`;
+  if(log.lateReason) lines+=`\n⏱️ Late Reason: ${log.lateReason}`;
+  if(log.ciNotes) lines+=`\n📝 Check-In Notes: ${log.ciNotes}`;
+  if(log.coNotes) lines+=`\n📝 Check-Out Notes: ${log.coNotes}`;
+  return lines;
+}
 async function sendTelegramNotification(message) {
   try {
     await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
