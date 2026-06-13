@@ -2256,16 +2256,14 @@ function submitCheckin(){
   syncStaffToFirestore(getSf(log.staffId)||{id:log.staffId,name:'Staff',role:'',phone:'',status:'active',color:'#0d6efd'});
   closeM('ciModal');
   const sf=getSf(staffId);
+  const _ciCo2=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
+  sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo2} · ${log.venue||'Office'}\n⏰ ${checkInTime}`);
   if(isStaff){
-    // Show success screen
     $('portalActionArea').style.display='none';
     $('checkinSuccess').classList.add('show');
     $('successMsg').textContent='Checked in at '+(S.ciCompany==='office'?'Office':venue)+' — '+checkInTime;
     renderStaffPortal();
   } else {
-    const _ciSf=sf||getSf(log.staffId);
-    const _ciCo2=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
-    sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${_ciSf?_ciSf.name:'Staff'}\n🏢 ${_ciCo2} · ${log.venue||'Office'}\n⏰ ${checkInTime}`);
     toast((sf?sf.name:'Staff')+' checked in — '+checkInTime);
     renderStatusBoard();
   }
