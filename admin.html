@@ -2209,6 +2209,18 @@ function handleSelfie(e){
   reader.readAsDataURL(file);
 }
 
+function buildTgDetails(log){
+  let lines='';
+  const wt=(log.workTypes||[]).filter(Boolean).join(', ');
+  if(log.venue) lines+=`\n📍 Venue: ${log.venue}`;
+  if(wt) lines+=`\n🎬 Work: ${wt}`;
+  if(log.clientName) lines+=`\n👥 Client: ${log.clientName}`;
+  if(log.copyName) lines+=`\n💾 Data Copied By: ${log.copyName}`;
+  if(log.lateReason) lines+=`\n⏱️ Late Reason: ${log.lateReason}`;
+  if(log.ciNotes) lines+=`\n📝 Check-In Notes: ${log.ciNotes}`;
+  if(log.coNotes) lines+=`\n📝 Check-Out Notes: ${log.coNotes}`;
+  return lines;
+}
 function submitCheckin(){
   if(!S.ciCompany){toast('Please select a duty type','err');return;}
   if(!S.ciSelfieData){toast('Selfie is mandatory','err');return;}
@@ -6244,18 +6256,6 @@ function fvClearRemember(){
 const TG_TOKEN = '8850461310:AAEpMuaDf2hAVmGDYBnesEit9iTrUOHWDOM';
 const TG_CHAT_ID = '-5585972833';
 
-function buildTgDetails(log){
-  let lines='';
-  const wt=(log.workTypes||[]).filter(Boolean).join(', ');
-  if(log.venue) lines+=`\n📍 Venue: ${log.venue}`;
-  if(wt) lines+=`\n🎬 Work: ${wt}`;
-  if(log.clientName) lines+=`\n👥 Client: ${log.clientName}`;
-  if(log.copyName) lines+=`\n💾 Data Copied By: ${log.copyName}`;
-  if(log.lateReason) lines+=`\n⏱️ Late Reason: ${log.lateReason}`;
-  if(log.ciNotes) lines+=`\n📝 Check-In Notes: ${log.ciNotes}`;
-  if(log.coNotes) lines+=`\n📝 Check-Out Notes: ${log.coNotes}`;
-  return lines;
-}
 async function sendTelegramNotification(message) {
   try {
     await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
