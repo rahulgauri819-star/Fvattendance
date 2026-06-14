@@ -6258,7 +6258,7 @@ const TG_CHAT_ID = '-5585972833';
 
 async function sendTelegramNotification(message) {
   try {
-    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+    const _tgRes = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -6267,7 +6267,10 @@ async function sendTelegramNotification(message) {
         parse_mode: 'HTML'
       })
     });
-  } catch(e) { console.log('Telegram notification failed:', e); }
+    const _tgJson = await _tgRes.json();
+    if(!_tgJson.ok) console.error('Telegram error:', JSON.stringify(_tgJson));
+    else console.log('Telegram OK');
+  } catch(e) { console.error('Telegram fetch failed:', e); }
 }
 
 // Custom confirm/prompt replacements
