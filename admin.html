@@ -1676,8 +1676,14 @@ function renderStaffPortal(){
       const [_rc2,_rm2]=l.checkOut.split(':').map(Number);
       const _ct2=new Date(); _ct2.setHours(_rc2,_rm2,0,0);
       const _canEdit3=Math.floor((new Date()-_ct2)/60000)<=30;
-      const _coTs=l.coCreatedAt||l.createdAt||0;
-      const _canDelCo=(Date.now()-_coTs)<30*60*1000;
+      let _coTs=l.coCreatedAt||0;
+      if(!_coTs&&l.checkOut){
+        // Fallback: parse checkOut time as today's timestamp
+        const [_coh,_com]=l.checkOut.split(':').map(Number);
+        const _coD=new Date(); _coD.setHours(_coh,_com,0,0);
+        _coTs=_coD.getTime();
+      }
+      const _canDelCo=_coTs>0&&(Date.now()-_coTs)<30*60*1000;
       html+=`<div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <div style="font-weight:700;color:var(--success);">✅ Checked Out</div>
@@ -1798,7 +1804,12 @@ async function staffDeleteOwnCheckout(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId);
   if(!l){toast('Log not found','err');return;}
-  const coTs=l.coCreatedAt||l.createdAt||0;
+  let coTs=l.coCreatedAt||0;
+  if(!coTs&&l.checkOut){
+    const [_coh3,_com3]=l.checkOut.split(':').map(Number);
+    const _coD3=new Date(); _coD3.setHours(_coh3,_com3,0,0);
+    coTs=_coD3.getTime();
+  }
   if(!coTs||(Date.now()-coTs)>=30*60*1000){
     toast('Undo window expired (30 min)','err');
     renderStaffPortal();
@@ -2459,6 +2470,7 @@ function submitCheckout(){
   }
   // Midnight crossing: if checkout < checkin, it's next day but log stays on checkin date
   log.checkOut=$('coTime').value;
+  log.coCreatedAt=Date.now();
   log.coNotes=$('coNotes').value.trim();
   if(S.coGps){ log.coGpsLat=S.coGps.lat; log.coGpsLng=S.coGps.lng; log.coGpsArea=S.coGpsArea||''; }
   closeM('coModal');
