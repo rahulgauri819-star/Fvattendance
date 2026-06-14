@@ -1676,8 +1676,13 @@ function renderStaffPortal(){
       const [_rc2,_rm2]=l.checkOut.split(':').map(Number);
       const _ct2=new Date(); _ct2.setHours(_rc2,_rm2,0,0);
       const _canEdit3=Math.floor((new Date()-_ct2)/60000)<=30;
+      const _coTs=l.coCreatedAt||l.createdAt||0;
+      const _canDelCo=(Date.now()-_coTs)<30*60*1000;
       html+=`<div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;">
-        <div style="font-weight:700;color:var(--success);margin-bottom:6px;">✅ Checked Out</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-weight:700;color:var(--success);">✅ Checked Out</div>
+          ${_canDelCo?`<button onclick="staffDeleteOwnCheckout(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;" title="Undo checkout (within 30 min)">🗑️ Undo Checkout</button>`:''}
+        </div>
         <div style="font-size:13px;color:var(--text-muted);">${compLabel(l.company)} · ${l.checkIn} → ${l.checkOut}${_d?' · '+fmtDur(_d):''}</div>
         ${_canEdit3?`<button class="btn btn-ghost btn-sm" style="margin-top:8px;font-size:12px;" onclick="openStaffEditModal(${l.id})">✏️ Edit details</button>`:''}
       </div>`;
@@ -1781,6 +1786,36 @@ function renderStaffHistory(){
     </div>
     ${rows||'<div class="empty" style="padding:32px;"><p>No data yet</p></div>'}`;
   lucide.createIcons();
+}
+
+function hideCheckinSuccess(){
+  $('checkinSuccess').classList.remove('show');
+  $('checkinSuccess').classList.remove('show');
+  $('portalActionArea').style.display='flex';
+  renderStaffPortal();
+}
+async function staffDeleteOwnCheckout(logId){
+  logId=parseInt(logId);
+  const l=S.logs.find(x=>x.id==logId);
+  if(!l){toast('Log not found','err');return;}
+  const coTs=l.coCreatedAt||l.createdAt||0;
+  if(!coTs||(Date.now()-coTs)>=30*60*1000){
+    toast('Undo window expired (30 min)','err');
+    renderStaffPortal();
+    renderStaffHistory();
+    return;
+  }
+  const _ok2=await showConfirm('Undo this checkout? You will be reverted to checked-in state.');
+  if(!_ok2) return;
+  l.checkOut='';
+  l.coGpsLat=null;
+  l.coGpsLng=null;
+  l.coGpsArea='';
+  l.coCreatedAt=null;
+  saveData();
+  renderStaffPortal();
+  renderStaffHistory();
+  toast('Checkout removed — you are checked in again');
 }
 
 async function staffDeleteOwnLog(logId){
@@ -3358,16 +3393,15 @@ function finishOfficeCheckin(staffId,venue,notes,checkInTime,lateReason){
   saveData();
   syncLogToFirestore(log);
   closeM('ciModal');
+  const _sfOfc=getSf(staffId);
+  sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${_sfOfc?_sfOfc.name:'Staff'}\n🏢 Office\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
   if(isStaff){
     $('portalActionArea').style.display='none';
     $('checkinSuccess').classList.add('show');
     $('successMsg').textContent='Checked in at Office — '+checkInTime+(lateReason?' ('+lateReason+')':'');
     renderStaffPortal();
   } else {
-    const sf=getSf(staffId);
-    const _ciCo3=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
-    sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo3}\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
-    toast((sf?sf.name:'Staff')+' checked in — '+checkInTime);
+    toast((_sfOfc?_sfOfc.name:'Staff')+' checked in — '+checkInTime);
     renderStatusBoard();
   }
 }
