@@ -1629,12 +1629,24 @@ function switchStaffTab(idx){
   if(idx===1) renderStaffHistory();
 }
 
+// Find an open (un-checked-out) log for a staff member, regardless of date.
+// Handles overnight shifts (check in 15th 4pm, still open at 16th 4am).
+function findActiveLog(staffId){
+  const open=(S.logs||[]).filter(l=>l&&l.staffId===staffId&&l.checkIn&&!l.checkOut);
+  if(!open.length) return null;
+  // Return the most recent by date then check-in time
+  open.sort((a,b)=>{
+    if(a.date!==b.date) return a.date<b.date?1:-1;
+    return (a.checkIn||'')<(b.checkIn||'')?1:-1;
+  });
+  return open[0];
+}
 function renderStaffPortal(){
   const sf=getSf(S.currentUser.staffId); if(!sf) return;
   $('portalGreeting').textContent='Hi '+sf.name.split(' ')[0]+' 👋';
   $('portalRoleLine').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
   const td=today();
-  const activeLog=S.logs.find(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&!l.checkOut);
+  const activeLog=findActiveLog(sf.id);
   const doneToday=S.logs.filter(l=>l.staffId===sf.id&&l.date===td&&l.checkIn&&l.checkOut).length;
   let html='';
   if(activeLog){
@@ -1704,7 +1716,7 @@ function renderStaffPortal(){
   $('checkinSuccess').classList.remove('show');
   // Start live timer if checked in for office
   const _td2=today();
-  const _activeLog=S.logs.find(l=>l.staffId===sf.id&&l.date===_td2&&l.checkIn&&!l.checkOut);
+  const _activeLog=findActiveLog(sf.id);
   if(_activeLog&&_activeLog.checkIn&&_activeLog.company==='office'){
     setTimeout(()=>startLiveTimer(_activeLog.checkIn), 200);
   } else {
@@ -2272,7 +2284,7 @@ function submitCheckin(){
   if(!S.ciSelfieData){toast('Selfie is mandatory','err');return;}
   const isStaff=isStaffUser();
   const staffId=isStaff?S.currentUser.staffId:parseInt(S.ciCompany==='office'?$('ciOfficeStaff').value:$('ciStaff').value);
-  const _activeLog=(S.logs||[]).find(l=>l&&l.staffId===staffId&&l.checkIn&&!l.checkOut);
+  const _activeLog=findActiveLog(staffId);
   if(_activeLog){toast('Already checked in. Please check out first.','err');closeM('ciModal');return;}
   if(!S.ciGps||!S.ciGps.lat){toast('GPS location required. Please enable location and try again.','err');return;}
   let venue,notes,checkInTime,clientName='';
@@ -2340,8 +2352,7 @@ function submitCheckin(){
 
 // ===== CHECKOUT MODAL =====
 function openCheckoutModal(staffId){
-  const td=today();
-  const log=S.logs.find(l=>l.staffId===staffId&&l.date===td&&l.checkIn&&!l.checkOut);
+  const log=findActiveLog(staffId);
   if(!log){toast('No active check-in found','err');return;}
   S.coLogId=log.id;
   S.coGps=null; S.coGpsArea='';
