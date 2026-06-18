@@ -2388,6 +2388,7 @@ function submitCheckin(){
   // Firebase-first: only update UI after confirmed save
   doFirebaseSave(buildSavePayload())
     .then(()=>{
+      syncSelfiesAndCleanup(); // upload selfie to Storage now that DB save confirmed
       syncLogToFirestore(log);
       syncStaffToFirestore(getSf(log.staffId)||{id:log.staffId,name:'Staff',role:'',phone:'',status:'active',color:'#0d6efd'});
       closeM('ciModal');
