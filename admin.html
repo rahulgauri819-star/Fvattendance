@@ -2663,8 +2663,8 @@ function renderLogs(){
     return `<div class="log-mobile-card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
         <div style="position:relative;flex-shrink:0;">
-          ${l.selfie&&l.selfie.startsWith('data:')?
-            `<img src="${l.selfie}" onclick="viewSelfie(${l.id})" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;">`:
+          ${(l.selfieUrl||(l.selfie&&l.selfie.startsWith('data:')))?
+            `<img src="${l.selfieUrl||l.selfie}" onclick="viewSelfie(${l.id})" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;">`:
             `<div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;flex-shrink:0;">${ini(sf.name)}</div>`}
         </div>
         <div style="flex:1;min-width:0;overflow:hidden;">
@@ -2698,7 +2698,7 @@ function renderLogs(){
       <td>${l.checkOut?'<span class="badge badge-gray">'+l.checkOut+'</span>':'<span class="badge badge-orange">Active</span>'}</td>
       <td style="font-size:12px;">${fmtDur(d)}</td>
       <td style="font-size:12px;max-width:120px;" class="truncate">${wt}</td>
-      <td>${l.selfie?`<img src="${l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
+      <td>${(l.selfieUrl||(l.selfie&&l.selfie.startsWith('data:')))?`<img src="${l.selfieUrl||l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
       <td>${l.gpsLat?`<button class="badge badge-green" style="cursor:pointer;border:none;" onclick="viewGps(${l.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.gpsArea||'View'}</button>`:'<span class="text-muted text-xs">—</span>'}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit">✏️</button>
@@ -2739,9 +2739,11 @@ function viewSelfie(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId); if(!l) return;
   const src=l.selfieUrl||(l.selfie&&l.selfie!=='[photo]'?l.selfie:null);
-  if(!src){toast('Selfie not available','err');return;}
   const sf=getSf(l.staffId);
-  $('gpsModalBody').innerHTML=`<div style="text-align:center;"><img src="${src}" style="width:220px;height:220px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;display:block;" onerror="this.style.display='none';this.nextSibling.style.display='block'"><div style="display:none;padding:20px;color:var(--text-muted);">Photo not available</div><div style="font-weight:700;margin-top:8px;">${sf?sf.name:'Staff'}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue}</div></div>`;
+  $('gpsModalBody').innerHTML=`<div style="text-align:center;">${src
+    ?`<img src="${src}" style="width:220px;height:220px;border-radius:50%;object-fit:cover;border:3px solid var(--success);margin:0 auto 12px;display:block;" onerror="this.style.display='none';this.nextSibling.style.display='block'"><div style="display:none;padding:20px;color:var(--text-muted);">Photo not available</div>`
+    :`<div style="width:220px;height:220px;border-radius:50%;background:var(--surface2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;flex-direction:column;gap:8px;"><span style="font-size:32px;">📷</span><span style="font-size:12px;color:var(--text-muted);">No selfie stored</span></div>`
+  }<div style="font-weight:700;margin-top:8px;">${sf?sf.name:'Staff'}</div><div style="font-size:12px;color:var(--text-muted);">${fmtDate(l.date)} · ${l.venue||'—'}</div></div>`;
   $('gpsModal').querySelector('.modal-title').textContent='Check-In Selfie';
   openM('gpsModal');
 }
