@@ -1677,9 +1677,7 @@ function renderStaffPortal(){
   let html='';
   if(activeLog){
       // Pre-calculate edit button visibility
-  const [_ch,_cm]=activeLog.checkIn.split(':').map(Number);
-  const _ci=new Date(); _ci.setHours(_ch,_cm,0,0);
-  const _canEdit=Math.floor((new Date()-_ci)/60000)<=30;
+  const _canAct=activeLog.createdAt&&(Date.now()-activeLog.createdAt)<30*60*1000;
   html+=`<div style="background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius-lg);padding:16px 20px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1688,8 +1686,8 @@ function renderStaffPortal(){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div style="font-size:13px;color:var(--text-muted);">⏰ Checked in at <strong>${activeLog.checkIn}</strong></div>
         <div style="display:flex;gap:6px;">
-          ${_canEdit?`<button class="btn btn-ghost btn-sm" onclick="openStaffEditModal(${activeLog.id})" style="font-size:12px;">✏️ Edit</button>`:''}
-          ${activeLog.createdAt&&(Date.now()-activeLog.createdAt)<30*60*1000?`<button onclick="staffDeleteOwnLog(${activeLog.id})" style="background:none;border:none;color:var(--danger);font-size:18px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
+          ${_canAct?`<button class="btn btn-ghost btn-sm" onclick="openStaffEditModal(${activeLog.id})" style="font-size:12px;">✏️ Edit</button>`:''}
+          ${_canAct?`<button onclick="staffDeleteOwnLog(${activeLog.id})" style="background:none;border:none;color:var(--danger);font-size:18px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
         </div>
       </div>
       ${activeLog.company==='office'?`<div style="text-align:center;padding:10px;background:rgba(0,0,0,.04);border-radius:var(--radius);">
@@ -1725,10 +1723,12 @@ function renderStaffPortal(){
       html+=`<div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <div style="font-weight:700;color:var(--success);">✅ Checked Out</div>
-          ${_canDelCo?`<button onclick="staffDeleteOwnCheckout(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;" title="Delete checkout (within 30 min)">🗑️ Undo Checkout</button>`:''}
+          <div style="display:flex;gap:6px;">
+            ${_canDelCo?`<button class="btn btn-ghost btn-sm" style="font-size:12px;" onclick="openStaffEditModal(${l.id})">✏️ Edit</button>`:''}
+            ${_canDelCo?`<button onclick="staffDeleteOwnLog(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
+          </div>
         </div>
         <div style="font-size:13px;color:var(--text-muted);">${compLabel(l.company)} · ${l.checkIn} → ${l.checkOut}${_d?' · '+fmtDur(_d):''}</div>
-        ${_canEdit3?`<button class="btn btn-ghost btn-sm" style="margin-top:8px;font-size:12px;" onclick="openStaffEditModal(${l.id})">✏️ Edit details</button>`:''}
       </div>`;
     });
     html+=`<button class="portal-btn portal-btn-in" onclick="openCheckinModal(${sf.id})">
@@ -1805,6 +1805,7 @@ function renderStaffHistory(){
           coTs=_coD2.getTime();
         }
         const canDeleteCo=l.checkOut&&coTs>0&&(nowMs-coTs)<30*60*1000;
+        const canAct=canDelete||canDeleteCo;
         const prefix=li===0?`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">${dayLabel}</div>`:'';
         rows+=`<div class="history-present-row" style="padding:${li===0?'14px 16px 8px':'4px 16px 8px'};border-bottom:${li===dayLogs.length-1?'1px solid var(--divider)':'none'};background:#f0fff4;">
           ${prefix}
@@ -1813,8 +1814,8 @@ function renderStaffHistory(){
               ${ciTime?`<span>⏰ <strong>${ciTime}</strong></span><span>→</span><span>⏰ <strong>${coTime||'—'}</strong></span>${showDur?`<span style="opacity:.6;color:var(--danger);">· ${durStr}</span>`:''}`:''}
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
-              ${canDeleteCo&&!canDelete?`<button onclick="staffDeleteOwnCheckout(${l.id})" style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:2px 6px;border:1px solid var(--danger);border-radius:4px;" title="Undo checkout (within 30 min)">↩️ Undo Checkout</button>`:''}
-              ${canDelete?`<button onclick="staffDeleteOwnLog(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;" title="Delete check-in (within 30 min)">🗑️</button>`:''}
+              ${canAct?`<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px;" onclick="openStaffEditModal(${l.id})">✏️ Edit</button>`:''}
+              ${canAct?`<button onclick="staffDeleteOwnLog(${l.id})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;" title="Delete (within 30 min)">🗑️</button>`:''}
               <span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✅ ${location}</span>
             </div>
           </div>
@@ -1845,19 +1846,32 @@ async function staffDeleteOwnLog(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId);
   if(!l){toast('Log not found','err');return;}
-  if(!l.createdAt||(Date.now()-l.createdAt)>=30*60*1000){
+  const nowMs=Date.now();
+  const ciOk=l.createdAt&&(nowMs-l.createdAt)<30*60*1000;
+  const coOk=l.coCreatedAt&&(nowMs-l.coCreatedAt)<30*60*1000;
+  if(!ciOk&&!coOk){
     toast('Delete window expired (30 min)','err');
+    renderStaffPortal();
     renderStaffHistory();
     return;
   }
-  const _ok1=await showConfirm('Delete this check-in? This cannot be undone.');
+  const _ok1=await showConfirm('Delete this entry? This cannot be undone.');
   if(!_ok1) return;
   const idx=S.logs.findIndex(x=>x.id==logId);
-  if(idx>=0) S.logs.splice(idx,1);
-  saveDataImmediate();
-  renderStaffPortal();
-  renderStaffHistory();
-  toast('Check-in deleted');
+  if(idx<0) return;
+  const removed=S.logs.splice(idx,1);
+  doFirebaseSave(buildSavePayload())
+    .then(()=>{
+      renderStaffPortal();
+      renderStaffHistory();
+      toast('Entry deleted');
+    })
+    .catch(e=>{
+      // Rollback — re-insert the log
+      S.logs.splice(idx,0,removed[0]);
+      toast('Failed to delete. Check your internet and try again.','err');
+      console.error('Delete failed:',e);
+    });
 }
 
 async function staffDeleteOwnCheckout(logId){
@@ -3557,6 +3571,8 @@ function toggleStaffEditFields(company){
 function submitStaffEdit(logId){
   logId=parseInt(logId);
   const log=S.logs.find(l=>l.id==logId); if(!log) return;
+  // Snapshot for rollback
+  const _prev={company:log.company,venue:log.venue,workTypes:[...(log.workTypes||[])],clientName:log.clientName,copyName:log.copyName,copyPhone:log.copyPhone,ciNotes:log.ciNotes};
   log.company=$('seCompany').value;
   const isOff=log.company==='office', isWed=log.company==='wedding', isGro=log.company==='grover';
   log.venue=isOff?'Office':($('seVenue')?$('seVenue').value.trim()||'—':'—');
@@ -3567,10 +3583,22 @@ function submitStaffEdit(logId){
   log.copyName=isGro?($('seCopyName')?$('seCopyName').value.trim():''):'';
   log.copyPhone=isGro?($('seCopyPhone')?$('seCopyPhone').value.trim():''):'';
   log.ciNotes=$('seNotes')?$('seNotes').value.trim():'';
-  saveData();
-  closeM('gpsModal');
-  renderStaffPortal();
-  toast('Details updated');
+  const _saveBtn=document.querySelector('#gpsModal .btn-primary');
+  if(_saveBtn){_saveBtn.disabled=true;_saveBtn.textContent='Saving...';}
+  doFirebaseSave(buildSavePayload())
+    .then(()=>{
+      closeM('gpsModal');
+      renderStaffPortal();
+      renderStaffHistory();
+      toast('Details updated');
+    })
+    .catch(e=>{
+      // Rollback
+      Object.assign(log,_prev);
+      if(_saveBtn){_saveBtn.disabled=false;_saveBtn.textContent='Save';}
+      toast('Failed to save. Check your internet and try again.','err');
+      console.error('Edit save failed:',e);
+    });
 }
 function openDataSizeInput(sizeId,gId,cId,type,idx){
   const disp=document.getElementById(sizeId+'_display');
