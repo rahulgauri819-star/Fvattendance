@@ -2585,6 +2585,7 @@ function submitStaff(){
     toast('Staff updated');
   }
   else{d.id=S.nId.staff++;d.color=colors[d.id%colors.length];d.password=d.password||'123';S.staff.push(d);toast(name+' added');}
+  saveData();
   closeM('sfModal');renderStaff();
 }
 async function deleteStaff(id){
