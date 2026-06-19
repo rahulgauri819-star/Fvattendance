@@ -1889,7 +1889,20 @@ function go(view,el){
 function toggleSidebar(){$('sidebar').classList.toggle('open');$('sidebarOverlay').classList.toggle('open');}
 function closeSidebar(){$('sidebar').classList.remove('open');$('sidebarOverlay').classList.remove('open');}
 function openM(id){$(id).classList.add('open');lucide.createIcons();}
-function closeM(id){$(id).classList.remove('open');}
+function closeM(id){
+  $(id).classList.remove('open');
+  if(window._fvPendingRerender){
+    window._fvPendingRerender=false;
+    const activeView=document.querySelector('.view.active');
+    if(activeView){
+      const vid=activeView.id.replace('view-','');
+      if(vid==='dashboard'&&S.currentUser&&S.currentUser.role==='admin') renderDash();
+      else if(vid==='staff') renderStaff();
+      else if(vid==='logs') renderLogs();
+      else if(vid==='reports') renderReports();
+    }
+  }
+}
 function openModal(html){$('genericModalInner').innerHTML=html;openM('genericModal');lucide.createIcons();}
 function closeModal(){closeM('genericModal');}
 function toast(msg,type='ok'){
@@ -6176,6 +6189,59 @@ function flushPendingSave(){
 window.addEventListener('pagehide', flushPendingSave);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushPendingSave(); });
 
+// Apply incoming Firebase data to local state and re-render (or defer if a modal is open)
+function applyIncomingData(data){
+  if(!data) return;
+  const anyModalOpen = document.querySelector('.modal-bg.open');
+  if(data.staff){
+    const incoming=data.staff.filter(Boolean);
+    const local=S.staff||[];
+    const pendingLocal=local.filter(s=>s&&!incoming.find(i=>i&&i.id===s.id));
+    S.staff=[...incoming,...pendingLocal];
+  }
+  if(data.logs) S.logs = data.logs.filter(Boolean);
+  if(data.nId) S.nId = data.nId;
+  if(data.leaves) S.leaves = data.leaves;
+  if(data.medicalLeaves) S.medicalLeaves = data.medicalLeaves;
+  if(data.weddingGroups) S.weddingGroups = data.weddingGroups;
+  if(data.manager) S.manager = data.manager;
+  if(data.wgIdCounter) S.wgIdCounter = data.wgIdCounter;
+  if(data.freelancers) S.freelancers = data.freelancers;
+  if(data.freelancerIdCounter) S.freelancerIdCounter = data.freelancerIdCounter;
+  if(data.hardDisks) S.hardDisks = data.hardDisks;
+  if(data.hardDiskIdCounter) S.hardDiskIdCounter = data.hardDiskIdCounter;
+  if(data.attendanceStartDay) S.attendanceStartDay = data.attendanceStartDay;
+  if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
+  if(data.officeStandardTime) S.officeStandardTime = data.officeStandardTime;
+  if(anyModalOpen){
+    window._fvPendingRerender=true;
+    return;
+  }
+  const activeView = document.querySelector('.view.active');
+  if(activeView){
+    const vid = activeView.id.replace('view-','');
+    if(vid==='dashboard'&&S.currentUser&&S.currentUser.role==='admin') renderDash();
+    else if(vid==='staff') renderStaff();
+    else if(vid==='logs') renderLogs();
+    else if(vid==='reports') renderReports();
+  }
+}
+// FIX: Mobile browsers (esp. iOS) can suspend the tab and silently drop the
+// Firebase realtime connection during long backgrounds (e.g. overnight).
+// The live listener may not resync reliably on its own. So whenever the tab
+// becomes visible again, force a fresh one-time fetch to guarantee the admin
+// always sees current data the moment they look at the screen.
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible'&&S.currentUser){
+    db.ref('appData').once('value').then(snap=>applyIncomingData(snap.val())).catch(()=>{});
+  }
+});
+window.addEventListener('focus', ()=>{
+  if(S.currentUser){
+    db.ref('appData').once('value').then(snap=>applyIncomingData(snap.val())).catch(()=>{});
+  }
+});
+
 function showLoadingScreen(msg){
   let el = $('fbLoadingScreen');
   if(!el){
@@ -6259,40 +6325,7 @@ function init(){
         renderDash();
     // Listen for real-time updates from other devices
     db.ref('appData').on('value', snap=>{
-      const data = snap.val();
-      if(!data) return;
-      // Only update if not currently in a modal (to avoid disrupting active forms)
-      const anyModalOpen = document.querySelector('.modal-bg.open');
-      if(anyModalOpen) return;
-      if(data.staff){
-        const incoming=data.staff.filter(Boolean);
-        const local=S.staff||[];
-        const pendingLocal=local.filter(s=>s&&!incoming.find(i=>i&&i.id===s.id));
-        S.staff=[...incoming,...pendingLocal];
-      }
-      if(data.logs) S.logs = data.logs.filter(Boolean);
-      if(data.nId) S.nId = data.nId;
-      if(data.leaves) S.leaves = data.leaves;
-      if(data.medicalLeaves) S.medicalLeaves = data.medicalLeaves;
-      if(data.weddingGroups) S.weddingGroups = data.weddingGroups;
-      if(data.manager) S.manager = data.manager;
-      if(data.wgIdCounter) S.wgIdCounter = data.wgIdCounter;
-      if(data.freelancers) S.freelancers = data.freelancers;
-      if(data.freelancerIdCounter) S.freelancerIdCounter = data.freelancerIdCounter;
-      if(data.hardDisks) S.hardDisks = data.hardDisks;
-      if(data.hardDiskIdCounter) S.hardDiskIdCounter = data.hardDiskIdCounter;
-      if(data.attendanceStartDay) S.attendanceStartDay = data.attendanceStartDay;
-      if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
-      if(data.officeStandardTime) S.officeStandardTime = data.officeStandardTime;
-      // Re-render current view silently
-      const activeView = document.querySelector('.view.active');
-      if(activeView){
-        const vid = activeView.id.replace('view-','');
-        if(vid==='dashboard'&&S.currentUser&&S.currentUser.role==='admin') renderDash();
-        else if(vid==='staff') renderStaff();
-        else if(vid==='logs') renderLogs();
-        else if(vid==='reports') renderReports();
-      }
+      applyIncomingData(snap.val());
     });
   }).catch(e=>{
     hideLoadingScreen();
