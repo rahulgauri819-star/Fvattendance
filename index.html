@@ -631,7 +631,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       </div>
       <div id="staffPortalHistory" class="staff-tab-content" style="display:none;">
         <div style="font-size:20px;font-weight:800;margin-bottom:4px;">My Attendance</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;" id="portalMonthLabel"></div>
+        <select id="portalMonthSelect" onchange="onPortalMonthChange()" style="font-size:13px;color:var(--text);margin-bottom:20px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);width:100%;max-width:220px;"></select>
         <div class="card"><div id="portalLogList"></div></div>
       </div>
     </div>
@@ -911,15 +911,10 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Office Duty Settings</span></div>
-          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
-            <div class="form-hint">Standard check-in time for office duty. Staff checking in more than 1 hour late will be asked for a reason.</div>
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <label class="form-label" style="margin:0;">Standard Check-in Time:</label>
-              <input class="form-input" type="time" id="officeStdTimeInput" style="width:130px;">
-              <button class="btn btn-primary" onclick="saveOfficeStandardTime()">Save</button>
-              <span id="officeTimeSavedMsg" style="display:none;font-size:13px;color:var(--success);">✓ Saved</span>
-            </div>
+          <div class="card-header"><span class="card-title">Office Duty — Standard Check-in Time</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-hint">Each staff member's standard check-in time. Checking in more than 1 hour after their time will ask for a late reason.</div>
+            <div id="perStaffTimeList" style="display:flex;flex-direction:column;gap:8px;"></div>
           </div>
         </div>
         <div class="card">
@@ -1420,20 +1415,9 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 <script>
 // ===== STATE =====
 const S = {
-  staff: [
-    {id:1,name:"Arjun Sharma",role:"Photographer",phone:"101",password:"123",email:"arjun@fv.in",status:"active",color:"#0d6efd"},
-    {id:2,name:"Priya Nair",role:"Cinematographer",phone:"102",password:"123",email:"priya@fv.in",status:"active",color:"#198754"},
-    {id:3,name:"Rohan Mehta",role:"Photographer",phone:"103",password:"123",email:"rohan@fv.in",status:"active",color:"#6f42c1"},
-    {id:4,name:"Sunita Gupta",role:"Editor",phone:"104",password:"123",email:"sunita@fv.in",status:"active",color:"#fd7e14"},
-    {id:5,name:"Vikram Singh",role:"Cinematographer",phone:"105",password:"123",email:"vikram@fv.in",status:"active",color:"#e83e8c"},
-    {id:6,name:"Anjali Patel",role:"Assistant",phone:"106",password:"123",email:"anjali@fv.in",status:"active",color:"#20c997"},
-  ],
-  logs: [
-    {id:1,staffId:1,company:"wedding",venue:"Taj Palace, New Delhi",date:"2026-06-04",checkIn:"09:30",checkOut:"18:00",selfie:"",gpsLat:28.6139,gpsLng:77.2090,gpsAddr:"New Delhi, India",clientName:"Sharma Family",ciNotes:"On time",coNotes:"",copyName:"",copyPhone:"",workTypes:["Still Photography"],prints:0,printSize:""},
-    {id:2,staffId:2,company:"grover",venue:"Hyatt Regency, Delhi",date:"2026-06-04",checkIn:"10:00",checkOut:"",selfie:"",gpsLat:28.5562,gpsLng:77.1000,gpsAddr:"Gurugram, India",clientName:"",ciNotes:"",coNotes:"",copyName:"",copyPhone:"",workTypes:[],prints:0,printSize:""},
-    {id:3,staffId:3,company:"wedding",venue:"Taj Palace, New Delhi",date:"2026-06-04",checkIn:"08:45",checkOut:"13:30",selfie:"",gpsLat:28.6139,gpsLng:77.2090,gpsAddr:"New Delhi, India",clientName:"Sharma Family",ciNotes:"",coNotes:"",copyName:"",copyPhone:"",workTypes:["Cinematic Video"],prints:0,printSize:""},
-  ],
-  nId:{staff:7,log:4},
+  staff: [],
+  logs: [],
+  nId:{staff:1,log:1},
   editSfId:null, coLogId:null,
   ciCompany:null, ciSelfieData:null, ciGps:null,
   roles: ['Photographer','Cinematographer','Editor','Assistant','Drone Operator','Photo Booth Operator'],
@@ -1767,18 +1751,33 @@ function startLiveTimer(checkInTime){
   update();
   _timerInterval=setInterval(update,1000);
 }
+function onPortalMonthChange(){
+  S.portalSelectedMonth=$('portalMonthSelect').value;
+  renderStaffHistory();
+}
 function renderStaffHistory(){
   const sf=getSf(S.currentUser.staffId); if(!sf) return;
   const now=new Date();
-  const year=now.getFullYear(), month=now.getMonth();
-  const ym=year+'-'+String(month+1).padStart(2,'0');
-  $('portalMonthLabel').textContent=now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  // Build last 3 months (current + 2 prior) for the dropdown
+  const monthOptions=[];
+  for(let i=0;i<3;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const ymVal=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    monthOptions.push({val:ymVal,label:d.toLocaleDateString('en-IN',{month:'long',year:'numeric'}),year:d.getFullYear(),month:d.getMonth()});
+  }
+  if(!S.portalSelectedMonth) S.portalSelectedMonth=monthOptions[0].val;
+  const sel=$('portalMonthSelect');
+  if(sel) sel.innerHTML=monthOptions.map(o=>`<option value="${o.val}"${o.val===S.portalSelectedMonth?' selected':''}>${o.label}</option>`).join('');
+  const chosen=monthOptions.find(o=>o.val===S.portalSelectedMonth)||monthOptions[0];
+  const year=chosen.year, month=chosen.month;
+  const ym=chosen.val;
+  const isCurrentMonth=(year===now.getFullYear()&&month===now.getMonth());
   const myLogs=S.logs.filter(l=>l.staffId===sf.id&&l.date.startsWith(ym));
   const logsByDate={};
   myLogs.forEach(l=>{ if(!logsByDate[l.date]) logsByDate[l.date]=[]; logsByDate[l.date].push(l); });
   const uniqueDays=Object.keys(logsByDate).length;
   const daysInMonth=new Date(year,month+1,0).getDate();
-  const lastDay=Math.min(daysInMonth, now.getDate());
+  const lastDay=isCurrentMonth?Math.min(daysInMonth, now.getDate()):daysInMonth;
   const todayStr=today();
   const nowMs=Date.now();
   let rows='';
@@ -2359,7 +2358,7 @@ function submitCheckin(){
     if($('ciOfficeTime')) $('ciOfficeTime').value=checkInTime;
     // Check if late
     const sfForLate=getSf(staffId);
-    const stdTime=sfForLate&&sfForLate.officeStartTime?sfForLate.officeStartTime:(S.officeStandardTime||'11:00');
+    const stdTime=(sfForLate&&sfForLate.officeStartTime)||'11:00';
     const [stdH,stdM]=stdTime.split(':').map(Number);
     const [ciH,ciM]=checkInTime.split(':').map(Number);
     const stdMins=stdH*60+stdM;
@@ -3027,7 +3026,7 @@ function renderSettings(){
   renderFreelancersList();
   renderHardDisksList();
   if($('attStartDayInput')) $('attStartDayInput').value=S.attendanceStartDay||1;
-  if($('officeStdTimeInput')) $('officeStdTimeInput').value=S.officeStandardTime||'11:00';
+  renderPerStaffTimeList();
   ['pwCurrent','pwNew','pwConfirm'].forEach(id=>$(id).value='');
   $('pwError').style.display='none';
   lucide.createIcons();
@@ -3302,13 +3301,31 @@ function saveHardDisks(gId){
 }
 
 // ===== ATTENDANCE START DAY =====
-function saveOfficeStandardTime(){
-  const v=$('officeStdTimeInput').value;
+function renderPerStaffTimeList(){
+  const el=$('perStaffTimeList'); if(!el) return;
+  const activeStaff=(S.staff||[]).filter(s=>s.status==='active');
+  if(!activeStaff.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No staff yet.</div>';
+    return;
+  }
+  el.innerHTML=activeStaff.map(s=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);flex-wrap:wrap;">
+      <div class="av" style="background:${s.color};width:26px;height:26px;font-size:11px;flex-shrink:0;">${ini(s.name)}</div>
+      <span style="flex:1;min-width:100px;font-size:14px;font-weight:500;">${s.name}</span>
+      <input class="form-input" type="time" id="perStaffTime_${s.id}" value="${s.officeStartTime||'11:00'}" style="width:130px;">
+      <button class="btn btn-primary btn-sm" onclick="savePerStaffTime(${s.id})">Save</button>
+      <span id="perStaffTimeMsg_${s.id}" style="display:none;font-size:12px;color:var(--success);">✓ Saved</span>
+    </div>`).join('');
+}
+function savePerStaffTime(staffId){
+  const v=$('perStaffTime_'+staffId).value;
   if(!v){toast('Enter a time','err');return;}
-  S.officeStandardTime=v;
+  const sf=S.staff.find(s=>s.id===staffId);
+  if(!sf) return;
+  sf.officeStartTime=v;
   saveData();
-  const m=$('officeTimeSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
-  toast('Office standard time saved: '+v);
+  const m=$('perStaffTimeMsg_'+staffId); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
+  toast(sf.name+'\'s check-in time saved: '+v);
 }
 function toggleOfficeTime(radio){
   const ot=$('sfOfficeTime'); if(!ot) return;
@@ -6255,6 +6272,16 @@ function syncSelfiesAndCleanup(){
           ref.getDownloadURL().then(url=>{
             l.selfieUrl=url;
             l.selfie='[photo]'; // replace base64 with URL reference
+            // FIX: persist the URL back to Firebase so it isn't lost on the
+            // next refresh/refetch — previously this only lived in memory
+            // and got silently overwritten by the next data sync.
+            saveData();
+            // Refresh the visible log table so the thumbnail appears now
+            const activeView=document.querySelector('.view.active');
+            if(activeView){
+              const vid=activeView.id.replace('view-','');
+              if(vid==='logs'&&typeof renderLogs==='function') renderLogs();
+            }
           });
         }).catch(()=>{});
       });
