@@ -2786,6 +2786,7 @@ function switchReportTab(idx){
   if(idx===4) renderBilling();
 }
 function renderReports(){
+  if(!$('companyReport')) return;
   const groverL=S.logs.filter(l=>l.company==='grover').length;
   const weddingL=S.logs.filter(l=>l.company==='wedding').length;
   const officeL=S.logs.filter(l=>l.company==='office').length;
@@ -3250,7 +3251,7 @@ function savePerStaffTime(staffId){
   sf.officeStartTime=v;
   saveData();
   const m=$('perStaffTimeMsg_'+staffId); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
-  toast(sf.name+'\'s check-in time saved: '+v);
+  toast(sf.name+"'s check-in time saved: "+v);
 }
 function toggleOfficeTime(radio){
   const ot=$('sfOfficeTime'); if(!ot) return;
@@ -5600,6 +5601,7 @@ function showStaffExportModal(){
         <input type="checkbox" id="srExpSummary" checked style="display:none;">
       </label>
       <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="doExportStaffReport()">Download CSV</button>
+      <button class="btn btn-outline" style="width:100%;margin-top:8px;" onclick="doExportStaffPDF()">📄 Download PDF</button>
     </div>`);
 }
 
@@ -5671,6 +5673,133 @@ function doExportStaffReport(){
   toast('Report exported ✓'); closeModal();
 }
 
+function doExportStaffPDF(){
+  const sfId=parseInt(($('srExpStaff')||{}).value||0)||'all';
+  const from=($('srExpFrom')||{}).value||'';
+  const to=($('srExpTo')||{}).value||'';
+  const incSummary=$('srExpSummary')&&$('srExpSummary').checked;
+  if(!from||!to){toast('Select date range','err');return;}
+  let logs=S.logs.filter(function(l){return l.date>=from&&l.date<=to;});
+  if(sfId!=='all') logs=logs.filter(function(l){return l.staffId==sfId;});
+  logs.sort(function(a,b){return a.date.localeCompare(b.date)||a.checkIn.localeCompare(b.checkIn);});
+  const staffIds=sfId==='all'?[...new Set(logs.map(function(l){return l.staffId;}))]:[ isNaN(sfId)?sfId:parseInt(sfId) ];
+  const fmtD=function(ds){return new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});};
+  const fromFmt=fmtD(from), toFmt=fmtD(to);
+  const fromD=new Date(from+'T00:00:00'), toD=new Date(to+'T00:00:00');
+  const monthYearLabel=(fromD.getMonth()===toD.getMonth()&&fromD.getFullYear()===toD.getFullYear())
+    ?fromD.toLocaleDateString('en-IN',{month:'long',year:'numeric'})
+    :(fromFmt+' \u2013 '+toFmt);
+  const dutyLabel=function(c){return c==='grover'?'Grover A/V':c==='wedding'?'Wedding':'Office';};
+  const dutyColor=function(c){return c==='grover'?'#0d6efd':c==='wedding'?'#e83e8c':'#198754';};
+  let pages='';
+  staffIds.forEach(function(id){
+    const sf=getSf(id); if(!sf) return;
+    const sfLogs=logs.filter(function(l){return l.staffId==id;});
+    if(!sfLogs.length) return;
+    const daysWorked=[...new Set(sfLogs.map(function(l){return l.date;}))].length;
+    const totalMins=sfLogs.reduce(function(s,l){return s+(l.checkIn&&l.checkOut?dur(l.checkIn,l.checkOut):0);},0);
+    const totalHrs=Math.floor(totalMins/60), totalMin=totalMins%60;
+    const months=[...new Set(sfLogs.map(function(l){return l.date.slice(0,7);}))].sort();
+    let leaveRows='';
+    if(incSummary){
+      months.forEach(function(mo){
+        const parts=mo.split('-').map(Number);
+        const y=parts[0],m=parts[1];
+        const sundays=countSundaysInMonth(y,m);
+        const taken=countLeavesTaken(id,mo);
+        const moLabel=new Date(y,m-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+        leaveRows+='<tr><td>'+moLabel+'</td><td style="text-align:center;">'+sundays+'</td><td style="text-align:center;">'+taken+'</td><td style="text-align:center;">'+Math.max(0,sundays-taken)+'</td></tr>';
+      });
+    }
+    const hasClient=sfLogs.some(function(l){return l.clientName;});
+    const hasNotes=sfLogs.some(function(l){return l.ciNotes;});
+    let attRows='';
+    sfLogs.forEach(function(l,i){
+      const dt=new Date(l.date+'T00:00:00');
+      const dayLabel=dt.toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'});
+      const d2=l.checkIn&&l.checkOut?dur(l.checkIn,l.checkOut):null;
+      const durLabel=d2?fmtDur(d2):'—';
+      const wt=(l.workTypes||[]).join(', ')||'—';
+      const ci=l.checkIn||'—', co=l.checkOut||'Active';
+      const isSun=dt.getDay()===0;
+      const rowBg=isSun?'background:#fff0f0;':i%2===0?'background:#f9f9f9;':'';
+      const dColor=dutyColor(l.company);
+      attRows+='<tr style="'+rowBg+'">'
+        +'<td style="text-align:center;color:#666;">'+(i+1)+'</td>'
+        +'<td>'+dayLabel+'</td>'
+        +'<td><span style="background:'+dColor+'20;color:'+dColor+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">'+dutyLabel(l.company)+'</span></td>'
+        +'<td>'+(l.venue||'—')+'</td>'
+        +'<td style="text-align:center;">'+ci+'</td>'
+        +'<td style="text-align:center;color:'+(co==='Active'?'#e67e22':'inherit')+';">'+co+'</td>'
+        +'<td style="text-align:center;font-weight:600;">'+durLabel+'</td>'
+        +'<td style="font-size:11px;color:#555;">'+wt+'</td>'
+        +(hasClient?'<td style="font-size:11px;">'+(l.clientName||'—')+'</td>':'')
+        +(hasNotes?'<td style="font-size:11px;color:#666;">'+(l.ciNotes||'—')+'</td>':'')
+        +'</tr>';
+    });
+    const clientTh=hasClient?'<th>Client</th>':'';
+    const notesTh=hasNotes?'<th>Notes</th>':'';
+    const leaveSec=incSummary&&leaveRows
+      ?'<div class="leave-section"><div class="section-title">Leave Summary</div>'
+        +'<table><thead><tr><th>Month</th><th style="text-align:center;">Sundays</th><th style="text-align:center;">Leaves Taken</th><th style="text-align:center;">Remaining</th></tr></thead>'
+        +'<tbody>'+leaveRows+'</tbody></table></div>'
+      :'';
+    const genTime=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    pages+='<div class="page">'
+      +'<div class="header"><div class="company-name">Fotovision Attendance Report</div><div class="period">'+monthYearLabel+'</div></div>'
+      +'<div class="staff-card">'
+        +'<div class="avatar" style="background:'+sf.color+';">'+ini(sf.name)+'</div>'
+        +'<div class="staff-info"><div class="staff-name">'+sf.name+'</div><div class="staff-role">'+(sf.role||'—')+'</div></div>'
+        +'<div class="stats">'
+          +'<div class="stat-box"><div class="stat-val">'+daysWorked+'</div><div class="stat-lbl">Days Worked</div></div>'
+          +'<div class="stat-box"><div class="stat-val">'+totalHrs+'h '+totalMin+'m</div><div class="stat-lbl">Total Hours</div></div>'
+          +'<div class="stat-box"><div class="stat-val">'+fromFmt+'</div><div class="stat-lbl">From</div></div>'
+          +'<div class="stat-box"><div class="stat-val">'+toFmt+'</div><div class="stat-lbl">To</div></div>'
+        +'</div>'
+      +'</div>'
+      +'<table><thead><tr>'
+        +'<th style="width:30px;">#</th><th>Date</th><th>Duty</th><th>Venue</th>'
+        +'<th style="text-align:center;">Check-In</th><th style="text-align:center;">Check-Out</th>'
+        +'<th style="text-align:center;">Duration</th><th>Work Type</th>'+clientTh+notesTh
+      +'</tr></thead><tbody>'+attRows+'</tbody></table>'
+      +leaveSec
+      +'<div class="footer">Generated on '+genTime+' \xB7 Fotovision Attendance System</div>'
+      +'</div>';
+  });
+  if(!pages){toast('No data to export','err');return;}
+  const css='*{margin:0;padding:0;box-sizing:border-box;}'
+    +'body{font-family:"Segoe UI",Arial,sans-serif;font-size:13px;color:#222;background:#fff;}'
+    +'.page{padding:28px 32px;page-break-after:always;min-height:100vh;display:flex;flex-direction:column;gap:18px;}'
+    +'.page:last-child{page-break-after:auto;}'
+    +'.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a1a2e;padding-bottom:10px;}'
+    +'.company-name{font-size:20px;font-weight:800;color:#1a1a2e;letter-spacing:.5px;}'
+    +'.period{font-size:13px;color:#555;font-weight:600;}'
+    +'.staff-card{display:flex;align-items:center;gap:16px;background:#f8f9fe;border:1px solid #e0e4f0;border-radius:10px;padding:16px 20px;}'
+    +'.avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0;}'
+    +'.staff-info{flex:1;}'
+    +'.staff-name{font-size:17px;font-weight:800;color:#1a1a2e;}'
+    +'.staff-role{font-size:12px;color:#666;margin-top:2px;}'
+    +'.stats{display:flex;gap:10px;}'
+    +'.stat-box{text-align:center;background:#fff;border:1px solid #e0e4f0;border-radius:8px;padding:8px 14px;min-width:70px;}'
+    +'.stat-val{font-size:14px;font-weight:800;color:#1a1a2e;}'
+    +'.stat-lbl{font-size:10px;color:#888;margin-top:2px;white-space:nowrap;}'
+    +'table{width:100%;border-collapse:collapse;font-size:12px;}'
+    +'th{background:#1a1a2e;color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11px;}'
+    +'td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:middle;}'
+    +'tr:last-child td{border-bottom:none;}'
+    +'.leave-section{margin-top:4px;}'
+    +'.section-title{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0e4f0;}'
+    +'.footer{margin-top:auto;font-size:10px;color:#aaa;text-align:center;padding-top:12px;border-top:1px solid #eee;}'
+    +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}.page{padding:20px 24px;}}';
+  const fullHtml='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Attendance Report</title><style>'+css+'</style></head><body>'+pages+'</body></html>';
+  const w=window.open('','_blank');
+  if(!w){toast('Allow popups to generate PDF','err');return;}
+  w.document.write(fullHtml);
+  w.document.close();
+  setTimeout(function(){w.focus();w.print();},600);
+  toast('PDF ready \u2014 use Print \u2192 Save as PDF \u2713');
+  closeModal();
+}
 function markCandid(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId); if(!l) return;
