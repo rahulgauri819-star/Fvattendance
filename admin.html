@@ -730,7 +730,15 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 
         <!-- Data Copy Log -->
         <div class="card mt-4">
-          <div class="card-header"><span class="card-title">Data Copy Log (Grover Events)</span></div>
+          <div class="card-header">
+            <span class="card-title">Data Copy Log (Grover Events)</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <input type="date" id="copyLogFrom" class="form-input" style="width:140px;font-size:12px;" onchange="renderCopyLog()">
+              <span style="font-size:12px;color:var(--text-muted);">to</span>
+              <input type="date" id="copyLogTo" class="form-input" style="width:140px;font-size:12px;" onchange="renderCopyLog()">
+              <button class="btn btn-outline btn-sm" onclick="exportCopyLogPDF()" style="font-size:11px;">📄 PDF</button>
+            </div>
+          </div>
           <div class="table-wrap"><table class="data-table"><thead><tr><th>Staff</th><th>Date</th><th>Venue</th><th>Copied By</th><th>Phone</th></tr></thead><tbody id="copyLogTbody"></tbody></table></div>
         </div>
       </div>
@@ -2796,16 +2804,89 @@ function renderReports(){
     <div style="padding:12px;background:var(--wedding-light);border-radius:var(--radius-sm);border-left:4px solid var(--wedding-color);cursor:pointer;" onclick="go('wedding-duties',document.querySelector('[onclick*=wedding-duties]'))"><div style="font-weight:700;margin-bottom:3px;">💍 Wedding Division</div><div style="font-size:13px;color:var(--text-muted);">${weddingL} attendance records</div></div>
     <div style="padding:12px;background:var(--purple-light);border-radius:var(--radius-sm);border-left:4px solid var(--purple);cursor:pointer;" onclick="go('office-duties',document.querySelector('[onclick*=office-duties]'))"><div style="font-weight:700;margin-bottom:3px;">🏢 Office Duty</div><div style="font-size:13px;color:var(--text-muted);">${officeL} attendance records</div></div>
   </div>`;
-  const copyLogs=S.logs.filter(l=>l.company==='grover'&&l.copyName);
-  $('copyLogTbody').innerHTML=copyLogs.length?copyLogs.map(l=>{
-    const sf=getSf(l.staffId);
-    return `<tr><td><div class="staff-cell"><div class="av" style="background:${sf?sf.color:'#ccc'};width:28px;height:28px;font-size:11px;">${sf?ini(sf.name):'?'}</div>${sf?sf.name:'—'}</div></td><td>${fmtDate(l.date)}</td><td>${l.venue}</td><td style="font-weight:600;">${l.copyName}</td><td>${l.copyPhone}</td></tr>`;
-  }).join(''):'<tr><td colspan="5"><div class="empty"><p>No data copy records yet</p></div></td></tr>';
+  renderCopyLog();
   renderStaffWiseReport();
   lucide.createIcons();
 }
 
-// ===== STAFF-WISE REPORT =====
+function renderCopyLog(){
+  const from=$('copyLogFrom')&&$('copyLogFrom').value;
+  const to=$('copyLogTo')&&$('copyLogTo').value;
+  // Fix: filter by copyName being non-empty string, not just truthy
+  let copyLogs=S.logs.filter(function(l){return l.company==='grover'&&l.copyName&&l.copyName.trim()!=='';});
+  if(from) copyLogs=copyLogs.filter(function(l){return l.date>=from;});
+  if(to) copyLogs=copyLogs.filter(function(l){return l.date<=to;});
+  copyLogs.sort(function(a,b){return b.date.localeCompare(a.date);});
+  const tbody=$('copyLogTbody'); if(!tbody) return;
+  tbody.innerHTML=copyLogs.length?copyLogs.map(function(l){
+    const sf=getSf(l.staffId);
+    return '<tr>'
+      +'<td><div class="staff-cell"><div class="av" style="background:'+(sf?sf.color:'#ccc')+';width:28px;height:28px;font-size:11px;">'+(sf?ini(sf.name):'?')+'</div>'+(sf?sf.name:'—')+'</div></td>'
+      +'<td>'+fmtDate(l.date)+'</td>'
+      +'<td>'+(l.venue||'—')+'</td>'
+      +'<td style="font-weight:600;">'+(l.copyName||'—')+'</td>'
+      +'<td>'+(l.copyPhone||'—')+'</td>'
+      +'</tr>';
+  }).join(''):'<tr><td colspan="5"><div class="empty"><p>No data copy records found</p></div></td></tr>';
+}
+
+function exportCopyLogPDF(){
+  const from=$('copyLogFrom')&&$('copyLogFrom').value;
+  const to=$('copyLogTo')&&$('copyLogTo').value;
+  var copyLogs=S.logs.filter(function(l){return l.company==='grover'&&l.copyName&&l.copyName.trim()!=='';});
+  if(from) copyLogs=copyLogs.filter(function(l){return l.date>=from;});
+  if(to) copyLogs=copyLogs.filter(function(l){return l.date<=to;});
+  copyLogs.sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!copyLogs.length){toast('No data copy records to export','err');return;}
+  var fmtD=function(ds){return new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});};
+  var periodLabel=from&&to?(fmtD(from)+' to '+fmtD(to)):from?('From '+fmtD(from)):to?('Until '+fmtD(to)):'All Records';
+  var rows=copyLogs.map(function(l,i){
+    var sf=getSf(l.staffId);
+    return '<tr style="'+(i%2===0?'background:#f9f9f9;':'')+'">'
+      +'<td style="text-align:center;color:#666;">'+(i+1)+'</td>'
+      +'<td style="white-space:nowrap;">'+fmtD(l.date)+'</td>'
+      +'<td>'+(sf?sf.name:'—')+'</td>'
+      +'<td>'+(l.venue||'—')+'</td>'
+      +'<td style="font-weight:600;">'+(l.copyName||'—')+'</td>'
+      +'<td>'+(l.copyPhone||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+  var css='*{margin:0;padding:0;box-sizing:border-box;}'
+    +'body{font-family:"Segoe UI",Arial,sans-serif;font-size:13px;color:#222;background:#fff;padding:28px 32px;}'
+    +'.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a1a2e;padding-bottom:10px;margin-bottom:20px;}'
+    +'.title{font-size:20px;font-weight:800;color:#1a1a2e;}'
+    +'.period{font-size:13px;color:#555;font-weight:600;}'
+    +'table{width:100%;border-collapse:collapse;font-size:12px;}'
+    +'th{background:#1a1a2e;color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11px;}'
+    +'td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:middle;}'
+    +'.footer{margin-top:20px;font-size:10px;color:#aaa;text-align:center;padding-top:12px;border-top:1px solid #eee;}'
+    +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}';
+  var genTime=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Data Copy Log</title><style>'+css+'</style></head><body>'
+    +'<div class="header"><div class="title">Fotovision — Data Copy Log</div><div class="period">'+periodLabel+'</div></div>'
+    +'<table><thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Copied By</th><th>Phone</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="footer">Generated on '+genTime+' \xB7 Fotovision Attendance System</div>'
+    +'</body></html>';
+  var fname='DataCopyLog'+(from?'_'+from:'')+(to&&to!==from?'_to_'+to:'')+'.pdf';
+  printAndSavePDF(html, fname);
+}
+// Helper: render HTML as PDF — uses iframe to avoid new tab, filename shown in print dialog
+function printAndSavePDF(html, filename){
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var iframe=document.createElement('iframe');
+  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;';
+  document.body.appendChild(iframe);
+  iframe.src=url;
+  iframe.onload=function(){
+    try{
+      iframe.contentWindow.focus();
+      iframe.contentDocument.title=filename.replace('.pdf','');
+      iframe.contentWindow.print();
+    }catch(e){ window.open(url,'_blank'); }
+    setTimeout(function(){ document.body.removeChild(iframe); URL.revokeObjectURL(url); },60000);
+  };
+}
 function staffReportPrevMonth(){
   const [y,m]=S.staffReportMonth.split('-').map(Number);
   const d=new Date(y,m-2,1);
@@ -5676,37 +5757,33 @@ function doExportStaffReport(){
 function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
   var sfId, from, to, incSummary;
   if(presetMonthAll!==undefined){
-    // All staff for a specific month
     sfId='all';
-    var parts0a=presetMonthAll.split('-').map(Number);
-    var y0a=parts0a[0],m0a=parts0a[1];
+    var p0=presetMonthAll.split('-').map(Number);
     from=presetMonthAll+'-01';
-    var lastDay0a=new Date(y0a,m0a,0).getDate();
-    to=presetMonthAll+'-'+String(lastDay0a).padStart(2,'0');
-    incSummary=true;
+    to=presetMonthAll+'-'+String(new Date(p0[0],p0[1],0).getDate()).padStart(2,'0');
+    incSummary=false;
   } else if(presetSfId!==undefined){
     sfId=presetSfId;
-    var parts0=presetMonth.split('-').map(Number);
-    var y0=parts0[0],m0=parts0[1];
+    var p1=presetMonth.split('-').map(Number);
     from=presetMonth+'-01';
-    var lastDay0=new Date(y0,m0,0).getDate();
-    to=presetMonth+'-'+String(lastDay0).padStart(2,'0');
-    incSummary=true;
+    to=presetMonth+'-'+String(new Date(p1[0],p1[1],0).getDate()).padStart(2,'0');
+    incSummary=false;
   } else {
     sfId=parseInt(($('srExpStaff')||{}).value||0)||'all';
     from=($('srExpFrom')||{}).value||'';
     to=($('srExpTo')||{}).value||'';
-    incSummary=$('srExpSummary')&&$('srExpSummary').checked;
+    incSummary=false; // Leave summary removed per item 9
   }
   if(!from||!to){toast('Select date range','err');return;}
   var logs=S.logs.filter(function(l){return l.date>=from&&l.date<=to;});
   if(sfId!=='all') logs=logs.filter(function(l){return l.staffId==sfId;});
   logs.sort(function(a,b){return a.date.localeCompare(b.date)||(a.checkIn||'').localeCompare(b.checkIn||'');});
-  var staffIds=sfId==='all'?[...new Set(logs.map(function(l){return l.staffId;}))]:[isNaN(sfId)?sfId:parseInt(sfId)];
+  var staffIds=sfId==='all'?[...new Set(logs.map(function(l){return l.staffId;}))]:[ isNaN(sfId)?sfId:parseInt(sfId) ];
   var fmtD=function(ds){return new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});};
   var fromFmt=fmtD(from), toFmt=fmtD(to);
   var fromD=new Date(from+'T00:00:00'), toD=new Date(to+'T00:00:00');
-  var monthYearLabel=(fromD.getMonth()===toD.getMonth()&&fromD.getFullYear()===toD.getFullYear())
+  var isSingleMonth=fromD.getMonth()===toD.getMonth()&&fromD.getFullYear()===toD.getFullYear();
+  var monthYearLabel=isSingleMonth
     ?fromD.toLocaleDateString('en-IN',{month:'long',year:'numeric'})
     :(fromFmt+' \u2013 '+toFmt);
   var dutyLbl=function(c){return c==='grover'?'Grover A/V':c==='wedding'?'Wedding':'Office';};
@@ -5717,6 +5794,12 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
     return dates;
   }
   var allDates=getDatesInRange(from,to);
+  // Build filename (item 11)
+  var firstSf=staffIds.length===1?getSf(staffIds[0]):null;
+  var nameSlug=sfId==='all'?'AllStaff':(firstSf?firstSf.name.split(' ')[0]:'Staff');
+  var monthSlug=isSingleMonth?fromD.toLocaleDateString('en-IN',{month:'long',year:'numeric'}).replace(' ','')
+    :(String(fromD.getDate()).padStart(2,'0')+fromD.toLocaleDateString('en-IN',{month:'short'})+'_to_'+String(toD.getDate()).padStart(2,'0')+toD.toLocaleDateString('en-IN',{month:'short',year:'numeric'}).replace(' ',''));
+  var pdfFilename=nameSlug+'_'+monthSlug+'.pdf';
   var pages='';
   staffIds.forEach(function(id){
     var sf=getSf(id); if(!sf) return;
@@ -5724,22 +5807,11 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
     var daysWorked=[...new Set(sfLogs.map(function(l){return l.date;}))].length;
     var logsByDate={};
     sfLogs.forEach(function(l){if(!logsByDate[l.date])logsByDate[l.date]=[];logsByDate[l.date].push(l);});
-    var months=[...new Set(allDates.map(function(d){return d.slice(0,7);}))].sort();
-    var leaveRows='';
-    if(incSummary){
-      months.forEach(function(mo){
-        var mp=mo.split('-').map(Number);
-        var y2=mp[0],m2=mp[1];
-        var sundays=countSundaysInMonth(y2,m2);
-        var taken=(S.leaves[id]||[]).filter(function(l){return l.year===y2&&l.date.startsWith(mo);}).length;
-        var moLabel=new Date(y2,m2-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
-        leaveRows+='<tr><td>'+moLabel+'</td><td style="text-align:center;">'+sundays+'</td><td style="text-align:center;">'+taken+'</td><td style="text-align:center;">'+Math.max(0,sundays-taken)+'</td></tr>';
-      });
-    }
-    var hasCopy=sfLogs.some(function(l){return l.copyName;});
-    var hasClient=sfLogs.some(function(l){return l.clientName;});
-    var hasNotes=sfLogs.some(function(l){return l.ciNotes;});
-    var extraCols=(hasClient?1:0)+(hasCopy?1:0)+(hasNotes?1:0);
+    var hasCopy=sfLogs.some(function(l){return l.copyName&&l.copyName.trim();});
+    var hasClient=sfLogs.some(function(l){return l.clientName&&l.clientName.trim();});
+    var hasNotes=sfLogs.some(function(l){return l.ciNotes&&l.ciNotes.trim();});
+    var hasOffice=sfLogs.some(function(l){return l.company==='office';});
+    var extraCols=(hasClient?1:0)+(hasCopy?1:0)+(hasNotes?1:0)+(hasOffice?1:0);
     var attRows='';
     allDates.forEach(function(dateStr){
       var dt=new Date(dateStr+'T00:00:00');
@@ -5761,7 +5833,12 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
           var serialNo=dayLogs.length===1?String(day):(String(day)+String.fromCharCode(65+li));
           var dColor=dutyClr(l.company);
           var ci=l.checkIn||'--', co=l.checkOut||'Active';
+          var isOffice=l.company==='office';
+          var durTxt='';
+          if(isOffice&&l.checkIn&&l.checkOut){var dm=dur(l.checkIn,l.checkOut);durTxt=dm?fmtDur(dm):'--';}
           var rowBg=li%2===0?'':'background:#f9f9f9;';
+          // Copied By: name + phone (item 13)
+          var copyTxt=l.copyName?(l.copyName+(l.copyPhone?' \xB7 '+l.copyPhone:'')):'--';
           attRows+='<tr style="'+rowBg+'">'
             +'<td style="text-align:center;color:#666;font-size:11px;">'+serialNo+'</td>'
             +'<td style="white-space:nowrap;">'+dateDisp+'</td>'
@@ -5769,8 +5846,9 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
             +'<td>'+(l.venue||'--')+'</td>'
             +'<td style="text-align:center;">'+ci+'</td>'
             +'<td style="text-align:center;color:'+(co==='Active'?'#e67e22':'inherit')+';">'+co+'</td>'
+            +(hasOffice?'<td style="text-align:center;font-size:11px;">'+(isOffice?durTxt:'--')+'</td>':'')
             +(hasClient?'<td style="font-size:11px;">'+(l.clientName||'--')+'</td>':'')
-            +(hasCopy?'<td style="font-size:11px;">'+(l.copyName||'--')+'</td>':'')
+            +(hasCopy?'<td style="font-size:11px;">'+copyTxt+'</td>':'')
             +(hasNotes?'<td style="font-size:11px;color:#666;">'+(l.ciNotes||'--')+'</td>':'')
             +'</tr>';
         });
@@ -5779,11 +5857,7 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
     var clientTh=hasClient?'<th>Client</th>':'';
     var copyTh=hasCopy?'<th>Copied By</th>':'';
     var notesTh=hasNotes?'<th>Notes</th>':'';
-    var leaveSec=incSummary&&leaveRows
-      ?'<div class="leave-section"><div class="section-title">Leave Summary</div>'
-        +'<table><thead><tr><th>Month</th><th style="text-align:center;">Sundays</th><th style="text-align:center;">Paid Leaves Taken</th><th style="text-align:center;">Remaining</th></tr></thead>'
-        +'<tbody>'+leaveRows+'</tbody></table></div>'
-      :'';
+    var officeDurTh=hasOffice?'<th style="text-align:center;">Duration</th>':'';
     var genTime=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
     pages+='<div class="page">'
       +'<div class="header"><div class="company-name">Fotovision Attendance Report</div><div class="period">'+monthYearLabel+'</div></div>'
@@ -5802,9 +5876,8 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
         +'<th>Duty</th><th>Venue</th>'
         +'<th style="text-align:center;">Check-In</th>'
         +'<th style="text-align:center;">Check-Out</th>'
-        +clientTh+copyTh+notesTh
+        +officeDurTh+clientTh+copyTh+notesTh
       +'</tr></thead><tbody>'+attRows+'</tbody></table>'
-      +leaveSec
       +'<div class="footer">Generated on '+genTime+' \xB7 Fotovision Attendance System</div>'
       +'</div>';
   });
@@ -5829,17 +5902,10 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
     +'th{background:#1a1a2e;color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11px;}'
     +'td{padding:7px 10px;border-bottom:1px solid #eee;vertical-align:middle;}'
     +'tr:last-child td{border-bottom:none;}'
-    +'.leave-section{margin-top:4px;}'
-    +'.section-title{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0e4f0;}'
     +'.footer{margin-top:auto;font-size:10px;color:#aaa;text-align:center;padding-top:12px;border-top:1px solid #eee;}'
     +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}.page{padding:20px 24px;}}';
-  var fullHtml='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Attendance Report</title><style>'+css+'</style></head><body>'+pages+'</body></html>';
-  var w=window.open('','_blank');
-  if(!w){toast('Allow popups to generate PDF','err');return;}
-  w.document.write(fullHtml);
-  w.document.close();
-  setTimeout(function(){w.focus();w.print();},600);
-  toast('PDF ready \u2014 use Print \u2192 Save as PDF \u2713');
+  var fullHtml='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+pdfFilename.replace('.pdf','')+'</title><style>'+css+'</style></head><body>'+pages+'</body></html>';
+  printAndSavePDF(fullHtml, pdfFilename);
   if(presetSfId===undefined&&presetMonthAll===undefined) closeModal();
 }
 function markCandid(logId){
