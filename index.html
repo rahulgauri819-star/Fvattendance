@@ -6235,8 +6235,7 @@ function buildSavePayload(){
 function doFirebaseSave(toSave,attempt=0){
   const p=db.ref('appData').set(toSave);
   if(attempt===0){
-    // Return the promise only on first attempt so callers can .then/.catch
-    return p.then(()=>{}).catch(e=>{
+    return p.catch(e=>{
       console.error('Save error (attempt 0):',e.message);
       // Start silent retries in background
       const _retry=(n)=>{

@@ -6352,7 +6352,7 @@ function buildSavePayload(){
 function doFirebaseSave(toSave,attempt=0){
   const p=db.ref('appData').set(toSave);
   if(attempt===0){
-    return p.then(()=>{}).catch(e=>{
+    return p.catch(e=>{
       console.error('Save error (attempt 0):',e.message);
       const _retry=(n)=>{
         if(n>5){ try{ localStorage.setItem('fv_pending_save', JSON.stringify(toSave)); }catch(_){} return; }
