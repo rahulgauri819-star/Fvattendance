@@ -629,6 +629,16 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           <button class="btn btn-outline" onclick="hideCheckinSuccess()" style="margin-top:8px;">Done</button>
         </div>
       </div>
+<!-- Full-screen Firebase-confirmed success popup -->
+<div id="fvSuccessOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="background:#fff;border-radius:20px;padding:40px 48px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;gap:12px;max-width:320px;width:90%;">
+    <div style="width:72px;height:72px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div id="fvSuccessTitle" style="font-size:22px;font-weight:800;color:#065f46;"></div>
+    <div id="fvSuccessMsg" style="font-size:14px;color:#6b7280;"></div>
+  </div>
+</div>
       <div id="staffPortalHistory" class="staff-tab-content" style="display:none;">
         <div style="font-size:20px;font-weight:800;margin-bottom:4px;">My Attendance</div>
         <select id="portalMonthSelect" onchange="onPortalMonthChange()" style="font-size:13px;color:var(--text);margin-bottom:20px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);width:100%;max-width:220px;"></select>
@@ -1909,6 +1919,22 @@ function hideCheckinSuccess(){
   $('checkinSuccess').classList.remove('show');
   $('portalActionArea').style.display='flex';
 }
+// Show a 2-second full-screen success popup (only after Firebase confirms)
+function showSuccessPopup(title, msg){
+  const overlay=$('fvSuccessOverlay');
+  if(!overlay) return;
+  $('fvSuccessTitle').textContent=title;
+  $('fvSuccessMsg').textContent=msg||'';
+  overlay.style.display='flex';
+  clearTimeout(window._successTimer);
+  window._successTimer=setTimeout(function(){
+    overlay.style.display='none';
+  },2000);
+}
+// Check network connectivity before attempting save
+function isOnline(){
+  return navigator.onLine;
+}
 
 // ===== NAV =====
 function go(view,el){
@@ -2341,6 +2367,7 @@ function buildTgDetails(log){
   return lines;
 }
 function submitCheckin(){
+  if(!isOnline()){toast('No internet connection. Please check your network and try again.','err');return;}
   if(!S.ciCompany){toast('Please select a duty type','err');return;}
   if(!S.ciSelfieData){toast('Selfie is mandatory','err');return;}
   const isStaff=isStaffUser();
@@ -2408,6 +2435,7 @@ function submitCheckin(){
       const sf=getSf(staffId);
       const _ciCo2=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
       sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo2}\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
+      showSuccessPopup('Check-In Successful ✅', 'Saved at '+checkInTime+' — '+( log.company==='office'?'Office':venue));
       if(isStaff){
         $('portalActionArea').style.display='none';
         $('checkinSuccess').classList.add('show');
@@ -2527,6 +2555,7 @@ function captureCoGps(){
 }
 
 function submitCheckout(){
+  if(!isOnline()){toast('No internet connection. Please check your network and try again.','err');return;}
   const log=S.logs.find(l=>l.id==S.coLogId);
   if(!log){toast('Log not found','err');return;}
   if(log.checkOut){toast('Already checked out','err');closeM('coModal');return;}
@@ -2582,6 +2611,7 @@ function submitCheckout(){
     .then(()=>{
       syncLogToFirestore(log);
       closeM('coModal');
+      showSuccessPopup('Check-Out Successful ✅', log.checkIn+' → '+log.checkOut+' · '+fmtDur(d));
       toast(_coName+' checked out — '+fmtDur(d));
       sendTelegramNotification(`🔴 <b>Check-Out</b>\n👤 ${_coName}\n🏢 ${_coCo}\n⏰ ${log.checkIn} → ${log.checkOut} · ${fmtDur(d)}`+buildTgDetails(log));
       if(isStaffUser()) renderStaffPortal(); else {renderStatusBoard();renderDash();}
