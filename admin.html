@@ -763,7 +763,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
           <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount">0 entries</span></div>
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead>
+              <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Notes</th><th>Actions</th></tr></thead>
               <tbody id="billingTbody"></tbody>
             </table>
           </div>
@@ -1059,7 +1059,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
         <div class="card-header"><span class="card-title">Billing Entries</span><span class="badge badge-blue" id="billingEntryCount2">0 entries</span></div>
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead>
+            <thead><tr><th>#</th><th>Date</th><th>Staff</th><th>Venue</th><th>Work Type</th><th>In</th><th>Out</th><th>Dinner</th><th>Rate</th><th>Amount</th><th>Notes</th><th>Actions</th></tr></thead>
             <tbody id="billingTbody2"></tbody>
           </table>
         </div>
@@ -5146,7 +5146,7 @@ function renderBilling(){
 
   // Main table
   if(!entries.length){
-    ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=`<tr><td colspan="11"><div class="empty"><p>No billable entries in ${monthLabel}. Use "+ Add Entry" to add manual items.</p></div></td></tr>`;});
+    ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=`<tr><td colspan="12"><div class="empty"><p>No billable entries in ${monthLabel}. Use "+ Add Entry" to add manual items.</p></div></td></tr>`;});
   } else {
     const billingHTML=entries.map((e,idx)=>{
       const _pbOv=e.wt&&e.wt.toLowerCase()==='photobooth'&&S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null?S.groverPriceOverrides[e.overrideKey]:null;
@@ -5157,11 +5157,13 @@ function renderBilling(){
         return `<tr style="background:var(--primary-light);">
           <td style="font-size:12px;color:var(--text-muted);">${e.rowNum}</td>
           <td style="font-size:12px;white-space:nowrap;">${fmtDate(me.date)}</td>
-          <td colspan="4" style="font-size:13px;font-weight:600;">${me.description}${me.notes?`<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> · ${me.notes}</span>`:''}</td>
-          <td></td>
+          <td colspan="2" style="font-size:13px;font-weight:600;">${me.description}${me.notes?`<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> · ${me.notes}</span>`:''}</td>
+          <td style="font-size:12px;color:var(--text-muted);">${me.venue||'—'}</td>
+          <td></td><td></td>
           <td><span class="badge badge-blue" style="font-size:10px;">Manual</span></td>
           <td style="font-size:13px;">₹${me.amount.toLocaleString('en-IN')}</td>
           <td style="font-weight:700;font-size:13px;">₹${me.amount.toLocaleString('en-IN')}</td>
+          <td></td>
           <td><button class="btn btn-ghost btn-sm" onclick="editManualBillingEntry('${S.billingMonth}','${me.id}')" title="Edit">✏️</button><button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteManualBillingEntry('${S.billingMonth}','${me.id}')" title="Delete">🗑️</button></td>
         </tr>`;
       }
@@ -5182,6 +5184,10 @@ function renderBilling(){
         <td style="font-size:13px;text-align:center;">${e.isDinner?'<span class="billing-double-badge">🌙 Yes</span>':''}</td>
         <td style="font-size:13px;">${rateDisplay}${(S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null)?'<span title="Custom rate" style="font-size:10px;color:var(--warning);margin-left:4px;">✏️</span>':''}</td>
         <td style="font-weight:700;font-size:13px;">${amtStr}</td>
+        <td style="font-size:11px;color:var(--text-muted);max-width:140px;">
+          ${e.log.billingNotes?`<span title="${escHtml(e.log.billingNotes)}">${escHtml(e.log.billingNotes.length>30?e.log.billingNotes.slice(0,30)+'…':e.log.billingNotes)}</span> `:''}
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:1px 5px;" onclick="editBillingNotes(${e.log.id})" title="Add/Edit Notes">✏️</button>
+        </td>
         <td>${(S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null)?`<button class="btn btn-ghost btn-sm" style="font-size:10px;" onclick="resetBillingRate('${e.overrideKey}')" title="Reset to default">↩</button>`:''}</td>
       </tr>`;
     }).join('');
@@ -5287,6 +5293,7 @@ function showAddManualEntryModal(month, editId){
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Description *</label><input class="form-input" id="mbeDesc" placeholder="e.g. Album Printing, Video Editing, Printer Rental" value="${existing?escHtml(existing.description):''}"></div>
       <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="mbeDate" value="${existing?existing.date:today}"></div>
+      <div class="form-group"><label class="form-label">Venue</label><input class="form-input" id="mbeVenue" placeholder="e.g. Taj Palace, New Delhi" value="${existing?escHtml(existing.venue||''):''}"></div>
       <div class="form-group"><label class="form-label">Amount (₹) *</label><input class="form-input" type="number" id="mbeAmount" placeholder="0" value="${existing?existing.amount:''}"></div>
       <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="mbeNotes" placeholder="Optional note" value="${existing?escHtml(existing.notes||''):''}"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="saveManualBillingEntry('${month}')">Save Entry</button>
@@ -5296,6 +5303,7 @@ function showAddManualEntryModal(month, editId){
 function saveManualBillingEntry(month){
   const desc=$('mbeDesc').value.trim();
   const date=$('mbeDate').value.trim();
+  const venue=$('mbeVenue')?$('mbeVenue').value.trim():'';
   const amtStr=$('mbeAmount').value.trim();
   const notes=$('mbeNotes').value.trim();
   if(!desc){toast('Description is required','err');return;}
@@ -5306,10 +5314,10 @@ function saveManualBillingEntry(month){
   if(!S.groverManualEntries[month]) S.groverManualEntries[month]=[];
   if(_editingManualId){
     const idx=S.groverManualEntries[month].findIndex(m=>m.id===_editingManualId);
-    if(idx>=0) S.groverManualEntries[month][idx]={id:_editingManualId,date,description:desc,amount,notes};
+    if(idx>=0) S.groverManualEntries[month][idx]={id:_editingManualId,date,description:desc,venue,amount,notes};
   } else {
     const newId='m'+Date.now();
-    S.groverManualEntries[month].push({id:newId,date,description:desc,amount,notes});
+    S.groverManualEntries[month].push({id:newId,date,description:desc,venue,amount,notes});
   }
   saveData(); closeModal(); renderBilling(); toast('Entry saved ✓');
 }
@@ -5322,6 +5330,15 @@ async function deleteManualBillingEntry(month,id){
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
   }
   saveData(); renderBilling(); toast('Entry deleted');
+}
+
+async function editBillingNotes(logId){
+  logId=parseInt(logId);
+  const log=S.logs.find(l=>l.id==logId); if(!log) return;
+  const val=await showPrompt('Notes for this billing entry:', log.billingNotes||'');
+  if(val===null) return;
+  log.billingNotes=val.trim();
+  saveData(); renderBilling(); toast('Notes saved ✓');
 }
 
 // ── Billing Export Column Selector ───────────────────────
