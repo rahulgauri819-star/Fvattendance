@@ -2435,15 +2435,13 @@ function submitCheckin(){
       const sf=getSf(staffId);
       const _ciCo2=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
       sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${sf?sf.name:'Staff'}\n🏢 ${_ciCo2}\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
-      showSuccessPopup('Check-In Successful ✅', 'Saved at '+checkInTime+' — '+( log.company==='office'?'Office':venue));
       if(isStaff){
-        $('portalActionArea').style.display='none';
-        $('checkinSuccess').classList.add('show');
-        $('successMsg').textContent='Checked in at '+(S.ciCompany==='office'?'Office':venue)+' — '+checkInTime;
         renderStaffPortal();
+        showSuccessPopup('Check-In Successful ✅', 'Saved at '+checkInTime+' — '+(log.company==='office'?'Office':venue));
       } else {
         const sf2=getSf(staffId);
         toast((sf2?sf2.name:'Staff')+' checked in — '+checkInTime);
+        showSuccessPopup('Check-In Successful ✅', (sf2?sf2.name:'Staff')+' — '+checkInTime);
         renderStatusBoard();
       }
     })
@@ -2452,7 +2450,10 @@ function submitCheckin(){
       const idx=S.logs.findIndex(l=>l.id===log.id);
       if(idx>=0) S.logs.splice(idx,1);
       if(_ciBtn){_ciBtn.disabled=false;_ciBtn.textContent='Confirm Check-In';}
-      toast('Failed to save. Check your internet connection and try again.','err');
+      const errMsg=e&&e.message&&e.message.includes('timed out')
+        ?'Poor network connection. Please move to a better signal area and try again.'
+        :'Check-in failed. Check your internet connection and try again.';
+      toast(errMsg,'err');
       console.error('Check-in save failed:',e);
     });
 }
@@ -2625,7 +2626,10 @@ function submitCheckout(){
       log.coGpsLng=_prevCoGpsLng;
       log.coGpsArea=_prevCoGpsArea;
       if(_coBtn){_coBtn.disabled=false;_coBtn.textContent='Confirm Check-Out';}
-      toast('Failed to save. Check your internet connection and try again.','err');
+      const errMsgCo=e&&e.message&&e.message.includes('timed out')
+        ?'Poor network connection. Please move to a better signal area and try again.'
+        :'Check-out failed. Check your internet connection and try again.';
+      toast(errMsgCo,'err');
       console.error('Check-out save failed:',e);
     });
 }
@@ -3555,33 +3559,48 @@ function confirmLateCheckin(){
   finishOfficeCheckin(staffId,venue,notes,checkInTime,sel.value);
 }
 function finishOfficeCheckin(staffId,venue,notes,checkInTime,lateReason){
+  if(!isOnline()){toast('No internet connection. Please check your network and try again.','err');return;}
   const isStaff=isStaffUser();
   const log={
     id:genUid(),staffId,company:'office',venue,clientName:'',
     date:today(),checkIn:checkInTime,checkOut:'',
-    selfie:S.ciSelfieData||'',  // compressed base64
+    createdAt:Date.now(),
+    selfie:S.ciSelfieData||'',
     gpsLat:S.ciGps?S.ciGps.lat:null,gpsLng:S.ciGps?S.ciGps.lng:null,
     gpsArea:S.ciGpsArea||'',gpsAddr:$('gpsCoords')?$('gpsCoords').textContent||'':'',
     ciNotes:notes,coNotes:'',copyName:'',copyPhone:'',
     workTypes:[],prints:0,printSize:'',
     lateReason:lateReason||''
   };
+  const _lateBtn=document.querySelector('#gpsModal .btn-primary');
+  if(_lateBtn){_lateBtn.disabled=true;_lateBtn.textContent='Saving...';}
   S.logs.push(log);
-  saveData();
-  syncLogToFirestore(log);
-  closeM('ciModal');
-  // Telegram notification for ALL office check-ins (staff + admin)
-  const _sfOfc=getSf(staffId);
-  sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${_sfOfc?_sfOfc.name:'Staff'}\n🏢 Office\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
-  if(isStaff){
-    $('portalActionArea').style.display='none';
-    $('checkinSuccess').classList.add('show');
-    $('successMsg').textContent='Checked in at Office — '+checkInTime+(lateReason?' ('+lateReason+')':'');
-    renderStaffPortal();
-  } else {
-    toast((_sfOfc?_sfOfc.name:'Staff')+' checked in — '+checkInTime);
-    renderStatusBoard();
-  }
+  doFirebaseSave(buildSavePayload())
+    .then(()=>{
+      syncSelfiesAndCleanup();
+      syncLogToFirestore(log);
+      closeM('ciModal');
+      const _sfOfc=getSf(staffId);
+      sendTelegramNotification(`✅ <b>Check-In</b>\n👤 ${_sfOfc?_sfOfc.name:'Staff'}\n🏢 Office\n⏰ Time: ${checkInTime}`+buildTgDetails(log));
+      if(isStaff){
+        renderStaffPortal();
+        showSuccessPopup('Check-In Successful ✅','Saved at '+checkInTime+' — Office');
+      } else {
+        toast((_sfOfc?_sfOfc.name:'Staff')+' checked in — '+checkInTime);
+        showSuccessPopup('Check-In Successful ✅',(_sfOfc?_sfOfc.name:'Staff')+' — '+checkInTime);
+        renderStatusBoard();
+      }
+    })
+    .catch(e=>{
+      const idx=S.logs.findIndex(l=>l.id===log.id);
+      if(idx>=0) S.logs.splice(idx,1);
+      if(_lateBtn){_lateBtn.disabled=false;_lateBtn.textContent='Confirm';}
+      const errMsg=e&&e.message&&e.message.includes('timed out')
+        ?'Poor network connection. Please move to a better signal area and try again.'
+        :'Check-in failed. Check your internet connection and try again.';
+      toast(errMsg,'err');
+      console.error('Late check-in save failed:',e);
+    });
 }
 function openStaffEditModal(logId){
   logId=parseInt(logId);
@@ -6263,9 +6282,14 @@ function buildSavePayload(){
   };
 }
 function doFirebaseSave(toSave,attempt=0){
-  const p=db.ref('appData').set(toSave);
   if(attempt===0){
-    return p.catch(e=>{
+    // Race Firebase write against a 15-second timeout
+    // If network is slow/hanging, Firebase promise may never resolve or reject
+    const firebaseWrite=db.ref('appData').set(toSave);
+    const timeout=new Promise((_,reject)=>
+      setTimeout(()=>reject(new Error('Save timed out — poor network connection')),15000)
+    );
+    return Promise.race([firebaseWrite,timeout]).catch(e=>{
       console.error('Save error (attempt 0):',e.message);
       // Start silent retries in background
       const _retry=(n)=>{
@@ -6280,12 +6304,13 @@ function doFirebaseSave(toSave,attempt=0){
       throw e; // re-throw so .catch() in callers fires
     });
   } else {
-    p.then(()=>console.log('Save succeeded on retry',attempt))
-     .catch(e=>{
-       console.error('Save error (attempt '+attempt+'):',e.message);
-       if(attempt<5) setTimeout(()=>doFirebaseSave(toSave,attempt+1), Math.min(1000*Math.pow(2,attempt),15000));
-       else { try{ localStorage.setItem('fv_pending_save', JSON.stringify(toSave)); }catch(_){} }
-     });
+    db.ref('appData').set(toSave)
+      .then(()=>console.log('Save succeeded on retry',attempt))
+      .catch(e=>{
+        console.error('Save error (attempt '+attempt+'):',e.message);
+        if(attempt<5) setTimeout(()=>doFirebaseSave(toSave,attempt+1), Math.min(1000*Math.pow(2,attempt),15000));
+        else { try{ localStorage.setItem('fv_pending_save', JSON.stringify(toSave)); }catch(_){} }
+      });
   }
 }
 function syncSelfiesAndCleanup(){
