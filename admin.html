@@ -5261,7 +5261,7 @@ function setPbRate(overrideKey, val){
   toast('Photobooth rate saved');
 }
 async function editBillingRate(overrideKey, currentRate){
-  const val=await showPrompt('Enter custom rate (₹)\n(Leave blank to reset to default)', currentRate||'');
+  const val=await showPrompt('Enter custom rate (₹)\n(Leave blank to reset to default)', currentRate||'', 'number');
   if(val===null) return;
   if(!S.groverPriceOverrides) S.groverPriceOverrides={};
   if(val.toString().trim()===''){
@@ -5335,7 +5335,7 @@ async function deleteManualBillingEntry(month,id){
 async function editBillingNotes(logId){
   logId=parseInt(logId);
   const log=S.logs.find(l=>l.id==logId); if(!log) return;
-  const val=await showPrompt('Notes for this billing entry:', log.billingNotes||'');
+  const val=await showPrompt('Notes for this billing entry:', log.billingNotes||'', 'text');
   if(val===null) return;
   log.billingNotes=val.trim();
   saveData(); renderBilling(); toast('Notes saved ✓');
@@ -5387,7 +5387,7 @@ function selectAllBillingCols(val){
 }
 
 function doExportBilling(){
-  updateBillingColSelection();
+  if(!_billingExportCols.length){toast('Please select at least one column','err');return;}
   if(_billingExportFormat==='csv') _doExportBillingCSV();
   else _doExportBillingPDF();
 }
@@ -5471,7 +5471,7 @@ function _doExportBillingPDF(){
 <div id="promptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <div id="promptModalMsg" style="font-size:15px;font-weight:600;margin-bottom:12px;"></div>
-    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="number" placeholder="Enter amount (₹)">
+    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="text" placeholder="">
     <div style="display:flex;gap:10px;">
       <button class="btn" style="flex:1;background:var(--surface2);justify-content:center;" onclick="window._promptResolve(null)">Cancel</button>
       <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="window._promptResolve($('promptModalInput').value)">OK</button>
@@ -6742,16 +6742,19 @@ window.showConfirm = function(msg, okLabel='Delete'){
     $('confirmModal').style.display='flex';
   });
 };
-window.showPrompt = function(msg, defaultVal=''){
+window.showPrompt = function(msg, defaultVal='', inputType='text'){
   return new Promise(resolve=>{
     window._promptResolve=(val)=>{
       $('promptModal').style.display='none';
       resolve(val);
     };
     $('promptModalMsg').textContent=msg;
-    $('promptModalInput').value=defaultVal||'';
+    const inp=$('promptModalInput');
+    inp.type=inputType;
+    inp.placeholder=inputType==='number'?'Enter amount (₹)':'';
+    inp.value=defaultVal||'';
     $('promptModal').style.display='flex';
-    setTimeout(()=>$('promptModalInput').focus(),100);
+    setTimeout(()=>inp.focus(),100);
   });
 };
 init();
@@ -6770,7 +6773,7 @@ init();
 <div id="promptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <div id="promptModalMsg" style="font-size:15px;font-weight:600;margin-bottom:12px;"></div>
-    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="number" placeholder="Enter amount (₹)">
+    <input id="promptModalInput" class="form-input" style="margin-bottom:16px;" type="text" placeholder="">
     <div style="display:flex;gap:10px;">
       <button class="btn" style="flex:1;background:var(--surface2);justify-content:center;" onclick="window._promptResolve(null)">Cancel</button>
       <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="window._promptResolve($('promptModalInput').value)">OK</button>

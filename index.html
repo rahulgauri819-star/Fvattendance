@@ -359,6 +359,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
 .wt-chip.selected{background:var(--primary);color:#fff;border-color:var(--primary);}
 
 @keyframes slideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fvSpin{to{transform:rotate(360deg);}}
 
 /* BILLING */
 .billing-double-row td{border-left:3px solid var(--warning);}
@@ -1591,11 +1592,17 @@ window.submitLogin = function(){
   // Switch view BEFORE rendering to prevent dashboard bleed-through
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   if($('view-staff-portal')) $('view-staff-portal').classList.add('active');
-  renderStaffPortal();
-  // Fallback re-render after data loads
-  setTimeout(()=>{
-    if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
-  }, 800);
+  // Show spinner immediately — never show stale Check In before Firebase confirms
+  if(!S.dataReady){
+    $('portalActionArea').innerHTML=`
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:16px;">
+        <div style="width:48px;height:48px;border:4px solid var(--border);border-top:4px solid var(--primary);border-radius:50%;animation:fvSpin 0.8s linear infinite;"></div>
+        <div style="font-size:14px;color:var(--text-muted);">Loading your attendance...</div>
+      </div>`;
+    $('portalActionArea').style.display='flex';
+  } else {
+    renderStaffPortal();
+  }
   toast('Welcome, '+sf.name+'!');
 };
 
@@ -6508,16 +6515,21 @@ function init(){
       return Promise.all(selfiePromises);
     }
   }).then(()=>{
+    S.dataReady=true;
     hideLoadingScreen();
     if(!S.currentUser||S.currentUser.role==='admin') renderDash();
+    // If staff logged in while data was loading, render portal now that data is ready
+    if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
     // Listen for real-time updates from other devices
     db.ref('appData').on('value', snap=>{
       applyIncomingData(snap.val());
     });
   }).catch(e=>{
+    S.dataReady=true;
     hideLoadingScreen();
     toast('Could not connect to database. Working offline.','err');
     renderDash();
+    if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
   });
   // Auto-fill remember me fields
   try{
