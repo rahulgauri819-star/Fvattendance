@@ -5031,7 +5031,9 @@ function isDoubleShift(ci,co){
   const [cih,cim]=ci.split(':').map(Number);
   const ciMins=cih*60+cim;
   const [coh,com]=co.split(':').map(Number);
-  const coMins=coh*60+com;
+  let coMins=coh*60+com;
+  // Handle midnight crossing — if checkout time is before checkin time, it's next day
+  if(coMins<=ciMins) coMins+=1440;
   // CI between 5:00 (300) and 11:00 (660) inclusive, CO >= 20:30 (1230)
   return ciMins>=300 && ciMins<=660 && coMins>=1230;
 }
