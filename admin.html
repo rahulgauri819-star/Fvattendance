@@ -2033,6 +2033,10 @@ function renderGroverSales(){
   });
   // Pending = active shifts
   const pending=logs.filter(l=>!l.checkOut&&l.workTypes&&l.workTypes.length&&l.workTypes[0].toLowerCase()!=='assistant');
+  // Add manual entries to total revenue
+  const manualEntries=(S.groverManualEntries&&S.groverManualEntries[S.groverSalesMonth])||[];
+  const manualTotal=manualEntries.reduce((s,m)=>s+(Number(m.amount)||0),0);
+  totalRev+=manualTotal;
 
   if($('groverSalesKpi')){
     // Build per-work-type KPI cards
@@ -3158,6 +3162,14 @@ function renderGroverDailyChart(logs, month){
     days[d].shifts++;
     days[d].wts.push(wt);
     if(isDinner) days[d].dinner+=rate;
+  });
+  // Add manual entries to daily chart
+  const chartManuals=(S.groverManualEntries&&S.groverManualEntries[month])||[];
+  chartManuals.forEach(m=>{
+    const d=parseInt((m.date||'').split('-')[2],10);
+    if(d>=1&&d<=daysInMonth){
+      days[d].normal+=Number(m.amount)||0;
+    }
   });
   const CHART_H=160;
   const maxVal=Math.max(...Object.values(days).map(d=>d.normal+d.dinner),1);
@@ -5057,16 +5069,21 @@ function buildBillingEntries(month){
     const overrideKey2=`${l.id}_dinner`;
     const ov=S.groverPriceOverrides||{};
     const rate1=(ov[overrideKey1]!=null)?ov[overrideKey1]:baseRate;
-    entries.push({rowNum:rowNum++,log:l,sf,wt,rate:rate1,isDinner:false,overrideKey:overrideKey1});
+    entries.push({rowNum:0,log:l,sf,wt,rate:rate1,isDinner:false,overrideKey:overrideKey1,sortKey:l.date+'T'+l.checkIn});
     if(isDoubleShift(l.checkIn,l.checkOut)){
       const rate2=(ov[overrideKey2]!=null)?ov[overrideKey2]:baseRate;
-      entries.push({rowNum:rowNum++,log:l,sf,wt,rate:rate2,isDinner:true,overrideKey:overrideKey2});
+      entries.push({rowNum:0,log:l,sf,wt,rate:rate2,isDinner:true,overrideKey:overrideKey2,sortKey:l.date+'T'+l.checkIn+'_d'});
     }
   });
+  // Add manual entries with sort key so they sort by date together with regular entries
   const manuals=(S.groverManualEntries&&S.groverManualEntries[month])||[];
   manuals.forEach(m=>{
-    entries.push({rowNum:rowNum++,log:null,sf:null,wt:m.description,rate:m.amount,isDinner:false,isManual:true,manualEntry:m});
+    entries.push({rowNum:0,log:null,sf:null,wt:m.description,rate:m.amount,isDinner:false,isManual:true,manualEntry:m,sortKey:m.date+'T99:99'});
   });
+  // Sort ALL entries by date together
+  entries.sort((a,b)=>a.sortKey.localeCompare(b.sortKey));
+  // Assign row numbers after sorting
+  entries.forEach((e,i)=>e.rowNum=i+1);
   return entries;
 }
 
