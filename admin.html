@@ -2019,15 +2019,18 @@ function renderGroverSales(){
     const wt=l.workTypes[0];
     if(wt.toLowerCase()==='assistant') return;
     staffSet.add(l.staffId);
-    const rate=Number(S.groverRates[wt])||0; // fix null/undefined rate
     const isPhotobooth=wt.toLowerCase()==='photobooth';
-    const double=!isPhotobooth&&l.checkOut&&isDoubleShift(l.checkIn,l.checkOut);
-    const amt=double?rate*2:rate;
+    const ov=S.groverPriceOverrides||{};
+    const overrideKey=`${l.id}_shift`;
+    // For photobooth, use price override if set, otherwise 0 (manual pricing)
+    const rate=isPhotobooth?(ov[overrideKey]!=null?Number(ov[overrideKey]):0):Number(S.groverRates[wt])||0;
+    const double=l.checkOut&&isDoubleShift(l.checkIn,l.checkOut);
+    const amt=isPhotobooth?rate:(double?rate*2:rate);
     totalRev+=amt; totalShifts++;
-    if(double) totalDoubles++;
+    if(double&&!isPhotobooth) totalDoubles++;
     if(!byWt[wt]) byWt[wt]={count:0,doubles:0,rev:0,pending:0};
     byWt[wt].count++;
-    if(double) byWt[wt].doubles++;
+    if(double&&!isPhotobooth) byWt[wt].doubles++;
     if(!l.checkOut) byWt[wt].pending++;
     byWt[wt].rev+=amt;
   });
@@ -2044,8 +2047,7 @@ function renderGroverSales(){
     const allWts=S.workTypes.filter(w=>w.toLowerCase()!=='assistant');
     const wtCards=allWts.map(wt=>{
       const v=byWt[wt]||{count:0,doubles:0,rev:0};
-      const isPhotobooth=wt.toLowerCase()==='photobooth';
-      const valStr=isPhotobooth?'Manual':'₹'+v.rev.toLocaleString('en-IN');
+      const valStr='₹'+v.rev.toLocaleString('en-IN');
       const subStr=v.count+' shift'+(v.count!==1?'s':'')+(v.doubles>0?' · '+v.doubles+' dinner':'');
       return `<div class="kpi" style="padding:12px 14px;"><div class="kpi-label" style="font-size:10px;">${wt.toUpperCase()}</div><div class="kpi-val" style="color:${v.rev>0?'var(--success)':'var(--text-faint)'};font-size:18px;">${valStr}</div><div class="kpi-sub">${subStr}</div></div>`;
     }).join('');
