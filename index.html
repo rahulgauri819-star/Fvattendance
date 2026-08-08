@@ -1806,7 +1806,7 @@ function renderStaffHistory(){
     if(dayLogs&&dayLogs.length){
       dayLogs.forEach((l,li)=>{
         const isOffice=l.company==='office';
-        const location=isOffice?'At Office':'At Event';
+        const location=isOffice?'At Office':(l.company==='grover'?'At Grover':'At Wedding');
         const ciTime=l.checkIn||'';
         const coTime=l.checkOut||'';
         const durMins=ciTime&&coTime?dur(ciTime,coTime):null;
@@ -2792,7 +2792,7 @@ function renderLogs(){
       <div style="font-size:12px;font-weight:600;margin-bottom:${(l.ciNotes||l.coNotes)?'3px':'6px'};">
         ${l.checkIn?`⏰ <strong>${l.checkIn}</strong> → <strong>${l.checkOut||'Active'}</strong>${d?' · '+fmtDur(d):''}` : '—'}
       </div>
-      ${(l.ciNotes||l.coNotes)?`<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📝 ${l.ciNotes||l.coNotes}</div>`:''}
+      ${l.ciNotes?`<div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📝 CI: ${l.ciNotes}</div>`:''} ${l.coNotes?`<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📝 CO: ${l.coNotes}</div>`:''}
       <div style="display:flex;gap:4px;flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 6px;" onclick="openEditLogModal(${l.id})">✏️</button>
         ${l.gpsLat?`<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 6px;" onclick="openGpsModal(${l.id})">📍 ${(l.gpsArea||l.gpsAddr||'GPS').slice(0,10)}</button>`:''}
@@ -2805,7 +2805,7 @@ function renderLogs(){
     const d=dur(l.checkIn,l.checkOut);
     const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
     return `<tr>
-      <td><div class="staff-cell"><div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;">${ini(sf.name)}</div><span style="font-weight:600;">${sf.name}</span>${(l.ciNotes||l.coNotes)?`<span title="${escHtml(l.ciNotes||l.coNotes||'')}" style="margin-left:4px;cursor:help;font-size:11px;">📝</span>`:''}</div></td>
+      <td><div class="staff-cell"><div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;">${ini(sf.name)}</div><span style="font-weight:600;">${sf.name}</span></div></td>
       <td>${compBadge(l.company)}</td>
       <td style="font-size:13px;max-width:130px;" class="truncate">${l.venue||'—'}</td>
       <td style="font-size:12px;white-space:nowrap;">${fmtDate(l.date)}</td>
@@ -3642,6 +3642,9 @@ function openStaffEditModal(logId){
     </div>
     <div class="form-group"><label class="form-label">Notes</label>
       <textarea class="form-textarea" id="seNotes">${escHtml(log.ciNotes||'')}</textarea></div>
+      <div class="form-group"><label class="form-label">Check-Out Notes</label>
+      <textarea class="form-textarea" id="seCoNotes">${escHtml(log.coNotes||'')}  </textarea></div>
+      <div class="form-group"><label class="form-label">Check-Out Notes</label>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
       <button class="btn btn-outline" onclick="closeM('gpsModal')">Cancel</button>
       <button class="btn btn-primary" onclick="submitStaffEdit(${logId})">Save</button>
@@ -3671,6 +3674,7 @@ function submitStaffEdit(logId){
   log.copyName=isGro?($('seCopyName')?$('seCopyName').value.trim():''):'';
   log.copyPhone=isGro?($('seCopyPhone')?$('seCopyPhone').value.trim():''):'';
   log.ciNotes=$('seNotes')?$('seNotes').value.trim():'';
+  log.coNotes=$('seCoNotes')?$('seCoNotes').value.trim():log.coNotes||'';
   const _saveBtn=document.querySelector('#gpsModal .btn-primary');
   if(_saveBtn){_saveBtn.disabled=true;_saveBtn.textContent='Saving...';}
   doFirebaseSave(buildSavePayload())
@@ -5813,7 +5817,7 @@ function doExportStaffReport(){
           const dt=new Date(l.date+'T00:00:00');
           const allVals=[rowNum++,l.date,dt.toLocaleDateString('en-IN',{weekday:'short'}),l.company||'',l.venue||'',
             (l.workTypes||[]).join(', '),l.checkIn||'',l.checkOut||'',d2?fmtDur(d2):'',
-            l.clientName||'',l.copyName||'',l.ciNotes||''];
+            l.clientName||'',l.copyName||'',l.ciNotes||'',l.coNotes||''];
           if(sfId==='all'){
             rows.push([sf.name,..._staffExportCols.map(i=>allVals[i])]);
           } else {
@@ -6152,7 +6156,7 @@ function exportDivisionCSV(div){
   const rows=[['Staff','Role','Venue','Client','Date','Check-In','Check-Out','Duration','Work Done','Copy Name','Copy Phone','Notes']];
   logs.forEach(l=>{
     const sf=getSf(l.staffId); if(!sf) return;
-    rows.push([sf.name,sf.role,l.venue,l.clientName||'',l.date,l.checkIn,l.checkOut||'',fmtDur(dur(l.checkIn,l.checkOut))||'',(l.workTypes||[]).join(';'),l.copyName||'',l.copyPhone||'',l.ciNotes||'']);
+    rows.push([sf.name,sf.role,l.venue,l.clientName||'',l.date,l.checkIn,l.checkOut||'',fmtDur(dur(l.checkIn,l.checkOut))||'',(l.workTypes||[]).join(';'),l.copyName||'',l.copyPhone||'',l.ciNotes||'',l.coNotes||'']);
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a');
@@ -6237,6 +6241,7 @@ async function syncLogToFirestore(log){
       copyName: log.copyName||'',
       copyPhone: log.copyPhone||'',
       ciNotes: log.ciNotes||'',
+      coNotes: log.coNotes||'',
       lateReason: log.lateReason||'',
       createdAt: log.createdAt||Date.now(),
       updatedAt: Date.now()

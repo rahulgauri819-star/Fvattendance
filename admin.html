@@ -688,7 +688,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
       </div>
       <div id="logsMobileList"></div>
       <div class="card"><div class="table-wrap log-table-wrap" id="logTableWrap">
-        <table class="data-table"><thead><tr><th>Staff</th><th>Duty</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Work Done</th><th>Selfie</th><th>GPS</th><th>Actions</th></tr></thead>
+        <table class="data-table"><thead><tr><th>Staff</th><th>Duty</th><th>Venue</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Work Done</th><th>Selfie</th><th>GPS</th><th>CI Notes</th><th>CO Notes</th><th>Actions</th></tr></thead>
         <tbody id="logTbody"></tbody></table>
       </div></div>
     <div id="logMobileList" style="display:none;"></div>
@@ -2701,7 +2701,7 @@ function renderLogs(){
       <div style="font-size:12px;font-weight:600;margin-bottom:${(l.ciNotes||l.coNotes)?'3px':'6px'};">
         ${l.checkIn?`⏰ <strong>${l.checkIn}</strong> → <strong>${l.checkOut||'Active'}</strong>${d?' · '+fmtDur(d):''}` : '—'}
       </div>
-      ${(l.ciNotes||l.coNotes)?`<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📝 ${l.ciNotes||l.coNotes}</div>`:''}
+      ${l.ciNotes?`<div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📝 CI: ${l.ciNotes}</div>`:''} ${l.coNotes?`<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📝 CO: ${l.coNotes}</div>`:''}
       <div style="display:flex;gap:4px;flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 6px;" onclick="openEditLogModal(${l.id})">✏️</button>
         ${l.gpsLat?`<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 6px;" onclick="openGpsModal(${l.id})">📍 ${(l.gpsArea||l.gpsAddr||'GPS').slice(0,10)}</button>`:''}
@@ -2714,7 +2714,7 @@ function renderLogs(){
     const d=dur(l.checkIn,l.checkOut);
     const wt=(l.workTypes&&l.workTypes.length)?l.workTypes.join(', '):'—';
     return `<tr>
-      <td><div class="staff-cell"><div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;">${ini(sf.name)}</div><span style="font-weight:600;">${sf.name}</span>${(l.ciNotes||l.coNotes)?`<span title="${escHtml(l.ciNotes||l.coNotes||'')}" style="margin-left:4px;cursor:help;font-size:11px;">📝</span>`:''}</div></td>
+      <td><div class="staff-cell"><div class="av" style="background:${sf.color};width:28px;height:28px;font-size:11px;">${ini(sf.name)}</div><span style="font-weight:600;">${sf.name}</span></div></td>
       <td>${compBadge(l.company)}</td>
       <td style="font-size:13px;max-width:130px;" class="truncate">${l.venue||'—'}</td>
       <td style="font-size:12px;white-space:nowrap;">${fmtDate(l.date)}</td>
@@ -2724,6 +2724,8 @@ function renderLogs(){
       <td style="font-size:12px;max-width:120px;" class="truncate">${wt}</td>
       <td>${(l.selfieUrl||(l.selfie&&l.selfie.startsWith('data:')))?`<img src="${l.selfieUrl||l.selfie}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--success);cursor:pointer;" onclick="viewSelfie(${l.id})">`:'<span class="text-muted text-xs">—</span>'}</td>
       <td>${l.gpsLat?`<button class="badge badge-green" style="cursor:pointer;border:none;" onclick="viewGps(${l.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.gpsArea||'View'}</button>`:'<span class="text-muted text-xs">—</span>'}</td>
+      <td style="font-size:11px;color:var(--text-muted);max-width:100px;" class="truncate" title="${escHtml(l.ciNotes||'')}">${l.ciNotes||'—'}</td>
+      <td style="font-size:11px;color:var(--text-muted);max-width:100px;" class="truncate" title="${escHtml(l.coNotes||'')}">${l.coNotes||'—'}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit">✏️</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteLog(${l.id})" title="Delete">🗑️</button>
@@ -3643,6 +3645,9 @@ function openStaffEditModal(logId){
     </div>
     <div class="form-group"><label class="form-label">Notes</label>
       <textarea class="form-textarea" id="seNotes">${escHtml(log.ciNotes||'')}</textarea></div>
+      <div class="form-group"><label class="form-label">Check-Out Notes</label>
+      <textarea class="form-textarea" id="seCoNotes">${escHtml(log.coNotes||'')}  </textarea></div>
+      <div class="form-group"><label class="form-label">Check-Out Notes</label>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
       <button class="btn btn-outline" onclick="closeM('gpsModal')">Cancel</button>
       <button class="btn btn-primary" onclick="submitStaffEdit(${logId})">Save</button>
@@ -3670,6 +3675,7 @@ function submitStaffEdit(logId){
   log.copyName=isGro?($('seCopyName')?$('seCopyName').value.trim():''):'';
   log.copyPhone=isGro?($('seCopyPhone')?$('seCopyPhone').value.trim():''):'';
   log.ciNotes=$('seNotes')?$('seNotes').value.trim():'';
+  log.coNotes=$('seCoNotes')?$('seCoNotes').value.trim():log.coNotes||'';
   saveData();
   closeM('gpsModal');
   renderStaffPortal();
@@ -4782,8 +4788,10 @@ function openEditLogModal(logId){
           <input class="form-input" id="elCopyPhone" autocomplete="off" value="${escHtml(log.copyPhone||'')}" style="font-size:16px;"></div>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Notes</label>
+    <div class="form-group"><label class="form-label">Check-In Notes</label>
       <textarea class="form-textarea" id="elNotes">${log.ciNotes||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Check-Out Notes</label>
+      <textarea class="form-textarea" id="elCoNotes">${log.coNotes||''}</textarea></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
       <button class="btn btn-outline" onclick="closeM('gpsModal')">Cancel</button>
       <button class="btn btn-primary" onclick="submitEditLog(${logId})">Save Changes</button>
@@ -4805,6 +4813,7 @@ function submitEditLog(logId){
   log.copyName=isGro?($('elCopyName')?$('elCopyName').value.trim():''):'';
   log.copyPhone=isGro?($('elCopyPhone')?$('elCopyPhone').value.trim():''):'';
   log.ciNotes=$('elNotes')?$('elNotes').value.trim():'';
+  log.coNotes=$('elCoNotes')?$('elCoNotes').value.trim():'';
   saveData();
   closeM('gpsModal');
   renderLogs();
@@ -5793,7 +5802,7 @@ function doExportStaffReport(){
     const dt=new Date(l.date+'T00:00:00');
     const allVals=[idx+1,l.date,dt.toLocaleDateString('en-IN',{weekday:'short'}),l.company||'',l.venue||'',
       (l.workTypes||[]).join(', '),l.checkIn||'',l.checkOut||'',d2?fmtDur(d2):'',
-      l.clientName||'',l.copyName||'',l.ciNotes||''];
+      l.clientName||'',l.copyName||'',l.ciNotes||'',l.coNotes||''];
     rows.push(_staffExportCols.map(i=>allVals[i]));
   });
   if(incSummary){
@@ -5875,7 +5884,7 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
     sfLogs.forEach(function(l){if(!logsByDate[l.date])logsByDate[l.date]=[];logsByDate[l.date].push(l);});
     var hasCopy=sfLogs.some(function(l){return l.copyName&&l.copyName.trim();});
     var hasClient=sfLogs.some(function(l){return l.clientName&&l.clientName.trim();});
-    var hasNotes=sfLogs.some(function(l){return l.ciNotes&&l.ciNotes.trim();});
+    var hasNotes=sfLogs.some(function(l){return (l.ciNotes&&l.ciNotes.trim())||(l.coNotes&&l.coNotes.trim());});
     var hasOffice=sfLogs.some(function(l){return l.company==='office';});
     var extraCols=(hasClient?1:0)+(hasCopy?1:0)+(hasNotes?1:0)+(hasOffice?1:0);
     var attRows='';
@@ -5916,13 +5925,14 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
             +(hasClient?'<td style="font-size:11px;">'+(l.clientName||'--')+'</td>':'')
             +(hasCopy?'<td style="font-size:11px;">'+copyTxt+'</td>':'')
             +(hasNotes?'<td style="font-size:11px;color:#666;">'+(l.ciNotes||'--')+'</td>':'')
+            +(hasNotes?'<td style="font-size:11px;color:#666;">'+(l.coNotes||'--')+'</td>':'')
             +'</tr>';
         });
       }
     });
     var clientTh=hasClient?'<th>Client</th>':'';
     var copyTh=hasCopy?'<th>Copied By</th>':'';
-    var notesTh=hasNotes?'<th>Notes</th>':'';
+    var notesTh=hasNotes?'<th>CI Notes</th><th>CO Notes</th>':'';
     var officeDurTh=hasOffice?'<th style="text-align:center;">Duration</th>':'';
     var genTime=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
     pages+='<div class="page">'
@@ -6279,7 +6289,7 @@ function exportDivisionCSV(div){
   const rows=[['Staff','Role','Venue','Client','Date','Check-In','Check-Out','Duration','Work Done','Copy Name','Copy Phone','Notes']];
   logs.forEach(l=>{
     const sf=getSf(l.staffId); if(!sf) return;
-    rows.push([sf.name,sf.role,l.venue,l.clientName||'',l.date,l.checkIn,l.checkOut||'',fmtDur(dur(l.checkIn,l.checkOut))||'',(l.workTypes||[]).join(';'),l.copyName||'',l.copyPhone||'',l.ciNotes||'']);
+    rows.push([sf.name,sf.role,l.venue,l.clientName||'',l.date,l.checkIn,l.checkOut||'',fmtDur(dur(l.checkIn,l.checkOut))||'',(l.workTypes||[]).join(';'),l.copyName||'',l.copyPhone||'',l.ciNotes||'',l.coNotes||'']);
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a');
@@ -6364,6 +6374,7 @@ async function syncLogToFirestore(log){
       copyName: log.copyName||'',
       copyPhone: log.copyPhone||'',
       ciNotes: log.ciNotes||'',
+      coNotes: log.coNotes||'',
       lateReason: log.lateReason||'',
       createdAt: log.createdAt||Date.now(),
       updatedAt: Date.now()
