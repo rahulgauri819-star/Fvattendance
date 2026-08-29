@@ -5719,7 +5719,10 @@ function saveEditLog(logId){
   l.copyPhone=isGro?($('elCopyPhone')?$('elCopyPhone').value.trim():''):'';
   l.ciNotes=$('elCINotes')?$('elCINotes').value.trim():'';
   l.coNotes=$('elCONotes')?$('elCONotes').value.trim():'';
-  saveData(); closeModal(); renderLogs(); toast('Log updated ✓');
+  saveLog(l); // save individual log to Firebase — updates workTypes, venue, checkIn/Out etc
+  saveData(); closeModal(); renderLogs();
+  if(typeof renderBilling==='function') renderBilling();
+  toast('Log updated ✓');
 }
 
 
