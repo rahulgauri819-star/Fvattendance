@@ -5720,7 +5720,7 @@ function saveEditLog(logId){
   l.ciNotes=$('elCINotes')?$('elCINotes').value.trim():'';
   l.coNotes=$('elCONotes')?$('elCONotes').value.trim():'';
   saveLog(l); // save individual log to Firebase — updates workTypes, venue, checkIn/Out etc
-  saveData(); closeModal(); renderLogs();
+  closeModal(); renderLogs();
   if(typeof renderBilling==='function') renderBilling();
   toast('Log updated ✓');
 }
@@ -6412,10 +6412,11 @@ async function syncStaffToFirestore(staff){
 let saveTimer = null;
 function saveLog(log){
   if(!log||!log.id) return Promise.resolve();
+  _savingLog = true;
   const toSave={...log,selfie:log.selfie?'[photo]':''};
   const fw=db.ref('appData/logs/'+log.id).set(toSave);
   const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Save timed out — poor network connection')),15000));
-  return Promise.race([fw,to]);
+  return Promise.race([fw,to]).finally(()=>{ setTimeout(()=>{_savingLog=false;},1000); });
 }
 function deleteLog(logId){
   if(!logId) return Promise.resolve();
@@ -6541,8 +6542,10 @@ window.addEventListener('pagehide', flushPendingSave);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushPendingSave(); });
 
 // Apply incoming Firebase data to local state and re-render (or defer if a modal is open)
+let _savingLog = false; // guard: prevent real-time listener from overwriting during log save
 function applyIncomingData(data){
   if(!data) return;
+  if(_savingLog) return; // skip real-time update while we are saving a log
   const anyModalOpen = document.querySelector('.modal-bg.open');
   if(data.staff){
     const incoming=data.staff.filter(Boolean);
@@ -6680,8 +6683,33 @@ function init(){
     hideLoadingScreen();
         renderDash();
     // Listen for real-time updates from other devices
+    // appData listener: only updates non-log data (staff, settings etc)
     db.ref('appData').on('value', snap=>{
-      applyIncomingData(snap.val());
+      const data = snap.val();
+      if(!data) return;
+      // Update non-log fields only — never overwrite S.logs from this listener
+      if(data.staff) S.staff = data.staff.filter(Boolean);
+      if(data.groverManualEntries) S.groverManualEntries = data.groverManualEntries;
+      if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
+      if(data.groverRates) S.groverRates = data.groverRates;
+      if(data.leaves) S.leaves = data.leaves;
+      if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
+      if(data.weddingGroups) S.weddingGroups = data.weddingGroups;
+      if(data.nId) S.nId = data.nId;
+      renderDash();
+    });
+    // Separate listener for logs — updates S.logs when any log changes on any device
+    db.ref('appData/logs').on('value', snap=>{
+      if(_savingLog) return; // skip if we are mid-save to avoid echo
+      const data = snap.val();
+      if(!data) return;
+      if(Array.isArray(data)){
+        S.logs = data.filter(Boolean);
+      } else {
+        S.logs = Object.values(data).filter(Boolean);
+      }
+      if(typeof renderLogs === 'function') renderLogs();
+      if(typeof renderBilling === 'function') renderBilling();
     });
   }).catch(e=>{
     hideLoadingScreen();
