@@ -5356,7 +5356,9 @@ async function saveManualBillingEntry(month){
   }
   // Save manual entries for this month directly to Firebase (not via bulk payload)
   db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
-  await db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
+  const _keyed={};
+  S.groverManualEntries[month].forEach(m=>{ _keyed[m.id]=m; });
+  await db.ref('appData/groverManualEntries/' + month).set(_keyed);
   db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
   closeModal(); renderBilling(); toast('Entry saved ✓');
 }
@@ -5366,11 +5368,13 @@ function editManualBillingEntry(month,id){ showAddManualEntryModal(month,id); }
 async function deleteManualBillingEntry(month,id){
   if(!await showConfirm('Delete this manual entry?')) return;
   if(S.groverManualEntries&&S.groverManualEntries[month]){
-    // Turn off listener before write to prevent it firing with stale data
     db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
+    // Remove from memory
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
-    await db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
-    // Re-enable listener after write completes
+    // Save as keyed object (not array) to avoid Firebase array conversion issues
+    const keyed={};
+    S.groverManualEntries[month].forEach(m=>{ keyed[m.id]=m; });
+    await db.ref('appData/groverManualEntries/' + month).set(keyed);
     db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
   }
   renderBilling(); toast('Entry deleted');
@@ -6721,8 +6725,17 @@ function init(){
     // Separate listener for manual entries
     window._manualEntriesListener = (snap)=>{
       const data = snap.val();
-      if(data) S.groverManualEntries = data;
-      else S.groverManualEntries = {};
+      if(data){
+        // Convert each month from keyed object or array to array
+        const converted={};
+        Object.keys(data).forEach(month=>{
+          const v=data[month];
+          if(Array.isArray(v)) converted[month]=v.filter(Boolean);
+          else if(v&&typeof v==='object') converted[month]=Object.values(v).filter(Boolean);
+          else converted[month]=[];
+        });
+        S.groverManualEntries=converted;
+      } else { S.groverManualEntries={}; }
       if(typeof renderBilling === 'function') renderBilling();
     };
     db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
