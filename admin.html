@@ -5334,7 +5334,7 @@ function showAddManualEntryModal(month, editId){
     </div>`);
 }
 
-function saveManualBillingEntry(month){
+async function saveManualBillingEntry(month){
   const desc=$('mbeDesc').value.trim();
   const workType=($('mbeWorkType')?$('mbeWorkType').value.trim():'');
   const date=$('mbeDate').value.trim();
@@ -5355,8 +5355,10 @@ function saveManualBillingEntry(month){
     S.groverManualEntries[month].push({id:newId,date,description:workType||desc,venue,amount,notes:desc,workType:workType});
   }
   // Save manual entries for this month directly to Firebase (not via bulk payload)
-  db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
-  saveData(); closeModal(); renderBilling(); toast('Entry saved ✓');
+  _savingManual = true;
+  await db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
+  setTimeout(()=>{_savingManual=false;},1000);
+  closeModal(); renderBilling(); toast('Entry saved ✓');
 }
 
 function editManualBillingEntry(month,id){ showAddManualEntryModal(month,id); }
@@ -5364,8 +5366,10 @@ function editManualBillingEntry(month,id){ showAddManualEntryModal(month,id); }
 async function deleteManualBillingEntry(month,id){
   if(!await showConfirm('Delete this manual entry?')) return;
   if(S.groverManualEntries&&S.groverManualEntries[month]){
+    _savingManual = true;
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
     await db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
+    setTimeout(()=>{_savingManual=false;},1000);
   }
   renderBilling(); toast('Entry deleted');
 }
@@ -6543,6 +6547,7 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 
 // Apply incoming Firebase data to local state and re-render (or defer if a modal is open)
 let _savingLog = false; // guard: prevent real-time listener from overwriting during log save
+let _savingManual = false; // guard: prevent listener from restoring deleted manual entries
 function applyIncomingData(data){
   if(!data) return;
   if(_savingLog) return; // skip real-time update while we are saving a log
@@ -6654,7 +6659,7 @@ function init(){
       if(data.admin) S.admin = data.admin;
       if(data.groverRates) S.groverRates = data.groverRates;
       // Ghost log cleanup handled via S.logs above
-      if(data.groverManualEntries) S.groverManualEntries = data.groverManualEntries;
+      if(data.groverManualEntries && !_savingManual) S.groverManualEntries = data.groverManualEntries;
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
       if(data.paidLeavesPerYear) S.paidLeavesPerYear = data.paidLeavesPerYear;
       if(data.leaves) S.leaves = data.leaves;
@@ -6689,7 +6694,7 @@ function init(){
       if(!data) return;
       // Update non-log fields only — never overwrite S.logs from this listener
       if(data.staff) S.staff = data.staff.filter(Boolean);
-      if(data.groverManualEntries) S.groverManualEntries = data.groverManualEntries;
+      if(data.groverManualEntries && !_savingManual) S.groverManualEntries = data.groverManualEntries;
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
       if(data.groverRates) S.groverRates = data.groverRates;
       if(data.leaves) S.leaves = data.leaves;
