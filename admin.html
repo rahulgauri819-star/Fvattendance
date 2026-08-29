@@ -6659,7 +6659,7 @@ function init(){
       if(data.admin) S.admin = data.admin;
       if(data.groverRates) S.groverRates = data.groverRates;
       // Ghost log cleanup handled via S.logs above
-      if(data.groverManualEntries && !_savingManual) S.groverManualEntries = data.groverManualEntries;
+      // groverManualEntries handled by dedicated listener below
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
       if(data.paidLeavesPerYear) S.paidLeavesPerYear = data.paidLeavesPerYear;
       if(data.leaves) S.leaves = data.leaves;
@@ -6694,7 +6694,7 @@ function init(){
       if(!data) return;
       // Update non-log fields only — never overwrite S.logs from this listener
       if(data.staff) S.staff = data.staff.filter(Boolean);
-      if(data.groverManualEntries && !_savingManual) S.groverManualEntries = data.groverManualEntries;
+      // groverManualEntries handled by dedicated listener below
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
       if(data.groverRates) S.groverRates = data.groverRates;
       if(data.leaves) S.leaves = data.leaves;
@@ -6714,6 +6714,13 @@ function init(){
         S.logs = Object.values(data).filter(Boolean);
       }
       if(typeof renderLogs === 'function') renderLogs();
+      if(typeof renderBilling === 'function') renderBilling();
+    });
+    // Separate listener for manual entries — never conflicts with delete/save
+    db.ref('appData/groverManualEntries').on('value', snap=>{
+      if(_savingManual) return; // skip if we are mid-save/delete
+      const data = snap.val();
+      if(data) S.groverManualEntries = data;
       if(typeof renderBilling === 'function') renderBilling();
     });
   }).catch(e=>{
