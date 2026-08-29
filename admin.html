@@ -3168,7 +3168,7 @@ function renderGroverDailyChart(logs, month){
     if(isDinner) days[d].dinner+=rate;
   });
   // Add manual entries to daily chart
-  const chartManuals=(S.groverManualEntries&&S.groverManualEntries[month])||[];
+  const chartManuals=getManuals(month);
   chartManuals.forEach(m=>{
     const d=parseInt((m.date||'').split('-')[2],10);
     if(d>=1&&d<=daysInMonth){
@@ -5089,7 +5089,7 @@ function buildBillingEntries(month){
     }
   });
   // Add manual entries with sort key so they sort by date together with regular entries
-  const manuals=(S.groverManualEntries&&S.groverManualEntries[month])||[];
+  const manuals=getManuals(month);
   manuals.forEach(m=>{
     entries.push({rowNum:0,log:null,sf:null,wt:m.description,rate:m.amount,isDinner:false,isManual:true,manualEntry:m,sortKey:m.date+'T99:99'});
   });
@@ -5318,7 +5318,7 @@ let _editingManualId=null;
 function showAddManualEntryModal(month, editId){
   month=month||S.billingMonth;
   _editingManualId=editId||null;
-  const manuals=(S.groverManualEntries&&S.groverManualEntries[month])||[];
+  const manuals=getManuals(month);
   let existing=editId?manuals.find(m=>m.id===editId):null;
   const today=new Date().toISOString().slice(0,10);
   openModal(`
@@ -5369,12 +5369,10 @@ async function deleteManualBillingEntry(month,id){
   if(!await showConfirm('Delete this manual entry?')) return;
   if(S.groverManualEntries&&S.groverManualEntries[month]){
     db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
-    // Remove from memory
-    S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
-    // Save as keyed object (not array) to avoid Firebase array conversion issues
-    const keyed={};
-    S.groverManualEntries[month].forEach(m=>{ keyed[m.id]=m; });
-    await db.ref('appData/groverManualEntries/' + month).set(keyed);
+    // Remove from memory by key
+    if(S.groverManualEntries[month]) delete S.groverManualEntries[month][id];
+    // Remove directly from Firebase by key — no set() of whole object needed
+    await db.ref('appData/groverManualEntries/' + month + '/' + id).remove();
     db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
   }
   renderBilling(); toast('Entry deleted');
@@ -6554,6 +6552,24 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 // Apply incoming Firebase data to local state and re-render (or defer if a modal is open)
 let _savingLog = false; // guard: prevent real-time listener from overwriting during log save
 let _savingManual = false; // guard: prevent listener from restoring deleted manual entries
+
+// Always get manual entries as array regardless of storage format (array or keyed object)
+function getManuals(month){
+  const v = S.groverManualEntries && S.groverManualEntries[month];
+  if(!v) return [];
+  if(Array.isArray(v)) return v.filter(Boolean);
+  return Object.values(v).filter(Boolean);
+}
+// Save manuals for a month as keyed object to Firebase
+async function saveManuals(month){
+  const arr = getManuals(month);
+  const keyed = {};
+  arr.forEach(m=>{ keyed[m.id] = m; });
+  S.groverManualEntries[month] = keyed; // keep in memory as keyed too
+  db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
+  await db.ref('appData/groverManualEntries/' + month).set(keyed);
+  db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
+}
 function applyIncomingData(data){
   if(!data) return;
   if(_savingLog) return; // skip real-time update while we are saving a log
