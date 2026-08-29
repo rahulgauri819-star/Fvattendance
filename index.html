@@ -1876,13 +1876,14 @@ async function staffDeleteOwnLog(logId){
   const idx=S.logs.findIndex(x=>x.id==logId);
   if(idx<0) return;
   const removed=S.logs.splice(idx,1);
-  db.ref('appData/logs/'+logId).remove()
+  doFirebaseSave(buildSavePayload())
     .then(()=>{
       renderStaffPortal();
       renderStaffHistory();
       toast('Entry deleted');
     })
     .catch(e=>{
+      // Rollback — re-insert the log
       S.logs.splice(idx,0,removed[0]);
       toast('Failed to delete. Check your internet and try again.','err');
       console.error('Delete failed:',e);
@@ -2307,7 +2308,7 @@ function venueChanged(){
           S.ciGpsArea=[a.neighbourhood||a.suburb||a.village,a.city||a.town||a.county,a.state].filter(Boolean).join(', ');
           // Update latest log if already saved
           const latestLog=S.logs[S.logs.length-1];
-          if(latestLog&&!latestLog.gpsArea){latestLog.gpsArea=S.ciGpsArea;saveLog(latestLog);}
+          if(latestLog&&!latestLog.gpsArea){latestLog.gpsArea=S.ciGpsArea;saveData();}
         }).catch(()=>{S.ciGpsArea='';});
       $('gpsBadge').className='gps-badge';
       $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> GPS Captured ✓';
@@ -2431,8 +2432,8 @@ function submitCheckin(){
   const _ciBtn=document.querySelector('#ciModal .btn-primary');
   if(_ciBtn){_ciBtn.disabled=true;_ciBtn.textContent='Saving...';}
   S.logs.push(log);
-  // Firebase-first: save individual log only — never overwrite full array
-  saveLog(log)
+  // Firebase-first: only update UI after confirmed save
+  doFirebaseSave(buildSavePayload())
     .then(()=>{
       syncSelfiesAndCleanup(); // upload selfie to Storage now that DB save confirmed
       syncLogToFirestore(log);
@@ -2613,7 +2614,8 @@ function submitCheckout(){
   const d=dur(log.checkIn,log.checkOut);
   const _coName=sf?sf.name:'Staff';
   const _coCo=log.company==='grover'?'Grover A/V':log.company==='wedding'?'Wedding':'Office';
-  saveLog(log)
+  // Firebase-first: only update UI after confirmed save
+  doFirebaseSave(buildSavePayload())
     .then(()=>{
       syncLogToFirestore(log);
       closeM('coModal');
@@ -2794,7 +2796,7 @@ function renderLogs(){
       <div style="display:flex;gap:4px;flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 6px;" onclick="openEditLogModal(${l.id})">✏️</button>
         ${l.gpsLat?`<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 6px;" onclick="openGpsModal(${l.id})">📍 ${(l.gpsArea||l.gpsAddr||'GPS').slice(0,10)}</button>`:''}
-        <button class="btn btn-danger btn-sm" style="font-size:11px;padding:2px 6px;" onclick="adminDeleteLog(${l.id})">🗑️</button>
+        <button class="btn btn-danger btn-sm" style="font-size:11px;padding:2px 6px;" onclick="deleteLog(${l.id})">🗑️</button>
       </div>
     </div>`;
   }).join('');
@@ -2815,7 +2817,7 @@ function renderLogs(){
       <td>${l.gpsLat?`<button class="badge badge-green" style="cursor:pointer;border:none;" onclick="viewGps(${l.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.gpsArea||'View'}</button>`:'<span class="text-muted text-xs">—</span>'}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit">✏️</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="adminDeleteLog(${l.id})" title="Delete">🗑️</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteLog(${l.id})" title="Delete">🗑️</button>
         ${(()=>{const isUL=(S.uninformedLeaves[sf.id]||[]).some(u=>u.date===l.date); return isUL?`<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">🚫UL</span>`:''})()}
         ${l.company==='grover'&&(l.workTypes||[]).includes('Still Photography')?`<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 6px;" onclick="markCandid(${l.id})">📷 Candid</button>`:''}
         ${l.company==='grover'&&(l.workTypes||[]).includes('Candid Photography')?`<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 6px;color:var(--primary);" onclick="unmarkCandid(${l.id})">↩ Still</button>`:''}
@@ -2860,7 +2862,7 @@ function viewSelfie(logId){
 }
 
 // ===== EXPORT CSV =====
-async function adminDeleteLog(id){
+async function deleteLog(id){
   id=parseInt(id);
   if(!await showConfirm('Delete this attendance record?')) return;
   const idx=S.logs.findIndex(l=>l.id==id);
@@ -3580,9 +3582,8 @@ function finishOfficeCheckin(staffId,venue,notes,checkInTime,lateReason){
   const _lateBtn=document.querySelector('#gpsModal .btn-primary');
   if(_lateBtn){_lateBtn.disabled=true;_lateBtn.textContent='Saving...';}
   S.logs.push(log);
-  saveLog(log)
+  doFirebaseSave(buildSavePayload())
     .then(()=>{
-      saveData();
       syncSelfiesAndCleanup();
       syncLogToFirestore(log);
       closeM('ciModal');
@@ -3676,7 +3677,7 @@ function submitStaffEdit(logId){
   log.coNotes=$('seCoNotes')?$('seCoNotes').value.trim():log.coNotes||'';
   const _saveBtn=document.querySelector('#gpsModal .btn-primary');
   if(_saveBtn){_saveBtn.disabled=true;_saveBtn.textContent='Saving...';}
-  saveLog(log)
+  doFirebaseSave(buildSavePayload())
     .then(()=>{
       closeM('gpsModal');
       renderStaffPortal();
@@ -3684,6 +3685,7 @@ function submitStaffEdit(logId){
       toast('Details updated');
     })
     .catch(e=>{
+      // Rollback
       Object.assign(log,_prev);
       if(_saveBtn){_saveBtn.disabled=false;_saveBtn.textContent='Save';}
       toast('Failed to save. Check your internet and try again.','err');
@@ -6264,21 +6266,10 @@ async function syncStaffToFirestore(staff){
 
 // Save entire state to Firebase (debounced)
 let saveTimer = null;
-function saveLog(log){
-  if(!log||!log.id) return Promise.resolve();
-  const toSave={...log,selfie:log.selfie?'[photo]':''};
-  const fw=db.ref('appData/logs/'+log.id).set(toSave);
-  const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Save timed out — poor network connection')),15000));
-  return Promise.race([fw,to]);
-}
-function deleteLog(logId){
-  if(!logId) return Promise.resolve();
-  return db.ref('appData/logs/'+logId).remove();
-}
 function buildSavePayload(){
   return {
     staff: S.staff,
-    // logs intentionally excluded — saved individually per check-in/out to prevent stale overwrites
+    logs: S.logs.map(l=>({...l, selfie: l.selfie?'[photo]':''})), // strip selfies from DB
     nId: S.nId,
     roles: S.roles,
     workTypes: S.workTypes,
@@ -6306,7 +6297,7 @@ function doFirebaseSave(toSave,attempt=0){
   if(attempt===0){
     // Race Firebase write against a 15-second timeout
     // If network is slow/hanging, Firebase promise may never resolve or reject
-    const firebaseWrite=db.ref('appData').update(toSave); // update not set — preserves logs node
+    const firebaseWrite=db.ref('appData').set(toSave);
     const timeout=new Promise((_,reject)=>
       setTimeout(()=>reject(new Error('Save timed out — poor network connection')),15000)
     );
@@ -6316,7 +6307,7 @@ function doFirebaseSave(toSave,attempt=0){
       const _retry=(n)=>{
         if(n>5){ try{ localStorage.setItem('fv_pending_save', JSON.stringify(toSave)); }catch(_){} return; }
         setTimeout(()=>{
-          db.ref('appData').update(toSave)
+          db.ref('appData').set(toSave)
             .then(()=>console.log('Save succeeded on retry',n))
             .catch(e2=>{ console.error('Save error (attempt '+n+'):',e2.message); _retry(n+1); });
         }, Math.min(1000*Math.pow(2,n),15000));
@@ -6325,7 +6316,7 @@ function doFirebaseSave(toSave,attempt=0){
       throw e; // re-throw so .catch() in callers fires
     });
   } else {
-    db.ref('appData').update(toSave)
+    db.ref('appData').set(toSave)
       .then(()=>console.log('Save succeeded on retry',attempt))
       .catch(e=>{
         console.error('Save error (attempt '+attempt+'):',e.message);
@@ -6408,14 +6399,7 @@ function applyIncomingData(data){
     const pendingLocal=local.filter(s=>s&&!incoming.find(i=>i&&i.id===s.id));
     S.staff=[...incoming,...pendingLocal];
   }
-  if(data.logs){
-    // Support both array (old) and object keyed by ID (new) — convert in memory only, never overwrite Firebase
-    if(Array.isArray(data.logs)){
-      S.logs=data.logs.filter(Boolean);
-    } else {
-      S.logs=Object.values(data.logs).filter(Boolean);
-    }
-  }
+  if(data.logs) S.logs = data.logs.filter(Boolean);
   if(data.nId) S.nId = data.nId;
   if(data.leaves) S.leaves = data.leaves;
   if(data.medicalLeaves) S.medicalLeaves = data.medicalLeaves;
@@ -6479,7 +6463,7 @@ function init(){
   try{
     const pending=localStorage.getItem('fv_pending_save');
     if(pending){
-      db.ref('appData').update(JSON.parse(pending))
+      db.ref('appData').set(JSON.parse(pending))
         .then(()=>{ localStorage.removeItem('fv_pending_save'); console.log('Flushed pending save'); })
         .catch(()=>{});
     }
@@ -6494,14 +6478,7 @@ function init(){
         const pendingLocal=local.filter(s=>s&&!incoming.find(i=>i&&i.id===s.id));
         S.staff=[...incoming,...pendingLocal];
       }
-      if(data.logs){
-    // Support both array (old) and object keyed by ID (new) — convert in memory only, never overwrite Firebase
-    if(Array.isArray(data.logs)){
-      S.logs=data.logs.filter(Boolean);
-    } else {
-      S.logs=Object.values(data.logs).filter(Boolean);
-    }
-  }
+      if(data.logs) S.logs = data.logs.filter(Boolean);
       if(data.nId) S.nId = data.nId;
       if(data.roles) S.roles = data.roles;
       if(data.workTypes) S.workTypes = data.workTypes;
