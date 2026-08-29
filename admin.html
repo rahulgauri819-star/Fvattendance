@@ -5351,6 +5351,8 @@ function saveManualBillingEntry(month){
     const newId='m'+Date.now();
     S.groverManualEntries[month].push({id:newId,date,description:desc,venue,amount,notes});
   }
+  // Save manual entries for this month directly to Firebase (not via bulk payload)
+  db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
   saveData(); closeModal(); renderBilling(); toast('Entry saved ✓');
 }
 
@@ -5360,6 +5362,7 @@ async function deleteManualBillingEntry(month,id){
   if(!await showConfirm('Delete this manual entry?')) return;
   if(S.groverManualEntries&&S.groverManualEntries[month]){
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
+    db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
   }
   saveData(); renderBilling(); toast('Entry deleted');
 }
@@ -6422,7 +6425,7 @@ function buildSavePayload(){
     standardHours: S.standardHours,
     admin: S.admin,
     groverRates: S.groverRates,
-    groverManualEntries: S.groverManualEntries||{},
+    // groverManualEntries: saved separately per-month — NOT in bulk save payload
     groverPriceOverrides: S.groverPriceOverrides||{},
     paidLeavesPerYear: S.paidLeavesPerYear,
     leaves: S.leaves,
@@ -6820,9 +6823,8 @@ async function sendFirebaseBackupToTelegram(){
     else console.error('Backup Telegram error:', JSON.stringify(json2));
   } catch(e){ console.error('Backup failed:', e); }
 }
-// Run immediately on load, then every 30 minutes
-setTimeout(sendFirebaseBackupToTelegram, 5000); // 5s after load
-setInterval(sendFirebaseBackupToTelegram, 30*60*1000); // every 30 min
+// Run every 30 minutes
+setInterval(sendFirebaseBackupToTelegram, 30*60*1000);
 
 // Custom confirm/prompt replacements
 window.showConfirm = function(msg, okLabel='Delete'){
