@@ -1857,11 +1857,11 @@ async function staffDeleteOwnLog(logId){
   }
   if(!await showConfirm('Delete this check-in? This cannot be undone.')) return;
   const idx=S.logs.findIndex(x=>x.id==logId);
-  if(idx>=0) S.logs.splice(idx,1);
-  saveDataImmediate();
-  renderStaffPortal();
-  renderStaffHistory();
-  toast('Check-in deleted');
+  if(idx<0) return;
+  const removed2=S.logs.splice(idx,1);
+  deleteLog(logId)
+    .then(()=>{renderStaffPortal();renderStaffHistory();toast('Entry deleted');})
+    .catch(e=>{S.logs.splice(idx,0,removed2[0]);toast('Failed to delete. Check internet and try again.','err');});
 }
 
 function hideCheckinSuccess(){
@@ -2237,7 +2237,7 @@ function venueChanged(){
           S.ciGpsArea=[a.neighbourhood||a.suburb||a.village,a.city||a.town||a.county,a.state].filter(Boolean).join(', ');
           // Update latest log if already saved
           const latestLog=S.logs[S.logs.length-1];
-          if(latestLog&&!latestLog.gpsArea){latestLog.gpsArea=S.ciGpsArea;saveData();}
+          if(latestLog&&!latestLog.gpsArea){latestLog.gpsArea=S.ciGpsArea;saveLog(latestLog);}
         }).catch(()=>{S.ciGpsArea='';});
       $('gpsBadge').className='gps-badge';
       $('gpsBadge').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> GPS Captured ✓';
@@ -2705,7 +2705,7 @@ function renderLogs(){
       <div style="display:flex;gap:4px;flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 6px;" onclick="openEditLogModal(${l.id})">✏️</button>
         ${l.gpsLat?`<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 6px;" onclick="openGpsModal(${l.id})">📍 ${(l.gpsArea||l.gpsAddr||'GPS').slice(0,10)}</button>`:''}
-        <button class="btn btn-danger btn-sm" style="font-size:11px;padding:2px 6px;" onclick="deleteLog(${l.id})">🗑️</button>
+        <button class="btn btn-danger btn-sm" style="font-size:11px;padding:2px 6px;" onclick="adminDeleteLog(${l.id})">🗑️</button>
       </div>
     </div>`;
   }).join('');
@@ -2728,7 +2728,7 @@ function renderLogs(){
       <td style="font-size:11px;color:var(--text-muted);max-width:100px;" class="truncate" title="${escHtml(l.coNotes||'')}">${l.coNotes||'—'}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-sm" onclick="showEditLogModal(${l.id})" title="Edit">✏️</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteLog(${l.id})" title="Delete">🗑️</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="adminDeleteLog(${l.id})" title="Delete">🗑️</button>
         ${(()=>{const isUL=(S.uninformedLeaves[sf.id]||[]).some(u=>u.date===l.date); return isUL?`<span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px;">🚫UL</span>`:''})()}
         ${l.company==='grover'&&(l.workTypes||[]).includes('Still Photography')?`<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 6px;" onclick="markCandid(${l.id})">📷 Candid</button>`:''}
         ${l.company==='grover'&&(l.workTypes||[]).includes('Candid Photography')?`<button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 6px;color:var(--primary);" onclick="unmarkCandid(${l.id})">↩ Still</button>`:''}
@@ -2775,15 +2775,15 @@ function viewSelfie(logId){
 }
 
 // ===== EXPORT CSV =====
-async function deleteLog(id){
+async function adminDeleteLog(id){
   id=parseInt(id);
   if(!await showConfirm('Delete this attendance record?')) return;
   const idx=S.logs.findIndex(l=>l.id==id);
   if(idx===-1){toast('Log not found','err');return;}
-  S.logs.splice(idx,1);
-  saveData();
-  renderLogs();
-  toast('Log deleted');
+  const removedAdm=S.logs.splice(idx,1);
+  db.ref('appData/logs/'+id).remove()
+    .then(()=>{renderLogs();toast('Log deleted');})
+    .catch(e=>{S.logs.splice(idx,0,removedAdm[0]);toast('Delete failed','err');});
 }
 function openGpsModal(logId){
   viewGps(logId);
@@ -3585,8 +3585,9 @@ function finishOfficeCheckin(staffId,venue,notes,checkInTime,lateReason){
   const _lateBtn=document.querySelector('#gpsModal .btn-primary');
   if(_lateBtn){_lateBtn.disabled=true;_lateBtn.textContent='Saving...';}
   S.logs.push(log);
-  doFirebaseSave(buildSavePayload())
+  saveLog(log)
     .then(()=>{
+      saveData();
       syncSelfiesAndCleanup();
       syncLogToFirestore(log);
       closeM('ciModal');
@@ -4814,7 +4815,7 @@ function submitEditLog(logId){
   log.copyPhone=isGro?($('elCopyPhone')?$('elCopyPhone').value.trim():''):'';
   log.ciNotes=$('elNotes')?$('elNotes').value.trim():'';
   log.coNotes=$('elCoNotes')?$('elCoNotes').value.trim():'';
-  saveData();
+  saveLog(log);
   closeM('gpsModal');
   renderLogs();
   toast('Log updated');
@@ -4846,7 +4847,7 @@ function submitAddLog(){
     gpsLat:null,gpsLng:null,selfie:null
   };
   S.logs.push(log);
-  saveData();
+  saveLog(log);
   closeM('gpsModal');
   renderLogs();
   toast('Log entry added');
@@ -5007,7 +5008,7 @@ function submitBulkLogs(){
   if(!validRows.length){toast('Please enter at least one date','err');return;}
   let added=0;
   validRows.forEach(r=>{
-    S.logs.push({
+    const newLog={
       id:genUid(),
       staffId:sfId,
       date:r.date,
@@ -5023,10 +5024,11 @@ function submitBulkLogs(){
       addedByAdmin:true,
       createdAt:Date.now(),
       gpsLat:null,gpsLng:null,selfie:null
-    });
+    };
+    S.logs.push(newLog);
+    saveLog(newLog);
     added++;
   });
-  saveData();
   closeModal();
   renderLogs();
   toast(`${added} log entr${added===1?'y':'ies'} added ✓`);
@@ -5187,7 +5189,7 @@ function renderBilling(){
         return `<tr style="background:var(--primary-light);">
           <td style="font-size:12px;color:var(--text-muted);">${e.rowNum}</td>
           <td style="font-size:12px;white-space:nowrap;">${fmtDate(me.date)}</td>
-          <td colspan="2" style="font-size:13px;font-weight:600;">${me.description}${me.notes?`<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> · ${me.notes}</span>`:''}</td>
+          <td style="font-size:13px;font-weight:600;">${me.description}${me.notes?`<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> · ${me.notes}</span>`:''}</td>
           <td style="font-size:12px;color:var(--text-muted);">${me.venue||'—'}</td>
           <td></td><td></td>
           <td><span class="badge badge-blue" style="font-size:10px;">Manual</span></td>
@@ -5368,7 +5370,7 @@ async function editBillingNotes(logId){
   const val=await showPrompt('Notes for this billing entry:', log.billingNotes||'', 'text');
   if(val===null) return;
   log.billingNotes=val.trim();
-  saveData(); renderBilling(); toast('Notes saved ✓');
+  saveLog(log); renderBilling(); toast('Notes saved ✓');
 }
 
 // ── Billing Export Column Selector ───────────────────────
@@ -5428,7 +5430,7 @@ function _getBillingRowValues(e, monthLabel){
     e.isManual?e.manualEntry.date:(e.log?e.log.date:''),                          // 1: Date
     e.isManual?'Manual':(e.sf?e.sf.name:''),                                      // 2: Staff
     e.isManual?'':(e.sf?e.sf.role:''),                                            // 3: Role
-    e.isManual?e.manualEntry.description:(e.log?e.log.venue:''),                  // 4: Venue
+    e.isManual?e.manualEntry.venue||'':(e.log?e.log.venue:''),                  // 4: Venue
     e.isManual?e.manualEntry.description:e.wt,                                    // 5: Work Type
     e.isManual?'':(e.log?e.log.checkIn:''),                                       // 6: Check-In
     e.isManual?'':(e.log?e.log.checkOut:''),                                      // 7: Check-Out
@@ -5988,14 +5990,14 @@ function markCandid(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId); if(!l) return;
   l.workTypes=['Candid Photography'];
-  saveData(); renderLogs();
+  saveLog(l); renderLogs();
   toast('Marked as Candid Photography ✓');
 }
 function unmarkCandid(logId){
   logId=parseInt(logId);
   const l=S.logs.find(x=>x.id==logId); if(!l) return;
   l.workTypes=['Still Photography'];
-  saveData(); renderLogs();
+  saveLog(l); renderLogs();
   toast('Reverted to Still Photography ✓');
 }
 
@@ -6399,10 +6401,21 @@ async function syncStaffToFirestore(staff){
 
 // Save entire state to Firebase (debounced)
 let saveTimer = null;
+function saveLog(log){
+  if(!log||!log.id) return Promise.resolve();
+  const toSave={...log,selfie:log.selfie?'[photo]':''};
+  const fw=db.ref('appData/logs/'+log.id).set(toSave);
+  const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Save timed out — poor network connection')),15000));
+  return Promise.race([fw,to]);
+}
+function deleteLog(logId){
+  if(!logId) return Promise.resolve();
+  return db.ref('appData/logs/'+logId).remove();
+}
 function buildSavePayload(){
   return {
     staff: S.staff,
-    logs: S.logs.map(l=>({...l, selfie: l.selfie?'[photo]':''})), // strip selfies from DB
+    // logs intentionally excluded — saved individually per check-in/out to prevent stale overwrites
     nId: S.nId,
     roles: S.roles,
     workTypes: S.workTypes,
@@ -6528,7 +6541,18 @@ function applyIncomingData(data){
     const pendingLocal=local.filter(s=>s&&!incoming.find(i=>i&&i.id===s.id));
     S.staff=[...incoming,...pendingLocal];
   }
-  if(data.logs) S.logs = data.logs.filter(Boolean);
+  if(data.logs){
+    // logs stored as object keyed by ID — convert to array
+    if(Array.isArray(data.logs)){
+      S.logs=data.logs.filter(Boolean);
+      // Migrate: convert array to object keyed by ID
+      const obj={};
+      data.logs.filter(Boolean).forEach(l=>{if(l.id)obj[l.id]=l;});
+      db.ref('appData/logs').set(obj).catch(e=>console.error('Migration failed:',e));
+    } else {
+      S.logs=Object.values(data.logs).filter(Boolean);
+    }
+  }
   if(data.nId) S.nId = data.nId;
   if(data.leaves) S.leaves = data.leaves;
   if(data.medicalLeaves) S.medicalLeaves = data.medicalLeaves;
@@ -6607,7 +6631,18 @@ function init(){
         const pendingLocal=local.filter(s=>s&&!incoming.find(i=>i&&i.id===s.id));
         S.staff=[...incoming,...pendingLocal];
       }
-      if(data.logs) S.logs = data.logs.filter(Boolean);
+      if(data.logs){
+    // logs stored as object keyed by ID — convert to array
+    if(Array.isArray(data.logs)){
+      S.logs=data.logs.filter(Boolean);
+      // Migrate: convert array to object keyed by ID
+      const obj={};
+      data.logs.filter(Boolean).forEach(l=>{if(l.id)obj[l.id]=l;});
+      db.ref('appData/logs').set(obj).catch(e=>console.error('Migration failed:',e));
+    } else {
+      S.logs=Object.values(data.logs).filter(Boolean);
+    }
+  }
       if(data.nId) S.nId = data.nId;
       if(data.roles) S.roles = data.roles;
       if(data.workTypes) S.workTypes = data.workTypes;
