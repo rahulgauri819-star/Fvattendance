@@ -6306,7 +6306,7 @@ function doFirebaseSave(toSave,attempt=0){
   if(attempt===0){
     // Race Firebase write against a 15-second timeout
     // If network is slow/hanging, Firebase promise may never resolve or reject
-    const firebaseWrite=db.ref('appData').set(toSave);
+    const firebaseWrite=db.ref('appData').update(toSave); // update not set — preserves logs node
     const timeout=new Promise((_,reject)=>
       setTimeout(()=>reject(new Error('Save timed out — poor network connection')),15000)
     );
@@ -6316,7 +6316,7 @@ function doFirebaseSave(toSave,attempt=0){
       const _retry=(n)=>{
         if(n>5){ try{ localStorage.setItem('fv_pending_save', JSON.stringify(toSave)); }catch(_){} return; }
         setTimeout(()=>{
-          db.ref('appData').set(toSave)
+          db.ref('appData').update(toSave)
             .then(()=>console.log('Save succeeded on retry',n))
             .catch(e2=>{ console.error('Save error (attempt '+n+'):',e2.message); _retry(n+1); });
         }, Math.min(1000*Math.pow(2,n),15000));
@@ -6325,7 +6325,7 @@ function doFirebaseSave(toSave,attempt=0){
       throw e; // re-throw so .catch() in callers fires
     });
   } else {
-    db.ref('appData').set(toSave)
+    db.ref('appData').update(toSave)
       .then(()=>console.log('Save succeeded on retry',attempt))
       .catch(e=>{
         console.error('Save error (attempt '+attempt+'):',e.message);
@@ -6409,13 +6409,9 @@ function applyIncomingData(data){
     S.staff=[...incoming,...pendingLocal];
   }
   if(data.logs){
-    // logs stored as object keyed by ID — convert to array
+    // Support both array (old) and object keyed by ID (new) — convert in memory only, never overwrite Firebase
     if(Array.isArray(data.logs)){
       S.logs=data.logs.filter(Boolean);
-      // Migrate: convert array to object keyed by ID
-      const obj={};
-      data.logs.filter(Boolean).forEach(l=>{if(l.id)obj[l.id]=l;});
-      db.ref('appData/logs').set(obj).catch(e=>console.error('Migration failed:',e));
     } else {
       S.logs=Object.values(data.logs).filter(Boolean);
     }
@@ -6483,7 +6479,7 @@ function init(){
   try{
     const pending=localStorage.getItem('fv_pending_save');
     if(pending){
-      db.ref('appData').set(JSON.parse(pending))
+      db.ref('appData').update(JSON.parse(pending))
         .then(()=>{ localStorage.removeItem('fv_pending_save'); console.log('Flushed pending save'); })
         .catch(()=>{});
     }
@@ -6499,13 +6495,9 @@ function init(){
         S.staff=[...incoming,...pendingLocal];
       }
       if(data.logs){
-    // logs stored as object keyed by ID — convert to array
+    // Support both array (old) and object keyed by ID (new) — convert in memory only, never overwrite Firebase
     if(Array.isArray(data.logs)){
       S.logs=data.logs.filter(Boolean);
-      // Migrate: convert array to object keyed by ID
-      const obj={};
-      data.logs.filter(Boolean).forEach(l=>{if(l.id)obj[l.id]=l;});
-      db.ref('appData/logs').set(obj).catch(e=>console.error('Migration failed:',e));
     } else {
       S.logs=Object.values(data.logs).filter(Boolean);
     }
