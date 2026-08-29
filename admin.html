@@ -5189,7 +5189,7 @@ function renderBilling(){
         return `<tr style="background:var(--primary-light);">
           <td style="font-size:12px;color:var(--text-muted);">${e.rowNum}</td>
           <td style="font-size:12px;white-space:nowrap;">${fmtDate(me.date)}</td>
-          <td style="font-size:13px;font-weight:600;">${me.description}${me.notes?`<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> · ${me.notes}</span>`:''}</td>
+          <td style="font-size:13px;font-weight:600;">${me.notes||me.description||'—'}<span style="font-size:11px;font-weight:400;color:var(--text-muted);"> · ${me.workType||me.description||'N/A'}</span></td>
           <td style="font-size:12px;color:var(--text-muted);">${me.venue||'—'}</td>
           <td></td><td></td>
           <td><span class="badge badge-blue" style="font-size:10px;">Manual</span></td>
@@ -5323,7 +5323,8 @@ function showAddManualEntryModal(month, editId){
   openModal(`
     <div class="modal-header"><span class="modal-title">${editId?'Edit':'Add'} Manual Billing Entry</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Description *</label><input class="form-input" id="mbeDesc" placeholder="e.g. Album Printing, Video Editing, Printer Rental" value="${existing?escHtml(existing.description):''}"></div>
+      <div class="form-group"><label class="form-label">Staff / Vendor Name *</label><input class="form-input" id="mbeDesc" placeholder="e.g. Ali Still, Rafeeq Video, Vansh Printing" value="${existing?escHtml(existing.notes||existing.description):''}"></div>
+    <div class="form-group"><label class="form-label">Work Type</label><input class="form-input" id="mbeWorkType" placeholder="e.g. Still Photography, NX Video" value="${existing?escHtml(existing.workType||''):''}"></div>
       <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="mbeDate" value="${existing?existing.date:today}"></div>
       <div class="form-group"><label class="form-label">Venue</label><input class="form-input" id="mbeVenue" placeholder="e.g. Taj Palace, New Delhi" value="${existing?escHtml(existing.venue||''):''}"></div>
       <div class="form-group"><label class="form-label">Amount (₹) *</label><input class="form-input" type="number" id="mbeAmount" placeholder="0" value="${existing?existing.amount:''}"></div>
@@ -5334,11 +5335,12 @@ function showAddManualEntryModal(month, editId){
 
 function saveManualBillingEntry(month){
   const desc=$('mbeDesc').value.trim();
+  const workType=($('mbeWorkType')?$('mbeWorkType').value.trim():'');
   const date=$('mbeDate').value.trim();
   const venue=$('mbeVenue')?$('mbeVenue').value.trim():'';
   const amtStr=$('mbeAmount').value.trim();
   const notes=$('mbeNotes').value.trim();
-  if(!desc){toast('Description is required','err');return;}
+  if(!desc){toast('Staff / Vendor name is required','err');return;}
   if(!date){toast('Date is required','err');return;}
   const amount=parseFloat(amtStr);
   if(isNaN(amount)||amount<0){toast('Invalid amount','err');return;}
@@ -5346,10 +5348,10 @@ function saveManualBillingEntry(month){
   if(!S.groverManualEntries[month]) S.groverManualEntries[month]=[];
   if(_editingManualId){
     const idx=S.groverManualEntries[month].findIndex(m=>m.id===_editingManualId);
-    if(idx>=0) S.groverManualEntries[month][idx]={id:_editingManualId,date,description:desc,venue,amount,notes};
+    if(idx>=0) S.groverManualEntries[month][idx]={id:_editingManualId,date,description:workType||desc,venue,amount,notes:desc,workType:workType};
   } else {
     const newId='m'+Date.now();
-    S.groverManualEntries[month].push({id:newId,date,description:desc,venue,amount,notes});
+    S.groverManualEntries[month].push({id:newId,date,description:workType||desc,venue,amount,notes:desc,workType:workType});
   }
   // Save manual entries for this month directly to Firebase (not via bulk payload)
   db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
@@ -6548,7 +6550,7 @@ function applyIncomingData(data){
     // Support both array (old) and object keyed by ID (new) — convert in memory only, never overwrite Firebase
     if(Array.isArray(data.logs)){
       S.logs=data.logs.filter(Boolean);
-    } else {
+    } else if(data.logs && typeof data.logs==='object'){
       S.logs=Object.values(data.logs).filter(Boolean);
     }
   }
@@ -6634,7 +6636,7 @@ function init(){
     // Support both array (old) and object keyed by ID (new) — convert in memory only, never overwrite Firebase
     if(Array.isArray(data.logs)){
       S.logs=data.logs.filter(Boolean);
-    } else {
+    } else if(data.logs && typeof data.logs==='object'){
       S.logs=Object.values(data.logs).filter(Boolean);
     }
   }
@@ -6644,16 +6646,7 @@ function init(){
       if(data.standardHours) S.standardHours = data.standardHours;
       if(data.admin) S.admin = data.admin;
       if(data.groverRates) S.groverRates = data.groverRates;
-      // Cleanup: remove ghost grover logs with no checkout from past dates
-      if(data.logs){
-        const todayD=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-        data.logs=data.logs.filter(Boolean).filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
-      }
-      // One-time cleanup: remove ghost logs (grover logs with no checkout older than today)
-      if(data.logs){
-        const todayD=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
-        data.logs=data.logs.filter(Boolean).filter(l=>!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
-      }
+      // Ghost log cleanup handled via S.logs above
       if(data.groverManualEntries) S.groverManualEntries = data.groverManualEntries;
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
       if(data.paidLeavesPerYear) S.paidLeavesPerYear = data.paidLeavesPerYear;
