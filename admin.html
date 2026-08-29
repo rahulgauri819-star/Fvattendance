@@ -5365,9 +5365,9 @@ async function deleteManualBillingEntry(month,id){
   if(!await showConfirm('Delete this manual entry?')) return;
   if(S.groverManualEntries&&S.groverManualEntries[month]){
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
-    db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
+    await db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
   }
-  saveData(); renderBilling(); toast('Entry deleted');
+  renderBilling(); toast('Entry deleted');
 }
 
 async function editBillingNotes(logId){
