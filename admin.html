@@ -5355,9 +5355,9 @@ async function saveManualBillingEntry(month){
     S.groverManualEntries[month].push({id:newId,date,description:workType||desc,venue,amount,notes:desc,workType:workType});
   }
   // Save manual entries for this month directly to Firebase (not via bulk payload)
-  _savingManual = true;
+  db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
   await db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
-  setTimeout(()=>{_savingManual=false;},1000);
+  db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
   closeModal(); renderBilling(); toast('Entry saved ✓');
 }
 
@@ -5366,10 +5366,12 @@ function editManualBillingEntry(month,id){ showAddManualEntryModal(month,id); }
 async function deleteManualBillingEntry(month,id){
   if(!await showConfirm('Delete this manual entry?')) return;
   if(S.groverManualEntries&&S.groverManualEntries[month]){
-    _savingManual = true;
+    // Turn off listener before write to prevent it firing with stale data
+    db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
     S.groverManualEntries[month]=S.groverManualEntries[month].filter(m=>m.id!==id);
     await db.ref('appData/groverManualEntries/' + month).set(S.groverManualEntries[month]);
-    setTimeout(()=>{_savingManual=false;},1000);
+    // Re-enable listener after write completes
+    db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
   }
   renderBilling(); toast('Entry deleted');
 }
@@ -6716,13 +6718,14 @@ function init(){
       if(typeof renderLogs === 'function') renderLogs();
       if(typeof renderBilling === 'function') renderBilling();
     });
-    // Separate listener for manual entries — never conflicts with delete/save
-    db.ref('appData/groverManualEntries').on('value', snap=>{
-      if(_savingManual) return; // skip if we are mid-save/delete
+    // Separate listener for manual entries
+    window._manualEntriesListener = (snap)=>{
       const data = snap.val();
       if(data) S.groverManualEntries = data;
+      else S.groverManualEntries = {};
       if(typeof renderBilling === 'function') renderBilling();
-    });
+    };
+    db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
   }).catch(e=>{
     hideLoadingScreen();
     toast('Could not connect to database. Working offline.','err');
