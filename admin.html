@@ -5920,7 +5920,7 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
         attRows+='<tr style="'+rowBg+'">'
           +'<td style="text-align:center;color:#888;font-size:11px;">'+String(day)+'</td>'
           +'<td style="white-space:nowrap;">'+dateDisp+'</td>'
-          +'<td colspan="'+(4+extraCols)+'">'+statusTxt+'</td>'
+          +'<td colspan="'+(4+extraCols+(hasWorkType?1:0))+'">'+statusTxt+'</td>'
           +'</tr>';
       } else {
         dayLogs.forEach(function(l,li){
@@ -5941,6 +5941,7 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
             +'<td style="text-align:center;">'+ci+'</td>'
             +'<td style="text-align:center;color:'+(co==='Active'?'#e67e22':'inherit')+';">'+co+'</td>'
             +(hasOffice?'<td style="text-align:center;font-size:11px;">'+(isOffice?durTxt:'--')+'</td>':'')
+            +(hasWorkType?'<td style="font-size:11px;">'+(l.workTypes&&l.workTypes.length?l.workTypes.join(', '):'--')+'</td>':'')
             +(hasClient?'<td style="font-size:11px;">'+(l.clientName||'--')+'</td>':'')
             +(hasCopy?'<td style="font-size:11px;">'+copyTxt+'</td>':'')
             +(hasNotes?'<td style="font-size:11px;color:#666;">'+(l.ciNotes||'--')+'</td>':'')
@@ -5949,10 +5950,12 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
         });
       }
     });
+    var hasWorkType=sfLogs.some(function(l){return (l.company==='grover'||l.company==='wedding')&&l.workTypes&&l.workTypes.length;});
     var clientTh=hasClient?'<th>Client</th>':'';
     var copyTh=hasCopy?'<th>Copied By</th>':'';
     var notesTh=hasNotes?'<th>CI Notes</th><th>CO Notes</th>':'';
     var officeDurTh=hasOffice?'<th style="text-align:center;">Duration</th>':'';
+    var workTypeTh=hasWorkType?'<th>Work Type</th>':'';
     var genTime=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
     pages+='<div class="page">'
       +'<div class="header"><div class="company-name">Fotovision Attendance Report</div><div class="period">'+monthYearLabel+'</div></div>'
@@ -5971,7 +5974,7 @@ function doExportStaffPDF(presetSfId, presetMonth, presetMonthAll){
         +'<th>Duty</th><th>Venue</th>'
         +'<th style="text-align:center;">Check-In</th>'
         +'<th style="text-align:center;">Check-Out</th>'
-        +officeDurTh+clientTh+copyTh+notesTh
+        +officeDurTh+workTypeTh+clientTh+copyTh+notesTh
       +'</tr></thead><tbody>'+attRows+'</tbody></table>'
       +'<div class="footer">Generated on '+genTime+' \xB7 Fotovision Attendance System</div>'
       +'</div>';
