@@ -5118,6 +5118,28 @@ function saveRates(){
   toast('Rates saved');
 }
 
+async function saveInlineManualEntry(tbodyId){
+  const month=S.billingMonth;
+  const dateVal=document.getElementById(tbodyId+'_date')?.value;
+  const staff=document.getElementById(tbodyId+'_staff')?.value.trim();
+  const venue=document.getElementById(tbodyId+'_venue')?.value.trim();
+  const wt=document.getElementById(tbodyId+'_wt')?.value.trim();
+  const amt=parseFloat(document.getElementById(tbodyId+'_amt')?.value)||0;
+  const notes=document.getElementById(tbodyId+'_notes')?.value.trim();
+  if(!staff){toast('Staff / Vendor name is required','err');return;}
+  if(!dateVal){toast('Date is required','err');return;}
+  if(!S.groverManualEntries) S.groverManualEntries={};
+  if(!S.groverManualEntries[month]) S.groverManualEntries[month]={};
+  const newId=Date.now();
+  const entry={id:newId,date:dateVal,description:wt||staff,venue:venue||'',amount:amt,notes:staff,workType:wt||''};
+  S.groverManualEntries[month][newId]=entry;
+  db.ref('appData/groverManualEntries').off('value',window._manualEntriesListener);
+  await db.ref('appData/groverManualEntries/'+month+'/'+newId).set(entry);
+  db.ref('appData/groverManualEntries').on('value',window._manualEntriesListener);
+  renderBilling();
+  toast('Entry saved ✓');
+}
+
 function renderBillingRatesCard(){
   const wts=['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth'];
   if(ratesEditMode){
@@ -5224,7 +5246,26 @@ function renderBilling(){
         <td>${(S.groverPriceOverrides&&S.groverPriceOverrides[e.overrideKey]!=null)?`<button class="btn btn-ghost btn-sm" style="font-size:10px;" onclick="resetBillingRate('${e.overrideKey}')" title="Reset to default">↩</button>`:''}</td>
       </tr>`;
     }).join('');
-    ['billingTbody','billingTbody2'].forEach(id=>{const el=$(id);if(el)el.innerHTML=billingHTML;});
+    ['billingTbody','billingTbody2'].forEach(id=>{
+      const el=$(id); if(!el) return;
+      el.innerHTML=billingHTML;
+      // Append inline add row
+      const addRow=document.createElement('tr');
+      addRow.id=id+'_addrow';
+      addRow.style.cssText='background:var(--bg-secondary);';
+      addRow.innerHTML=`
+        <td style="color:var(--text-muted);font-size:11px;text-align:center;">+</td>
+        <td><input id="${id}_date" type="date" style="width:130px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);" value="${S.billingMonth+'-01'}"></td>
+        <td><input id="${id}_staff" type="text" placeholder="Staff / Vendor" style="width:130px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);"></td>
+        <td><input id="${id}_venue" type="text" placeholder="Venue" style="width:110px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);"></td>
+        <td><input id="${id}_wt" type="text" placeholder="Work Type" style="width:110px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);"></td>
+        <td></td><td></td><td></td><td></td>
+        <td><input id="${id}_amt" type="number" placeholder="Amount" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);" min="0"></td>
+        <td><input id="${id}_notes" type="text" placeholder="Notes" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);"></td>
+        <td><button onclick="saveInlineManualEntry('${id}')" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;">Save</button></td>
+      `;
+      el.appendChild(addRow);
+    });
   }
 
   // Staff subtotals (exclude manual entries from staff grouping)
