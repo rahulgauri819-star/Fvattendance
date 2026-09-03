@@ -6959,11 +6959,12 @@ async function maybeRunBackup(){
   } catch(e){ console.error('Backup check failed:', e); }
 }
 
-// Wait 30 min before first check, then check every 30 min
+// Run first check after 5 seconds (catches missed backups on page load)
+// then every 30 minutes
 setTimeout(()=>{
   maybeRunBackup();
   setInterval(maybeRunBackup, BACKUP_INTERVAL_MS);
-}, BACKUP_INTERVAL_MS);
+}, 5000);
 
 // Custom confirm/prompt replacements
 window.showConfirm = function(msg, okLabel='Delete'){
