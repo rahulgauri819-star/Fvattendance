@@ -5391,7 +5391,9 @@ function showAddManualEntryModal(month, editId){
   month=month||S.billingMonth;
   _editingManualId=editId||null;
   const manuals=getManuals(month);
-  let existing=editId?manuals.find(m=>m.id===editId):null;
+  console.log('DEBUG editId:', editId, 'month:', month, 'manuals count:', manuals.length, 'manuals:', JSON.stringify(manuals.map(m=>({id:m.id,notes:m.notes}))));
+  let existing=editId?manuals.find(m=>String(m.id)===String(editId)):null;
+  console.log('DEBUG existing:', JSON.stringify(existing));
   const today=new Date().toISOString().slice(0,10);
   const vendors=Array.isArray(S.manualVendors)?S.manualVendors:(S.manualVendors?Object.values(S.manualVendors):[]);
   const workTypes=['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth'];
@@ -5455,7 +5457,7 @@ async function saveManualBillingEntry(month){
   db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
   if(_editingManualId){
     entry.id=_editingManualId;
-    S.groverManualEntries[month][_editingManualId]=entry;
+    S.groverManualEntries[month][String(_editingManualId)]=entry;
     await db.ref('appData/groverManualEntries/'+month+'/'+_editingManualId).set(entry);
   } else {
     const newId='m'+Date.now();
