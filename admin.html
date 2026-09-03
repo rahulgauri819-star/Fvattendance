@@ -1415,6 +1415,7 @@ const S = {
   currentUser:null,
   groverRates:{'Still Photography':3000,'NX Video':5000,'Cinematic Video':8000,'Candid Photography':8000,'Photobooth':null},
   groverManualEntries: {},   // key: month (YYYY-MM), value: [{id, date, description, amount, notes}]
+  manualVendors: [],         // array of vendor name strings, saved to appData/manualVendors
   groverPriceOverrides: {},  // key: "logId_dinner" or "logId", value: number (custom rate)
   billingMonth: new Date().toISOString().slice(0,7),
   staffReportMonth: new Date().toISOString().slice(0,7),
@@ -5118,20 +5119,30 @@ function saveRates(){
   toast('Rates saved');
 }
 
+function inlineAutoFillRate(tbodyId){
+  const wt=document.getElementById(tbodyId+'_wt')?.value;
+  const amtEl=document.getElementById(tbodyId+'_amt'); if(!amtEl) return;
+  if(wt==='Photobooth'){ amtEl.value='0'; return; }
+  const rate=S.groverRates&&S.groverRates[wt];
+  if(rate!=null) amtEl.value=rate;
+}
+
 async function saveInlineManualEntry(tbodyId){
   const month=S.billingMonth;
   const dateVal=document.getElementById(tbodyId+'_date')?.value;
-  const staff=document.getElementById(tbodyId+'_staff')?.value.trim();
-  const venue=document.getElementById(tbodyId+'_venue')?.value.trim();
-  const wt=document.getElementById(tbodyId+'_wt')?.value.trim();
+  const staff=(document.getElementById(tbodyId+'_staff')?.value||'').trim();
+  const venue=(document.getElementById(tbodyId+'_venue')?.value||'').trim();
+  const wt=(document.getElementById(tbodyId+'_wt')?.value||'').trim();
+  const checkIn=(document.getElementById(tbodyId+'_ci')?.value||'').trim();
+  const checkOut=(document.getElementById(tbodyId+'_co')?.value||'').trim();
   const amt=parseFloat(document.getElementById(tbodyId+'_amt')?.value)||0;
-  const notes=document.getElementById(tbodyId+'_notes')?.value.trim();
   if(!staff){toast('Staff / Vendor name is required','err');return;}
   if(!dateVal){toast('Date is required','err');return;}
+  await saveManualVendor(staff);
   if(!S.groverManualEntries) S.groverManualEntries={};
   if(!S.groverManualEntries[month]) S.groverManualEntries[month]={};
   const newId=Date.now();
-  const entry={id:newId,date:dateVal,description:wt||staff,venue:venue||'',amount:amt,notes:staff,workType:wt||''};
+  const entry={id:newId,date:dateVal,description:wt||staff,venue:venue||'',amount:amt,notes:staff,workType:wt||'',checkIn,checkOut};
   S.groverManualEntries[month][newId]=entry;
   db.ref('appData/groverManualEntries').off('value',window._manualEntriesListener);
   await db.ref('appData/groverManualEntries/'+month+'/'+newId).set(entry);
@@ -5253,15 +5264,31 @@ function renderBilling(){
       const addRow=document.createElement('tr');
       addRow.id=id+'_addrow';
       addRow.style.cssText='background:var(--bg-secondary);';
+      const _inlineVendors=(S.manualVendors||[]);
+      const _inlineIS=`border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);`;
       addRow.innerHTML=`
         <td style="color:var(--text-muted);font-size:11px;text-align:center;">+</td>
-        <td><input id="${id}_date" type="date" style="width:130px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);" value="${S.billingMonth+'-01'}"></td>
-        <td><input id="${id}_staff" type="text" placeholder="Staff / Vendor" style="width:130px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);"></td>
-        <td><input id="${id}_venue" type="text" placeholder="Venue" style="width:110px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);"></td>
-        <td><input id="${id}_wt" type="text" placeholder="Work Type" style="width:110px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);"></td>
-        <td></td><td></td><td></td><td></td>
-        <td><input id="${id}_amt" type="number" placeholder="Amount" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);" min="0"></td>
-        <td><input id="${id}_notes" type="text" placeholder="Notes" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--text);"></td>
+        <td><input id="${id}_date" type="date" style="width:120px;${_inlineIS}" value="${S.billingMonth+'-01'}"></td>
+        <td>
+          <input id="${id}_staff" list="${id}_staffList" placeholder="Vendor" style="width:120px;${_inlineIS}" autocomplete="off">
+          <datalist id="${id}_staffList">${_inlineVendors.map(v=>`<option value="${escHtml(v)}">`).join('')}</datalist>
+        </td>
+        <td><input id="${id}_venue" type="text" placeholder="Venue" style="width:100px;${_inlineIS}"></td>
+        <td>
+          <select id="${id}_wt" style="width:130px;${_inlineIS}" onchange="inlineAutoFillRate('${id}')">
+            <option value="">— Work Type —</option>
+            <option>Still Photography</option>
+            <option>NX Video</option>
+            <option>Cinematic Video</option>
+            <option>Candid Photography</option>
+            <option>Photobooth</option>
+          </select>
+        </td>
+        <td><input id="${id}_ci" type="time" style="width:85px;${_inlineIS}" placeholder="In"></td>
+        <td><input id="${id}_co" type="time" style="width:85px;${_inlineIS}" placeholder="Out"></td>
+        <td></td><td></td>
+        <td><input id="${id}_amt" type="number" placeholder="Amount" style="width:80px;${_inlineIS}" min="0"></td>
+        <td></td>
         <td><button onclick="saveInlineManualEntry('${id}')" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;">Save</button></td>
       `;
       el.appendChild(addRow);
@@ -5366,46 +5393,87 @@ function showAddManualEntryModal(month, editId){
   const manuals=getManuals(month);
   let existing=editId?manuals.find(m=>m.id===editId):null;
   const today=new Date().toISOString().slice(0,10);
+  const vendors=Array.isArray(S.manualVendors)?S.manualVendors:(S.manualVendors?Object.values(S.manualVendors):[]);
+  const workTypes=['Still Photography','NX Video','Cinematic Video','Candid Photography','Photobooth'];
+  const existingVendor=existing?(existing.notes||existing.description):'';
+  const existingWt=existing?(existing.workType||''):'';
+  const vendorInList=existingVendor&&vendors.includes(existingVendor);
   openModal(`
     <div class="modal-header"><span class="modal-title">${editId?'Edit':'Add'} Manual Billing Entry</span><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Staff / Vendor Name *</label><input class="form-input" id="mbeDesc" placeholder="e.g. Ali Still, Rafeeq Video, Vansh Printing" value="${existing?escHtml(existing.notes||existing.description):''}"></div>
-    <div class="form-group"><label class="form-label">Work Type</label><input class="form-input" id="mbeWorkType" placeholder="e.g. Still Photography, NX Video" value="${existing?escHtml(existing.workType||''):''}"></div>
+      <div class="form-group">
+        <label class="form-label">Staff / Vendor Name *</label>
+        <input class="form-input" id="mbeVendor" list="mbeVendorList" placeholder="Select or type new vendor" value="${escHtml(existingVendor)}" autocomplete="off">
+        <datalist id="mbeVendorList">${vendors.map(v=>`<option value="${escHtml(v)}">`).join('')}</datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Work Type</label>
+        <select class="form-input" id="mbeWorkType" onchange="mbeAutoFillRate()">
+          <option value="">— Select —</option>
+          ${workTypes.map(wt=>`<option value="${wt}"${existingWt===wt?' selected':''}>${wt}</option>`).join('')}
+        </select>
+      </div>
       <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="mbeDate" value="${existing?existing.date:today}"></div>
       <div class="form-group"><label class="form-label">Venue</label><input class="form-input" id="mbeVenue" placeholder="e.g. Taj Palace, New Delhi" value="${existing?escHtml(existing.venue||''):''}"></div>
-      <div class="form-group"><label class="form-label">Amount (₹) *</label><input class="form-input" type="number" id="mbeAmount" placeholder="0" value="${existing?existing.amount:''}"></div>
-      <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="mbeNotes" placeholder="Optional note" value="${existing?escHtml(existing.notes||''):''}"></div>
+      <div style="display:flex;gap:10px;">
+        <div class="form-group" style="flex:1;"><label class="form-label">Check-In (optional)</label><input class="form-input" type="time" id="mbeCheckIn" value="${existing?(existing.checkIn||''):''}"></div>
+        <div class="form-group" style="flex:1;"><label class="form-label">Check-Out (optional)</label><input class="form-input" type="time" id="mbeCheckOut" value="${existing?(existing.checkOut||''):''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Amount (₹)</label><input class="form-input" type="number" id="mbeAmount" placeholder="0" value="${existing?existing.amount:''}"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="saveManualBillingEntry('${month}')">Save Entry</button>
     </div>`);
+  // Auto-fill rate if editing with existing work type
+  if(existingWt) setTimeout(()=>mbeAutoFillRate(true),50);
+}
+
+function mbeAutoFillRate(keepExisting){
+  const wt=$('mbeWorkType')?$('mbeWorkType').value:'';
+  const amtEl=$('mbeAmount'); if(!amtEl) return;
+  if(keepExisting && amtEl.value) return; // don't overwrite if editing and amount already set
+  if(wt==='Photobooth'){ amtEl.value='0'; return; }
+  const rate=S.groverRates&&S.groverRates[wt];
+  if(rate!=null) amtEl.value=rate;
+  else if(!keepExisting) amtEl.value='';
 }
 
 async function saveManualBillingEntry(month){
-  const desc=$('mbeDesc').value.trim();
-  const workType=($('mbeWorkType')?$('mbeWorkType').value.trim():'');
+  const vendor=$('mbeVendor')?$('mbeVendor').value.trim():'';
+  const workType=$('mbeWorkType')?$('mbeWorkType').value.trim():'';
   const date=$('mbeDate').value.trim();
   const venue=$('mbeVenue')?$('mbeVenue').value.trim():'';
+  const checkIn=$('mbeCheckIn')?$('mbeCheckIn').value.trim():'';
+  const checkOut=$('mbeCheckOut')?$('mbeCheckOut').value.trim():'';
   const amtStr=$('mbeAmount').value.trim();
-  const notes=$('mbeNotes').value.trim();
-  if(!desc){toast('Staff / Vendor name is required','err');return;}
+  if(!vendor){toast('Staff / Vendor name is required','err');return;}
   if(!date){toast('Date is required','err');return;}
-  const amount=parseFloat(amtStr);
-  if(isNaN(amount)||amount<0){toast('Invalid amount','err');return;}
+  const amount=parseFloat(amtStr)||0;
+  // Save vendor to manualVendors if new
+  await saveManualVendor(vendor);
   if(!S.groverManualEntries) S.groverManualEntries={};
-  if(!S.groverManualEntries[month]) S.groverManualEntries[month]=[];
+  if(!S.groverManualEntries[month]) S.groverManualEntries[month]={};
+  const entry={date,description:workType||vendor,venue,amount,notes:vendor,workType,checkIn,checkOut};
+  db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
   if(_editingManualId){
-    const idx=S.groverManualEntries[month].findIndex(m=>m.id===_editingManualId);
-    if(idx>=0) S.groverManualEntries[month][idx]={id:_editingManualId,date,description:workType||desc,venue,amount,notes:desc,workType:workType};
+    entry.id=_editingManualId;
+    S.groverManualEntries[month][_editingManualId]=entry;
+    await db.ref('appData/groverManualEntries/'+month+'/'+_editingManualId).set(entry);
   } else {
     const newId='m'+Date.now();
-    S.groverManualEntries[month].push({id:newId,date,description:workType||desc,venue,amount,notes:desc,workType:workType});
+    entry.id=newId;
+    S.groverManualEntries[month][newId]=entry;
+    await db.ref('appData/groverManualEntries/'+month+'/'+newId).set(entry);
   }
-  // Save manual entries for this month directly to Firebase (not via bulk payload)
-  db.ref('appData/groverManualEntries').off('value', window._manualEntriesListener);
-  const _keyed={};
-  S.groverManualEntries[month].forEach(m=>{ _keyed[m.id]=m; });
-  await db.ref('appData/groverManualEntries/' + month).set(_keyed);
   db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
   closeModal(); renderBilling(); toast('Entry saved ✓');
+}
+
+async function saveManualVendor(name){
+  if(!name) return;
+  if(!S.manualVendors) S.manualVendors=[];
+  if(!S.manualVendors.includes(name)){
+    S.manualVendors.push(name);
+    await db.ref('appData/manualVendors').set(S.manualVendors).catch(()=>{});
+  }
 }
 
 function editManualBillingEntry(month,id){ showAddManualEntryModal(month,id); }
@@ -5487,12 +5555,12 @@ function _getBillingRowValues(e, monthLabel){
   const allVals=[
     e.isManual?e.rowNum:e.rowNum,                                                 // 0: #
     e.isManual?e.manualEntry.date:(e.log?e.log.date:''),                          // 1: Date
-    e.isManual?'Manual':(e.sf?e.sf.name:''),                                      // 2: Staff
+    e.isManual?(e.manualEntry.notes||e.manualEntry.description||'Manual'):(e.sf?e.sf.name:''), // 2: Staff
     e.isManual?'':(e.sf?e.sf.role:''),                                            // 3: Role
     e.isManual?e.manualEntry.venue||'':(e.log?e.log.venue:''),                  // 4: Venue
     e.isManual?e.manualEntry.description:e.wt,                                    // 5: Work Type
-    e.isManual?'':(e.log?e.log.checkIn:''),                                       // 6: Check-In
-    e.isManual?'':(e.log?e.log.checkOut:''),                                      // 7: Check-Out
+    e.isManual?(e.manualEntry.checkIn||''):(e.log?e.log.checkIn:''),              // 6: Check-In
+    e.isManual?(e.manualEntry.checkOut||''):(e.log?e.log.checkOut:''),            // 7: Check-Out
     e.isManual?'':(e.isDinner?'Yes':''),                                          // 8: Dinner
     e.rate!=null?e.rate:'TBD',                                                    // 9: Rate
     e.rate!=null?e.rate:'TBD',                                                    // 10: Amount
@@ -6728,6 +6796,7 @@ function init(){
       if(data.standardHours) S.standardHours = data.standardHours;
       if(data.admin) S.admin = data.admin;
       if(data.groverRates) S.groverRates = data.groverRates;
+      if(data.manualVendors) S.manualVendors = Array.isArray(data.manualVendors)?data.manualVendors:Object.values(data.manualVendors);
       // Ghost log cleanup handled via S.logs above
       // groverManualEntries handled by dedicated listener below
       if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
@@ -6766,6 +6835,7 @@ function init(){
       if(data.staff) S.staff = data.staff.filter(Boolean);
       // groverManualEntries and groverPriceOverrides handled by dedicated listeners below
       if(data.groverRates) S.groverRates = data.groverRates;
+      if(data.manualVendors) S.manualVendors = Array.isArray(data.manualVendors)?data.manualVendors:Object.values(data.manualVendors);
       if(data.leaves) S.leaves = data.leaves;
       if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
       if(data.weddingGroups) S.weddingGroups = data.weddingGroups;
