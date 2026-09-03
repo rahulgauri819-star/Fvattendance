@@ -5327,10 +5327,11 @@ function setPbRate(overrideKey, val){
   const n=parseInt(val);
   if(val===''||isNaN(n)){
     delete S.groverPriceOverrides[overrideKey];
+    db.ref('appData/groverPriceOverrides/'+overrideKey).remove().catch(()=>{});
   } else {
     S.groverPriceOverrides[overrideKey]=n;
+    db.ref('appData/groverPriceOverrides/'+overrideKey).set(n).catch(()=>{});
   }
-  saveData();
   renderBilling();
   toast('Photobooth rate saved');
 }
@@ -5340,18 +5341,21 @@ async function editBillingRate(overrideKey, currentRate){
   if(!S.groverPriceOverrides) S.groverPriceOverrides={};
   if(val.toString().trim()===''){
     delete S.groverPriceOverrides[overrideKey];
+    db.ref('appData/groverPriceOverrides/'+overrideKey).remove().catch(()=>{});
   } else {
     const n=parseInt(val.trim());
     if(isNaN(n)||n<0){toast('Invalid amount','err');return;}
     S.groverPriceOverrides[overrideKey]=n;
+    db.ref('appData/groverPriceOverrides/'+overrideKey).set(n).catch(()=>{});
   }
-  saveData(); renderBilling(); toast('Rate updated');
+  renderBilling(); toast('Rate updated');
 }
 
 function resetBillingRate(overrideKey){
   if(!S.groverPriceOverrides) return;
   delete S.groverPriceOverrides[overrideKey];
-  saveData(); renderBilling(); toast('Rate reset to default');
+  db.ref('appData/groverPriceOverrides/'+overrideKey).remove().catch(()=>{});
+  renderBilling(); toast('Rate reset to default');
 }
 
 // ── Manual Billing Entries ────────────────────────────────
@@ -6485,7 +6489,7 @@ function buildSavePayload(){
     admin: S.admin,
     groverRates: S.groverRates,
     // groverManualEntries: saved separately per-month — NOT in bulk save payload
-    groverPriceOverrides: S.groverPriceOverrides||{},
+    // groverPriceOverrides: saved directly via dedicated Firebase path — NOT in bulk save payload
     paidLeavesPerYear: S.paidLeavesPerYear,
     leaves: S.leaves,
     medicalLeaves: S.medicalLeaves||{},
@@ -6760,8 +6764,7 @@ function init(){
       if(!data) return;
       // Update non-log fields only — never overwrite S.logs from this listener
       if(data.staff) S.staff = data.staff.filter(Boolean);
-      // groverManualEntries handled by dedicated listener below
-      if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
+      // groverManualEntries and groverPriceOverrides handled by dedicated listeners below
       if(data.groverRates) S.groverRates = data.groverRates;
       if(data.leaves) S.leaves = data.leaves;
       if(data.uninformedLeaves) S.uninformedLeaves = data.uninformedLeaves;
@@ -6799,6 +6802,11 @@ function init(){
       if(typeof renderBilling === 'function') renderBilling();
     };
     db.ref('appData/groverManualEntries').on('value', window._manualEntriesListener);
+    // Separate listener for price overrides — never in bulk payload
+    db.ref('appData/groverPriceOverrides').on('value', snap=>{
+      S.groverPriceOverrides = snap.val()||{};
+      if(typeof renderBilling === 'function') renderBilling();
+    });
   }).catch(e=>{
     hideLoadingScreen();
     toast('Could not connect to database. Working offline.','err');

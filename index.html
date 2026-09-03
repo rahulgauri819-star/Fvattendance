@@ -6286,7 +6286,7 @@ function buildSavePayload(){
     admin: S.admin,
     groverRates: S.groverRates,
     // groverManualEntries intentionally excluded — saved directly via dedicated Firebase path to prevent stale overwrites
-    groverPriceOverrides: S.groverPriceOverrides||{},
+    // groverPriceOverrides: saved directly via dedicated Firebase path — NOT in bulk save payload
     paidLeavesPerYear: S.paidLeavesPerYear,
     leaves: S.leaves,
     medicalLeaves: S.medicalLeaves||{},
@@ -6518,7 +6518,7 @@ function init(){
         data.logs=data.logs.filter(Boolean).filter(l=>l&&!(l.company==='grover'&&!l.checkOut&&l.date<todayD));
       }
       if(data.groverManualEntries) S.groverManualEntries = data.groverManualEntries;
-      if(data.groverPriceOverrides) S.groverPriceOverrides = data.groverPriceOverrides;
+      // groverPriceOverrides handled by dedicated listener
       if(data.paidLeavesPerYear) S.paidLeavesPerYear = data.paidLeavesPerYear;
       if(data.leaves) S.leaves = data.leaves;
       if(data.medicalLeaves) S.medicalLeaves = data.medicalLeaves;
@@ -6551,6 +6551,10 @@ function init(){
     // Listen for real-time updates from other devices
     db.ref('appData').on('value', snap=>{
       applyIncomingData(snap.val());
+    });
+    // Dedicated listener for price overrides — never in bulk payload
+    db.ref('appData/groverPriceOverrides').on('value', snap=>{
+      S.groverPriceOverrides = snap.val()||{};
     });
   }).catch(e=>{
     S.dataReady=true;
