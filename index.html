@@ -3230,7 +3230,16 @@ function renderManagerPortal(){
   const sb=$('sidebar'); if(sb) sb.style.display='none';
   const mn=document.querySelector('.main'); if(mn) mn.style.display='none';
   $('mgrName').textContent=(S.manager&&S.manager.name)||'Manager';
-  renderMgrDataManagement();
+  // If data not loaded yet, wait for it
+  if(!S.dataReady){
+    const dst=$('mgrDataManagementContent');
+    if(dst) dst.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</div>';
+    const checkReady=setInterval(()=>{
+      if(S.dataReady){ clearInterval(checkReady); renderMgrDataManagement(); lucide.createIcons(); }
+    },200);
+  } else {
+    renderMgrDataManagement();
+  }
   lucide.createIcons();
 }
 
