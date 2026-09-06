@@ -3248,37 +3248,42 @@ function renderManagerPortal(){
 
 function renderMgrDataManagement(){
   const dst=$('mgrDataManagementContent'); if(!dst) return;
-  const groups=(S.weddingGroups||[]);
   const hd=(S.hardDisks||[]);
   dst.innerHTML=`
     <div class="page-header" style="margin-bottom:20px;">
       <div><h1 class="page-title">💒 Data Management</h1><p class="page-sub">Photo & video data management</p></div>
       <button class="btn btn-primary" onclick="openNewWeddingGroup()"><i data-lucide="plus"></i> New Wedding Group</button>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-      <input class="form-input" id="mgrWgSearch" placeholder="Search wedding group..." style="max-width:220px;" oninput="renderMgrDataManagement()">
-      <select class="form-input" id="mgrWgSort" style="max-width:160px;" onchange="renderMgrDataManagement()">
-        <option value="month">Sort by Month</option>
-        <option value="name">Sort by Name</option>
-        <option value="status">Sort by Status</option>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <input class="form-input" id="mgr_wgSearch" placeholder="Search wedding groups..." style="max-width:340px;" oninput="renderDataManagement('mgrWgContent')">
+      <select class="form-input" id="mgr_wgSortBy" style="max-width:150px;" onchange="renderDataManagement('mgrWgContent')">
+        <option value="month">Sort: Month</option>
+        <option value="name">Sort: Name</option>
+        <option value="status">Sort: Status</option>
+      </select>
+      <select class="form-input" id="mgr_wgDiskFilter" style="max-width:150px;" onchange="renderDataManagement('mgrWgContent')">
+        <option value="">All Disks</option>
+        ${hd.map(d=>`<option value="${d.name}">${d.name}</option>`).join('')}
       </select>
     </div>
-    <div id="mgrWeddingGroupsList"></div>
-    <div style="margin-top:24px;">
+    <div style="margin-bottom:12px;">
+      <input class="form-input" id="mgr_wgStaffSearch" placeholder="Search staff name across all groups..." style="max-width:340px;" oninput="renderDataManagement('mgrWgContent')">
+    </div>
+    <div id="mgrWgContent"></div>
+    <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
       <div style="font-weight:700;font-size:15px;margin-bottom:12px;">💾 Hard Disks</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input class="form-input" id="mgrNewHdInput" placeholder="Add hard disk name..." style="max-width:220px;">
         <button class="btn btn-primary" onclick="mgrAddHardDisk()">Add</button>
       </div>
       <div id="mgrHdList">${hd.length?hd.map(d=>`
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:6px;margin-bottom:6px;">
           <span style="font-size:13px;flex:1;">💾 ${d.name}</span>
           <button class="btn btn-danger btn-sm" onclick="deleteHardDisk(${d.id})">Delete</button>
         </div>`).join(''):'<div style="font-size:13px;color:var(--text-muted);">No hard disks added yet.</div>'}
       </div>
     </div>`;
-  // Now render wedding groups into the list
-  renderWeddingGroups('mgrWeddingGroupsList');
+  renderDataManagement('mgrWgContent');
   lucide.createIcons();
 }
 
@@ -3905,14 +3910,16 @@ function saveManagerCredentials(){
   const m=$('mgrSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
   toast('Manager credentials saved');
 }
-function renderDataManagement(){
-  const el=$('dataManagementContent'); if(!el) return;
-  const sq=($('wgSearch')||{}).value||'';
-  const staffQ=($('wgStaffSearch')||{}).value||'';
-  const sortBy=($('wgSortBy')||{}).value||'month';
-  const diskFilter=($('wgDiskFilter')||{}).value||'';
+function renderDataManagement(containerId){
+  const el=$(containerId||'dataManagementContent'); if(!el) return;
+  const isMgr = containerId==='mgrWgContent';
+  const prefix = isMgr ? 'mgr_' : '';
+  const sq=($(`${prefix}wgSearch`)||{}).value||'';
+  const staffQ=($(`${prefix}wgStaffSearch`)||{}).value||'';
+  const sortBy=($(`${prefix}wgSortBy`)||{}).value||'month';
+  const diskFilter=($(`${prefix}wgDiskFilter`)||{}).value||'';
   // Update disk filter dropdown
-  const dfEl=$('wgDiskFilter');
+  const dfEl=$(`${prefix}wgDiskFilter`);
   if(dfEl){
     const current=dfEl.value;
     dfEl.innerHTML='<option value="">All Disks</option>'+(S.hardDisks||[]).map(d=>`<option value="${d.name}"${d.name===current?' selected':''}>${d.name}</option>`).join('')+'<option value="__none__"'+(current==='__none__'?' selected':'')+'>No Disk Assigned</option>';
