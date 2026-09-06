@@ -1543,7 +1543,7 @@ function getStaffLoginId(sf){
   const idx=allWithSameName.findIndex(s=>s.id===sf.id);
   return idx===0?firstName:firstName+(idx+1);
 }
-window.submitLogin = function(){
+window.submitLogin = async function(){
   const e=$('loginError'); e.style.display='none';
   const rawInput=($('loginPhone').value||'').trim();
   const pw=($('loginPassword').value||'').trim().toLowerCase();
@@ -1560,6 +1560,22 @@ window.submitLogin = function(){
     renderManagerPortal();
     lucide.createIcons();
     return;
+  }
+  // Fallback: fetch manager directly from Firebase in case S.manager not yet loaded
+  if(!mgr){
+    try {
+      const mgrSnap = await db.ref('appData/manager').once('value');
+      const mgrData = mgrSnap.val();
+      if(mgrData && normalizePhone(mgrData.phone)===phone && mgrData.password.toLowerCase()===pw){
+        S.manager = mgrData;
+        S.currentUser={type:'manager',name:mgrData.name,phone:mgrData.phone};
+        $('loginScreen').style.display='none';
+        document.body.classList.remove('staff-mode');
+        renderManagerPortal();
+        lucide.createIcons();
+        return;
+      }
+    } catch(err){ console.warn('Manager fetch failed:', err); }
   }
   // Try phone match (case insensitive password)
   let sf=(S.staff||[]).find(s=>normalizePhone(s.phone)===phone&&(s.password||'123').toLowerCase()===pw&&s.status==='active');
