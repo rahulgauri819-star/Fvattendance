@@ -509,13 +509,7 @@ body:not(.staff-mode) .toast-wrap{bottom:20px;}
     </div>
     <button class="btn btn-outline btn-sm" onclick="logoutManager()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</button>
   </div>
-  <div style="padding:20px;">
-    <div class="page-header">
-      <div><h1 class="page-title">💒 Data Management</h1><p class="page-sub">Photo & video data management</p></div>
-      <button class="btn btn-primary" onclick="openNewWeddingGroup()"><i data-lucide="plus"></i> New Wedding Group</button>
-    </div>
-    <div id="mgrWeddingGroupsList"></div>
-  </div>
+  <div style="padding:20px;" id="mgrDataManagementContent"></div>
 </div>
 
 <!-- LOGIN SCREEN -->
@@ -3232,11 +3226,16 @@ function showChartTooltip(day,total,shifts,hasDinner,month){
 // ===== WEDDING DATA MANAGEMENT =====
 function renderManagerPortal(){
   $('managerPortal').style.display='block';
-  // Hide main app completely
   const sb=$('sidebar'); if(sb) sb.style.display='none';
   const mn=document.querySelector('.main'); if(mn) mn.style.display='none';
-  $('mgrName').textContent=S.manager.name||'Manager';
-  renderWeddingGroups('mgrWeddingGroupsList');
+  $('mgrName').textContent=(S.manager&&S.manager.name)||'Manager';
+  // Show admin main temporarily to render data management, then copy to manager portal
+  if(mn) mn.style.display='block';
+  renderDataManagement();
+  if(mn) mn.style.display='none';
+  const src=$('dataManagementContent');
+  const dst=$('mgrDataManagementContent');
+  if(src&&dst) dst.innerHTML=src.innerHTML;
   lucide.createIcons();
 }
 function logoutManager(){
@@ -6561,7 +6560,8 @@ function init(){
   }).then(()=>{
     S.dataReady=true;
     hideLoadingScreen();
-    if(!S.currentUser||S.currentUser.role==='admin') renderDash();
+    // If manager is logged in, refresh manager portal too
+    if(S.currentUser&&S.currentUser.type==='manager') renderManagerPortal();
     // If staff logged in while data was loading, render portal now that data is ready
     if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
     // Listen for real-time updates from other devices
