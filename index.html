@@ -1546,31 +1546,27 @@ window.submitLogin = async function(){
   if(!pw){e.textContent='Please enter your password.';e.style.display='block';return;}
   const phone=normalizePhone(rawInput);
   const inputLower=rawInput.toLowerCase();
-  // Check manager — data already loaded in background on app start
+  // Check manager — instant from memory, no fetch needed
   const mgr=S.manager;
   if(mgr&&(normalizePhone(mgr.phone)===phone)&&mgr.password.toLowerCase()===pw){
     S.currentUser={type:'manager',name:mgr.name,phone:mgr.phone};
     $('loginScreen').style.display='none';
-    document.body.classList.remove('staff-mode');
-    renderManagerPortal();
+    // Show admin main, hide sidebar, navigate to wedding groups
+    const sb=$('sidebar'); if(sb) sb.style.display='none';
+    const mn=document.querySelector('.main'); if(mn) mn.style.display='block';
+    // Add manager top bar
+    const topBar=document.querySelector('.topbar');
+    if(topBar){
+      const mgrBadge=document.createElement('span');
+      mgrBadge.style.cssText='font-size:12px;color:var(--text-muted);margin-right:10px;';
+      mgrBadge.textContent='Manager: '+mgr.name;
+      topBar.prepend(mgrBadge);
+    }
+    go('wedding-data', document.querySelector('.nav-item'));
+    $('logoutBtn').style.display='inline-flex';
+    if($('topbarTitle')) $('topbarTitle').textContent='Data Management — Manager';
     lucide.createIcons();
     return;
-  }
-  // If data not ready yet, wait briefly then retry once
-  if(!S.dataReady){
-    const e2=$('loginError');
-    if(e2){e2.textContent='Connecting... please wait';e2.style.display='block';}
-    await new Promise(r=>setTimeout(r,2000));
-    const mgr2=S.manager;
-    if(mgr2&&(normalizePhone(mgr2.phone)===phone)&&mgr2.password.toLowerCase()===pw){
-      if(e2) e2.style.display='none';
-      S.currentUser={type:'manager',name:mgr2.name,phone:mgr2.phone};
-      $('loginScreen').style.display='none';
-      document.body.classList.remove('staff-mode');
-      renderManagerPortal();
-      lucide.createIcons();
-      return;
-    }
   }
   // Try phone match (case insensitive password)
   let sf=(S.staff||[]).find(s=>normalizePhone(s.phone)===phone&&(s.password||'123').toLowerCase()===pw&&s.status==='active');
@@ -1618,6 +1614,11 @@ window.submitLogin = async function(){
 };
 
 window.logout = function(){
+  // If manager logged in via admin view, restore sidebar
+  if(S.currentUser&&S.currentUser.type==='manager'){
+    const sb=$('sidebar'); if(sb) sb.style.display='';
+    const mn=document.querySelector('.main'); if(mn) mn.style.display='none';
+  }
   S.currentUser=null;
   // Reset view to dashboard
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -3290,21 +3291,11 @@ function mgrAddHardDisk(){
 function logoutManager(){
   S.currentUser=null;
   $('managerPortal').style.display='none';
+  const sb=$('sidebar'); if(sb) sb.style.display='';
+  const mn=document.querySelector('.main'); if(mn) mn.style.display='none';
   $('loginScreen').style.display='flex';
-  try{
-    const saved=fvGetRemember();
-    if(saved){
-      const parsed=saved;
-      if(parsed.loginId&&$('loginPhone')) $('loginPhone').value=parsed.loginId;
-      if(parsed.pw&&$('loginPassword')) $('loginPassword').value=parsed.pw;
-    } else {
-      if($('loginPhone')) $('loginPhone').value='';
-      if($('loginPassword')) $('loginPassword').value='';
-    }
-  } catch(e){
-    if($('loginPhone')) $('loginPhone').value='';
-    if($('loginPassword')) $('loginPassword').value='';
-  }
+  if($('loginPhone')) $('loginPhone').value='';
+  if($('loginPassword')) $('loginPassword').value='';
   lucide.createIcons();
 }
 // ===== HARD DISKS =====
@@ -3898,16 +3889,14 @@ function saveManagerCredentials(){
   const m=$('mgrSavedMsg'); if(m){m.style.display='inline';setTimeout(()=>m.style.display='none',2500);}
   toast('Manager credentials saved');
 }
-function renderDataManagement(containerId){
-  const el=$(containerId||'dataManagementContent'); if(!el) return;
-  const isMgr = containerId==='mgrWgContent';
-  const prefix = isMgr ? 'mgr_' : '';
-  const sq=($(`${prefix}wgSearch`)||{}).value||'';
-  const staffQ=($(`${prefix}wgStaffSearch`)||{}).value||'';
-  const sortBy=($(`${prefix}wgSortBy`)||{}).value||'month';
-  const diskFilter=($(`${prefix}wgDiskFilter`)||{}).value||'';
+function renderDataManagement(){
+  const el=$('dataManagementContent'); if(!el) return;
+  const sq=($('wgSearch')||{}).value||'';
+  const staffQ=($('wgStaffSearch')||{}).value||'';
+  const sortBy=($('wgSortBy')||{}).value||'month';
+  const diskFilter=($('wgDiskFilter')||{}).value||'';
   // Update disk filter dropdown
-  const dfEl=$(`${prefix}wgDiskFilter`);
+  const dfEl=$('wgDiskFilter');
   if(dfEl){
     const current=dfEl.value;
     dfEl.innerHTML='<option value="">All Disks</option>'+(S.hardDisks||[]).map(d=>`<option value="${d.name}"${d.name===current?' selected':''}>${d.name}</option>`).join('')+'<option value="__none__"'+(current==='__none__'?' selected':'')+'>No Disk Assigned</option>';
