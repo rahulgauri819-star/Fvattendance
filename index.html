@@ -1569,8 +1569,11 @@ window.submitLogin = async function(){
         // Fetch all appData so manager portal has full data
         const allSnap = await db.ref('appData').once('value');
         const allData = allSnap.val()||{};
-        S.weddingGroups = allData.weddingGroups||[];
-        S.hardDisks = allData.hardDisks||[];
+        S.weddingGroups = allData.weddingGroups ? (Array.isArray(allData.weddingGroups) ? allData.weddingGroups : Object.values(allData.weddingGroups)) : [];
+        S.hardDisks = allData.hardDisks ? (Array.isArray(allData.hardDisks) ? allData.hardDisks : Object.values(allData.hardDisks)) : [];
+        S.weddingGroups = S.weddingGroups.filter(Boolean);
+        S.hardDisks = S.hardDisks.filter(Boolean);
+        console.log('Manager data loaded — weddingGroups:', S.weddingGroups.length, 'hardDisks:', S.hardDisks.length);
         S.hardDiskIdCounter = allData.hardDiskIdCounter||1;
         S.wgIdCounter = allData.wgIdCounter||1;
         S.staff = allData.staff||[];
