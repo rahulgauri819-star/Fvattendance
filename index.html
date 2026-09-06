@@ -6515,6 +6515,7 @@ function applyIncomingData(data){
   }
   // Refresh manager portal if logged in as manager
   if(S.currentUser&&S.currentUser.type==='manager') renderMgrDataManagement();
+}
 // FIX: Mobile browsers (esp. iOS) can suspend the tab and silently drop the
 // Firebase realtime connection during long backgrounds (e.g. overnight).
 // Force a fresh fetch whenever the tab becomes visible/focused again, so
