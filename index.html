@@ -3227,12 +3227,7 @@ function showChartTooltip(day,total,shifts,hasDinner,month){
 
 // ===== WEDDING DATA MANAGEMENT =====
 function renderManagerPortal(){
-  $('managerPortal').style.display='block';
-  const sb=$('sidebar'); if(sb) sb.style.display='none';
-  const mn=document.querySelector('.main'); if(mn) mn.style.display='none';
-  $('mgrName').textContent=(S.manager&&S.manager.name)||'Manager';
-  renderMgrDataManagement();
-  lucide.createIcons();
+  // Manager now uses admin view directly — nothing to do here
 }
 
 function renderMgrDataManagement(){
@@ -6345,13 +6340,10 @@ function buildSavePayload(){
     paidLeavesPerYear: S.paidLeavesPerYear,
     leaves: S.leaves,
     medicalLeaves: S.medicalLeaves||{},
-    weddingGroups: S.weddingGroups||[],
+    // weddingGroups intentionally excluded — staff portal must never overwrite wedding data
+    // hardDisks intentionally excluded — same reason
+    // freelancers intentionally excluded — same reason
     manager: S.manager,
-    wgIdCounter: S.wgIdCounter||1,
-    freelancers: S.freelancers||[],
-    freelancerIdCounter: S.freelancerIdCounter||1,
-    hardDisks: S.hardDisks||[],
-    hardDiskIdCounter: S.hardDiskIdCounter||1,
     attendanceStartDay: S.attendanceStartDay||1,
     uninformedLeaves: S.uninformedLeaves||{},
     officeStandardTime: S.officeStandardTime||'11:00'
@@ -6498,7 +6490,7 @@ function applyIncomingData(data){
     else if(vid==='staff-portal'&&S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
   }
   // Refresh manager portal if logged in as manager
-  if(S.currentUser&&S.currentUser.type==='manager') renderMgrDataManagement();
+  if(S.currentUser&&S.currentUser.type==='manager') renderDataManagement();
 }
 // FIX: Mobile browsers (esp. iOS) can suspend the tab and silently drop the
 // Firebase realtime connection during long backgrounds (e.g. overnight).
@@ -6602,8 +6594,8 @@ function init(){
   }).then(()=>{
     S.dataReady=true;
     hideLoadingScreen();
-    // If manager is logged in, refresh manager portal too
-    if(S.currentUser&&S.currentUser.type==='manager') renderMgrDataManagement();
+    // If manager is logged in, refresh data management view
+    if(S.currentUser&&S.currentUser.type==='manager') renderDataManagement();
     // If staff logged in while data was loading, render portal now that data is ready
     if(S.currentUser&&S.currentUser.role==='staff') renderStaffPortal();
     // Listen for real-time updates from other devices
