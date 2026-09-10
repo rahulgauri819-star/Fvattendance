@@ -1551,21 +1551,19 @@ window.submitLogin = async function(){
   if(mgr&&(normalizePhone(mgr.phone)===phone)&&mgr.password.toLowerCase()===pw){
     S.currentUser={type:'manager',name:mgr.name,phone:mgr.phone};
     $('loginScreen').style.display='none';
-    // Show admin main, hide sidebar, navigate to wedding groups
     const sb=$('sidebar'); if(sb) sb.style.display='none';
     const mn=document.querySelector('.main'); if(mn) mn.style.display='block';
-    // Add manager top bar
-    const topBar=document.querySelector('.topbar');
-    if(topBar){
-      const mgrBadge=document.createElement('span');
-      mgrBadge.style.cssText='font-size:12px;color:var(--text-muted);margin-right:10px;';
-      mgrBadge.textContent='Manager: '+mgr.name;
-      topBar.prepend(mgrBadge);
-    }
-    go('wedding-data', document.querySelector('.nav-item'));
     $('logoutBtn').style.display='inline-flex';
     if($('topbarTitle')) $('topbarTitle').textContent='Data Management — Manager';
-    lucide.createIcons();
+    // Wait for data to be ready then render
+    const doNav=()=>{
+      go('wedding-data', document.querySelector('.nav-item'));
+      lucide.createIcons();
+    };
+    if(S.dataReady){ doNav(); }
+    else {
+      const t=setInterval(()=>{ if(S.dataReady){ clearInterval(t); doNav(); } },100);
+    }
     return;
   }
   // Try phone match (case insensitive password)
